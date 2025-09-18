@@ -1,16 +1,42 @@
 {
-  "AUTH_USER_EXISTS": { "status": 400, "description": "El correo electrónico ya está registrado." },
-  "AUTH_INVALID_CREDENTIALS": { "status": 401, "description": "Credenciales inválidas. Por favor, verifique su correo y contraseña." },
-  "AUTH_USER_NOT_FOUND": { "status": 404, "description": "Usuario no encontrado." },
-  "AUTH_TOKEN_MISSING": { "status": 401, "description": "No autorizado: Falta el token de autenticación." },
-  "AUTH_TOKEN_INVALID": { "status": 401, "description": "No autorizado: El token proporcionado es inválido." },
-
-  "VALIDATION_MISSING_FIELDS": { "status": 400, "description": "Petición inválida: Faltan campos obligatorios." },
-  "VALIDATION_INVALID_EMAIL": { "status": 400, "description": "Petición inválida: El formato del correo electrónico no es válido." },
-
-  "RESOURCE_NOT_FOUND": { "status": 404, "description": "El recurso solicitado no fue encontrado." },
-  "ROUTING_NOT_FOUND": { "status": 404, "description": "La ruta solicitada no existe." },
-
-  "SERVER_INTERNAL_ERROR": { "status": 500, "description": "Error interno del servidor. Por favor, intente de nuevo más tarde." },
-  "DB_ERROR": { "status": 500, "description": "Ocurrió un error al procesar su solicitud en la base de datos." }
+  "SERVER_INTERNAL_ERROR": {
+    "status": 500,
+    "description": "Ocurrió un error inesperado en el servidor."
+  },
+  "NOT_FOUND": {
+    "status": 404,
+    "description": "El recurso solicitado no fue encontrado."
+  },
+  "VALIDATION_ERROR": {
+    "status": 400,
+    "description": "La solicitud contiene datos inválidos."
+  },
+  "VALIDATION_MISSING_FIELDS": {
+    "status": 400,
+    "description": "Faltan campos obligatorios en la solicitud."
+  },
+  "VALIDATION_INVALID_EMAIL": {
+    "status": 400,
+    "description": "El formato del correo electrónico es inválido."
+  },
+  "AUTH_INVALID_CREDENTIALS": {
+    "status": 401,
+    "description": "Las credenciales de autenticación son incorrectas."
+  },
+  "AUTH_TOKEN_MISSING": {
+    "status": 401,
+    "description": "No se proveyó un token de autenticación."
+  },
+  "AUTH_TOKEN_INVALID": {
+    "status": 401,
+    "description": "El token de autenticación es inválido o ha expirado."
+  },
+  "USER_NOT_FOUND": {
+    "status": 404,
+    "description": "El usuario especificado no fue encontrado."
+  },
+  "ENTE_NOT_FOUND": {
+    "status": 404,
+    "description": "El ente especificado no fue encontrado."
+  }
 }

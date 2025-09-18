@@ -6,7 +6,8 @@ import { EnteRepository, EnteInput } from '../domain/ports/enteRepository.port';
 import { User } from "../domain/user";
 import ApiError from "../utils/ApiError";
 import { v4 as uuidv4 } from 'uuid';
-import { EnteCompaniaRepository } from '../infrastructure/firebase/enteCompania.repository';
+// Corrected import path for the repository
+import { FirebaseEnteCompaniaRepository } from '../infrastructure/persistence/firebaseEnteCompania.adapter';
 
 // Definimos la forma de los datos de entrada para el registro
 export interface RegisterInput {
@@ -22,7 +23,7 @@ export class AuthService {
     constructor(
         private readonly userRepository: UserRepository,
         private readonly enteRepository: EnteRepository,
-        private readonly enteCompaniaRepository: EnteCompaniaRepository // Nuevo repositorio
+        private readonly enteCompaniaRepository: FirebaseEnteCompaniaRepository // Corrected repository name
     ) {}
 
     async register(data: RegisterInput): Promise<{ user: User, token: string }> {

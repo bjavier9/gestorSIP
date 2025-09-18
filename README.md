@@ -1,94 +1,110 @@
-# Node.js & Express API con Arquitectura Hexagonal
+# Node.js & Express API con Arquitectura Hexagonal y IA
 
-Este proyecto es una API robusta y escalable construida con Node.js, Express y TypeScript, siguiendo los principios de la **Arquitectura Hexagonal** (también conocida como Puertos y Adaptadores).
+Este proyecto es una API robusta y escalable construida con Node.js, Express y TypeScript. Sigue los principios de la **Arquitectura Hexagonal** para un diseño limpio y mantenible, e integra capacidades de **IA generativa** con el SDK de Gemini.
+
+## Características
+
+*   **Arquitectura Limpia:** Separación clara entre el dominio, la aplicación y la infraestructura.
+*   **TypeScript:** Tipado estático para un código más robusto y mantenible.
+*   **Seguridad:** Autenticación con JWT y middleware para manejo de errores.
+*   **IA Integrada:** Generación de contenido dinámico usando la API de Gemini.
+*   **Documentación:** Documentación de API automatizada con Swagger.
+*   **Configuración Fácil:** Gestión de la configuración a través de variables de entorno.
 
 ## Primeros Pasos
 
-El servidor debería iniciarse automáticamente al abrir el espacio de trabajo. Para ejecutarlo manualmente:
+### 1. Prerrequisitos
 
-```sh
+*   Node.js (v18 o superior)
+*   npm
+
+### 2. Clonar el Repositorio
+
+```bash
+git clone <URL_DEL_REPOSITORIO>
+cd <NOMBRE_DEL_DIRECTORIO>
+```
+
+### 3. Instalar Dependencias
+
+```bash
+npm install
+```
+
+### 4. Configurar Variables de Entorno
+
+Copia el archivo de ejemplo y completa los valores requeridos:
+
+```bash
+cp .env.example .env
+```
+
+Abre el archivo `.env` y añade tus credenciales para:
+*   `JWT_SECRET`: Una clave secreta para firmar los tokens.
+*   `GEMINI_API_KEY`: Tu clave de la API de Google Gemini.
+*   `FIREBASE_SERVICE_ACCOUNT`: El JSON de tu cuenta de servicio de Firebase.
+
+### 5. Iniciar el Servidor
+
+```bash
 npm run dev
 ```
 
-La documentación de la API (generada con Swagger) está disponible en `http://localhost:3000/api-docs`.
+El servidor se iniciará en `http://localhost:3000`.
 
-## Concepto Clave: Arquitectura Hexagonal
+## Documentación de la API
 
-El objetivo principal de esta arquitectura es **aislar el núcleo de la lógica de tu aplicación** de las preocupaciones externas. Esto significa que la lógica de negocio (el "dominio") no sabe nada sobre la base de datos que usas, cómo se exponen las APIs o cualquier otro detalle de infraestructura.
+La documentación de la API, generada con Swagger, está disponible una vez que el servidor está en funcionamiento.
 
-Esto se logra a través de tres capas principales:
+*   **URL:** `http://localhost:3000/api-docs`
 
-1.  **Dominio (`domain`):** El corazón de la aplicación. Contiene la lógica de negocio, las entidades (`User`, `Ente`) y los "puertos" (interfaces que definen los contratos que la infraestructura debe cumplir).
-2.  **Aplicación (`application`):** Orquesta los casos de uso. Contiene los servicios de aplicación (`AuthService`, `EnteService`) que utilizan los puertos para ejecutar la lógica del dominio.
-3.  **Infraestructura (`infrastructure`):** El mundo exterior. Contiene los "adaptadores" que implementan los puertos y se comunican con el núcleo de la aplicación. Incluye controladores HTTP (Express), clientes de base de datos (Firebase), etc.
+Desde esta interfaz puedes explorar y probar todos los endpoints de la API de forma interactiva.
 
-![Hexagonal Architecture Diagram](https://i.imgur.com/y3N0gRE.png)
+## Nueva Funcionalidad: Generación de Contenido con IA
 
-## Estructura del Proyecto
+Se ha añadido un nuevo endpoint para generar contenido utilizando el modelo `gemini-1.5-pro`.
 
-A continuación se muestra la estructura actual, reflejando la separación de responsabilidades.
+*   **Endpoint:** `POST /api/content/generate`
+*   **Autenticación:** Requiere token JWT.
+*   **Cuerpo de la Petición:**
+    ```json
+    {
+      "prompt": "Describe la arquitectura hexagonal en 3 párrafos."
+    }
+    ```
+
+Este endpoint te permite enviar un `prompt` y recibir una respuesta generada por el modelo de IA, abriendo la puerta a la creación de contenido dinámico, chatbots, resúmenes automáticos y mucho más.
+
+## Arquitectura del Proyecto
+
+El proyecto sigue la Arquitectura Hexagonal, que aísla la lógica de negocio de los detalles de la infraestructura. A continuación, un ejemplo de la distribución de archivos:
 
 ```
 src/
 ├── application/         # Orquesta los casos de uso (Capa de Aplicación)
-│   ├── auth.service.ts  # Lógica para registrar/loguear usuarios, crear Entes y vincularlos a compañías.
-│   └── ente.service.ts  # Lógica de negocio para operaciones sobre los "Entes".
+│   ├── auth.service.ts  # Lógica para registrar y loguear usuarios.
+│   └── ente.service.ts  # Lógica de negocio para operaciones sobre "Entes".
 │
 ├── domain/              # El núcleo de tu negocio (Capa de Dominio)
-│   ├── ente.ts          # La definición de la entidad Ente.
-│   ├── user.ts          # La definición de la entidad User.
-│   └── ports/           # Los "puertos": contratos (interfaces) que el dominio necesita.
+│   ├── ente.ts          # Definición de la entidad Ente.
+│   ├── user.ts          # Definición de la entidad User.
+│   └── ports/           # "Puertos": Contratos (interfaces) que el dominio necesita.
 │       ├── enteRepository.port.ts
 │       └── userRepository.port.ts
 │
 ├── infrastructure/      # Implementaciones concretas (Capa de Infraestructura)
-│   ├── firebase/        # Adaptadores específicos de Firebase que no son repositorios directos.
-│   │   └── enteCompania.repository.ts # Lógica para manejar la relación N:M entre Entes y Compañías.
 │   ├── http/            # Adaptadores de "entrada" (driving adapters)
 │   │   ├── auth.controller.ts # Maneja las peticiones HTTP para Auth.
 │   │   └── ente.controller.ts # Maneja las peticiones HTTP para Entes.
 │   └── persistence/     # Adaptadores de "salida" (driven adapters)
-│       ├── firebaseEnteRepository.adapter.ts  # Implementación del EnteRepository con Firebase.
-│       └── firebaseUserRepository.adapter.ts # Implementación del UserRepository con Firebase.
+│       ├── firebaseEnteRepository.adapter.ts
+│       └── firebaseUserRepository.adapter.ts
 │
-├── config/              # Configuración (Firebase, Logger).
-├── middleware/          # Middlewares de Express (auth, errores).
-├── routes/              # Define las rutas de Express y las conecta a los controladores.
-│   ├── auth.ts
-│   ├── entes.ts
-│   └── content.ts
-├── utils/               # Funciones de utilidad.
-└── index.ts             # Punto de entrada: une todo (inyección de dependencias).
+├── config/              # Configuración (Firebase, Logger, etc.)
+├── middleware/          # Middlewares de Express (autenticación, errores)
+├── routes/              # Define las rutas de Express y las conecta a los controladores
+├── utils/               # Funciones de utilidad
+└── index.ts             # Punto de entrada: Inyección de dependencias y arranque del servidor
 ```
 
-## Flujo Actualizado: Registro de un Nuevo Usuario
-
-Así es como una petición `POST /auth/register` fluye a través de las capas con la lógica implementada:
-
-1.  **Entrada (`index.ts` -> `routes/auth.ts`)**
-    *   Express recibe la petición y la dirige al `authController.register`.
-
-2.  **Adaptador de Entrada (`infrastructure/http/auth.controller.ts`)**
-    *   El `AuthController` extrae los datos del cuerpo de la petición (`email`, `password`, `nombre`, `companiaCorretajeId`, etc.).
-    *   Traduce la petición HTTP a una llamada de función, invocando al servicio de aplicación: `this.authService.register(data)`.
-
-3.  **Servicio de Aplicación (`application/auth.service.ts`)**
-    *   Este servicio orquesta el caso de uso completo de registro:
-    *   Usa el `userRepository` para verificar que el email no exista.
-    *   Usa el `enteRepository` para crear una nueva entidad `Ente` con el `nombre`, `telefono`, etc.
-    *   Crea un objeto `User` con el `email`, la contraseña y el `enteId` del `Ente` recién creado.
-    *   Usa el `userRepository` para guardar el nuevo `User`.
-    *   **Paso clave:** Usa el `enteCompaniaRepository` para crear la vinculación entre el nuevo `Ente` y la `CompaniaCorretaje` en la base de datos, asignándole un rol (ej: 'agente').
-    *   Genera un token JWT y lo devuelve.
-
-4.  **Puertos (`domain/ports/`)**
-    *   Las interfaces (`UserRepository`, `EnteRepository`) definen los métodos que el `AuthService` necesita, sin conocer la implementación subyacente.
-
-5.  **Adaptadores de Salida (`infrastructure/persistence/` y `infrastructure/firebase/`)**
-    *   Las clases como `FirebaseUserRepository`, `FirebaseEnteRepository` y `EnteCompaniaRepository` implementan los puertos.
-    *   Ejecutan las operaciones específicas de Firestore para buscar usuarios, guardar entes y crear el documento de relación en la colección `entes_companias`.
-
-6.  **Retorno del Flujo**
-    *   El token y los datos del usuario vuelven al `AuthController`, que los envía de vuelta al cliente en una respuesta JSON.
-
-Esta separación nos brinda una enorme flexibilidad para probar, mantener y escalar cada parte de la aplicación de manera independiente.
+Para una explicación más detallada del flujo, consulta el código fuente, que está documentado para reflejar esta estructura.

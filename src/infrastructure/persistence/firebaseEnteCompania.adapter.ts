@@ -3,7 +3,7 @@ import { CollectionReference, Firestore } from 'firebase-admin/firestore';
 /**
  * @description Repositorio para gestionar las relaciones entre Entes y Compañías de Corretaje.
  */
-export class EnteCompaniaRepository {
+export class FirebaseEnteCompaniaRepository {
     private collection: CollectionReference;
 
     constructor(firestore: Firestore) {

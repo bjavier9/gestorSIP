@@ -3,33 +3,34 @@ import jwt from 'jsonwebtoken';
 import asyncHandler from 'express-async-handler';
 import ApiError from '../utils/ApiError';
 
-// Extend the Express Request type to include the user payload
+// Extend Express Request type to include a user property
 interface AuthenticatedRequest extends Request {
-    user?: string | jwt.JwtPayload;
+    user?: any; // Define a more specific type for user if you have one
 }
 
+// Asegúrate de que JWT_SECRET esté definido. Si no lo está, lanza un error.
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-    // This error is thrown on startup if the secret is missing, which is appropriate.
     throw new Error('FATAL_ERROR: JWT_SECRET environment variable is not set.');
 }
 
-export const authMiddleware = asyncHandler((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const authMiddleware = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        // Throw an ApiError for missing token, which will be caught by the central handler
+        // Si no hay token o el formato es incorrecto, lanzamos un error.
         throw new ApiError('AUTH_TOKEN_MISSING');
     }
 
     const token = authHeader.split(' ')[1];
 
     try {
+        // Verificamos el token. Si es válido, el payload decodificado se añade a la request.
         const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded; // Attach decoded user info to the request
-        next(); // Proceed to the next middleware
+        req.user = decoded; // Ahora la información del usuario está disponible en req.user
+        next(); // El usuario está autenticado, pasamos al siguiente middleware.
     } catch (error) {
-        // Throw an ApiError for an invalid token
+        // Si el token no es válido (expirado, malformado, etc.), lanzamos un error.
         throw new ApiError('AUTH_TOKEN_INVALID');
     }
 });
