@@ -1,6 +1,6 @@
 # Node.js & Express API con Arquitectura Hexagonal
 
-Este proyecto es una plantilla para construir una API robusta y escalable con Node.js, Express y TypeScript, siguiendo los principios de la **Arquitectura Hexagonal** (también conocida como Puertos y Adaptadores).
+Este proyecto es una API robusta y escalable construida con Node.js, Express y TypeScript, siguiendo los principios de la **Arquitectura Hexagonal** (también conocida como Puertos y Adaptadores).
 
 ## Primeros Pasos
 
@@ -18,64 +18,77 @@ El objetivo principal de esta arquitectura es **aislar el núcleo de la lógica 
 
 Esto se logra a través de tres capas principales:
 
-1.  **Dominio (`domain`):** El corazón de la aplicación. Contiene la lógica de negocio y las entidades puras. No tiene dependencias de ninguna otra capa.
-2.  **Aplicación (`application`):** Orquesta el flujo de datos. Contiene los "casos de uso" (servicios de aplicación) que llaman a la lógica del dominio.
-3.  **Infraestructura (`infrastructure`):** El mundo exterior. Contiene los "adaptadores" que interactúan con el núcleo de la aplicación, como controladores HTTP (Express), clientes de base de datos (Firebase), etc.
+1.  **Dominio (`domain`):** El corazón de la aplicación. Contiene la lógica de negocio, las entidades (`User`, `Ente`) y los "puertos" (interfaces que definen los contratos que la infraestructura debe cumplir).
+2.  **Aplicación (`application`):** Orquesta los casos de uso. Contiene los servicios de aplicación (`AuthService`, `EnteService`) que utilizan los puertos para ejecutar la lógica del dominio.
+3.  **Infraestructura (`infrastructure`):** El mundo exterior. Contiene los "adaptadores" que implementan los puertos y se comunican con el núcleo de la aplicación. Incluye controladores HTTP (Express), clientes de base de datos (Firebase), etc.
 
 ![Hexagonal Architecture Diagram](https://i.imgur.com/y3N0gRE.png)
 
 ## Estructura del Proyecto
 
+A continuación se muestra la estructura actual, reflejando la separación de responsabilidades.
+
 ```
 src/
 ├── application/         # Orquesta los casos de uso (Capa de Aplicación)
-│   └── auth.service.ts  # Lógica para registrar y loguear usuarios.
+│   ├── auth.service.ts  # Lógica para registrar/loguear usuarios, crear Entes y vincularlos a compañías.
+│   └── ente.service.ts  # Lógica de negocio para operaciones sobre los "Entes".
 │
 ├── domain/              # El núcleo de tu negocio (Capa de Dominio)
+│   ├── ente.ts          # La definición de la entidad Ente.
 │   ├── user.ts          # La definición de la entidad User.
 │   └── ports/           # Los "puertos": contratos (interfaces) que el dominio necesita.
+│       ├── enteRepository.port.ts
 │       └── userRepository.port.ts
 │
 ├── infrastructure/      # Implementaciones concretas (Capa de Infraestructura)
+│   ├── firebase/        # Adaptadores específicos de Firebase que no son repositorios directos.
+│   │   └── enteCompania.repository.ts # Lógica para manejar la relación N:M entre Entes y Compañías.
 │   ├── http/            # Adaptadores de "entrada" (driving adapters)
-│   │   ├── auth.controller.ts # Maneja las peticiones HTTP y llama a los servicios.
-│   │   └── ...
+│   │   ├── auth.controller.ts # Maneja las peticiones HTTP para Auth.
+│   │   └── ente.controller.ts # Maneja las peticiones HTTP para Entes.
 │   └── persistence/     # Adaptadores de "salida" (driven adapters)
+│       ├── firebaseEnteRepository.adapter.ts  # Implementación del EnteRepository con Firebase.
 │       └── firebaseUserRepository.adapter.ts # Implementación del UserRepository con Firebase.
 │
-├── config/              # Configuración (Firebase, etc.)
+├── config/              # Configuración (Firebase, Logger).
 ├── middleware/          # Middlewares de Express (auth, errores).
 ├── routes/              # Define las rutas de Express y las conecta a los controladores.
+│   ├── auth.ts
+│   ├── entes.ts
+│   └── content.ts
 ├── utils/               # Funciones de utilidad.
 └── index.ts             # Punto de entrada: une todo (inyección de dependencias).
 ```
 
-## Ejemplo de Flujo: Registro de un Nuevo Usuario
+## Flujo Actualizado: Registro de un Nuevo Usuario
 
-Así es como una petición `POST /auth/register` fluye a través de las capas:
+Así es como una petición `POST /auth/register` fluye a través de las capas con la lógica implementada:
 
 1.  **Entrada (`index.ts` -> `routes/auth.ts`)**
     *   Express recibe la petición y la dirige al `authController.register`.
 
 2.  **Adaptador de Entrada (`infrastructure/http/auth.controller.ts`)**
-    *   El `AuthController` extrae `email` y `password` del cuerpo de la petición.
-    *   **No contiene lógica de negocio.** Simplemente llama al servicio de aplicación: `this.authService.register(email, password)`. Su trabajo es traducir de HTTP a una llamada de función.
+    *   El `AuthController` extrae los datos del cuerpo de la petición (`email`, `password`, `nombre`, `companiaCorretajeId`, etc.).
+    *   Traduce la petición HTTP a una llamada de función, invocando al servicio de aplicación: `this.authService.register(data)`.
 
 3.  **Servicio de Aplicación (`application/auth.service.ts`)**
-    *   Este servicio orquesta el caso de uso.
-    *   Primero, usa el puerto de repositorio para ver si el usuario ya existe: `await this.userRepository.findByEmail(email)`. **Importante:** El servicio no sabe que está usando Firebase; solo conoce la interfaz `UserRepository`.
-    *   Si el usuario no existe, hashea la contraseña y vuelve a usar el puerto: `await this.userRepository.save(newUser)`.
+    *   Este servicio orquesta el caso de uso completo de registro:
+    *   Usa el `userRepository` para verificar que el email no exista.
+    *   Usa el `enteRepository` para crear una nueva entidad `Ente` con el `nombre`, `telefono`, etc.
+    *   Crea un objeto `User` con el `email`, la contraseña y el `enteId` del `Ente` recién creado.
+    *   Usa el `userRepository` para guardar el nuevo `User`.
+    *   **Paso clave:** Usa el `enteCompaniaRepository` para crear la vinculación entre el nuevo `Ente` y la `CompaniaCorretaje` en la base de datos, asignándole un rol (ej: 'agente').
     *   Genera un token JWT y lo devuelve.
 
-4.  **Puerto (`domain/ports/userRepository.port.ts`)**
-    *   Es solo una `interface` de TypeScript. Define el contrato: "cualquier repositorio de usuarios debe tener un método `findByEmail` y un método `save`".
+4.  **Puertos (`domain/ports/`)**
+    *   Las interfaces (`UserRepository`, `EnteRepository`) definen los métodos que el `AuthService` necesita, sin conocer la implementación subyacente.
 
-5.  **Adaptador de Salida (`infrastructure/persistence/firebaseUserRepository.adapter.ts`)**
-    *   Esta es la implementación concreta del puerto que usa Firebase.
-    *   El método `findByEmail` ejecuta `db.collection('users').where('email', '==', email).get()`.
-    *   El método `save` ejecuta `db.collection('users').doc(user.email).set(userToSave)`.
+5.  **Adaptadores de Salida (`infrastructure/persistence/` y `infrastructure/firebase/`)**
+    *   Las clases como `FirebaseUserRepository`, `FirebaseEnteRepository` y `EnteCompaniaRepository` implementan los puertos.
+    *   Ejecutan las operaciones específicas de Firestore para buscar usuarios, guardar entes y crear el documento de relación en la colección `entes_companias`.
 
 6.  **Retorno del Flujo**
-    *   El token JWT vuelve al `AuthController`, que lo empaqueta en una respuesta JSON estandarizada y la envía de vuelta al cliente con un estado `201 Created`.
+    *   El token y los datos del usuario vuelven al `AuthController`, que los envía de vuelta al cliente en una respuesta JSON.
 
-Esta separación nos brinda una enorme flexibilidad para probar, mantener y escalar la aplicación de manera independiente.
+Esta separación nos brinda una enorme flexibilidad para probar, mantener y escalar cada parte de la aplicación de manera independiente.

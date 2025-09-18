@@ -1,11 +1,12 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import Logger from '../config/logger'; // Importar el Logger
+import Logger from '../config/logger';
 import { UserRepository } from "../domain/ports/userRepository.port";
 import { EnteRepository, EnteInput } from '../domain/ports/enteRepository.port';
 import { User } from "../domain/user";
 import ApiError from "../utils/ApiError";
 import { v4 as uuidv4 } from 'uuid';
+import { EnteCompaniaRepository } from '../infrastructure/firebase/enteCompania.repository';
 
 // Definimos la forma de los datos de entrada para el registro
 export interface RegisterInput {
@@ -20,7 +21,8 @@ export class AuthService {
     // Inyectamos los repositorios necesarios
     constructor(
         private readonly userRepository: UserRepository,
-        private readonly enteRepository: EnteRepository
+        private readonly enteRepository: EnteRepository,
+        private readonly enteCompaniaRepository: EnteCompaniaRepository // Nuevo repositorio
     ) {}
 
     async register(data: RegisterInput): Promise<{ user: User, token: string }> {
@@ -56,10 +58,9 @@ export class AuthService {
         Logger.info(`Creating new user with email: ${email}`);
         const newUser = await this.userRepository.save(userToSave);
 
-        // 5. Crear la relación Ente-Compañía (Este paso es crucial)
-        // En una implementación completa, tendríamos un EnteCompaniaRepository.
-        Logger.warn(`ACTION_REQUIRED: Link ente '${newEnte.id}' to company '${companiaCorretajeId}' with role 'USER'. This is not yet implemented.`);
-
+        // 5. Crear la relación Ente-Compañía
+        Logger.info(`Linking ente ${newEnte.id} to company ${companiaCorretajeId}`);
+        await this.enteCompaniaRepository.create(newEnte.id, companiaCorretajeId, ['agente']);
 
         // 6. Generar el token JWT
         const token = this.generateToken(newUser.id);

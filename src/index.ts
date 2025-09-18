@@ -18,6 +18,7 @@ import { EnteService } from './application/ente.service';
 // --- INFRASTRUCTURE ---
 import { FirebaseUserRepository } from './infrastructure/persistence/firebaseUserRepository.adapter';
 import { FirebaseEnteRepository } from './infrastructure/persistence/firebaseEnteRepository.adapter';
+import { EnteCompaniaRepository } from './infrastructure/firebase/enteCompania.repository'; // Importar el nuevo repo
 import { AuthController } from './infrastructure/http/auth.controller';
 import { EnteController } from './infrastructure/http/ente.controller';
 
@@ -39,9 +40,10 @@ const app = express();
 // 1. Repositories (Adapters)
 const userRepository = new FirebaseUserRepository();
 const enteRepository = new FirebaseEnteRepository();
+const enteCompaniaRepository = new EnteCompaniaRepository(db); // Crear instancia del nuevo repo
 
 // 2. Application Services
-const authService = new AuthService(userRepository, enteRepository); // Inyectar enteRepository
+const authService = new AuthService(userRepository, enteRepository, enteCompaniaRepository); // Inyectar el nuevo repo
 const enteService = new EnteService(enteRepository);
 
 // 3. Controllers (Input Adapters)
@@ -53,12 +55,9 @@ const enteController = new EnteController(enteService);
 app.use(express.json());
 
 // --- HTTP REQUEST LOGGING ---
-// Define un stream para que morgan use nuestro logger de Winston
 const stream = {
     write: (message: string) => Logger.http(message.trim()),
 };
-
-// Usa morgan con el stream de Winston. El formato 'combined' es un estándar de Apache.
 app.use(morgan('combined', { stream }));
 
 // --- SWAGGER DOCUMENTATION ---
@@ -112,23 +111,16 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpecification));
 
 
 // --- ROUTE DEFINITIONS ---
-
-// Public routes
 app.use('/auth', createAuthRouter(authController));
-
-// Root & Health Check
 app.get('/', (req, res) => handleSuccess(res, { message: 'Welcome to the Hexagonal API!' }));
 app.get('/health', (req, res) => handleSuccess(res, { status: 'ok' }));
 
-// Protected API routes
 const apiRouter = express.Router();
-apiRouter.use(authMiddleware); // All routes under /api/* are now protected
+apiRouter.use(authMiddleware);
 
-// Connect routers
 apiRouter.use('/content', contentRouter);
-apiRouter.use('/entes', createEnteRouter(enteController)); // Add the new router
+apiRouter.use('/entes', createEnteRouter(enteController));
 
-// DB Test Route
 apiRouter.get('/test-db', asyncHandler(async (req, res) => {
     await db.collection('test').doc('health-check').set({ status: 'ok', timestamp: new Date() });
     handleSuccess(res, { message: 'Successfully connected to and wrote to Firestore!' });
@@ -138,7 +130,6 @@ app.use('/api', apiRouter);
 
 
 // --- ERROR HANDLING MIDDLEWARE ---
-// Custom logger for errors, passed to the errorHandler
 app.use((err: any, req: any, res: any, next: any) => {
     Logger.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
     next(err);
@@ -150,8 +141,8 @@ app.use(errorHandler);
 // --- SERVER STARTUP ---
 const port = parseInt(process.env.PORT || '3000');
 app.listen(port, () => {
-    Logger.info(`Server running on http://localhost:${port}`); // Use Logger
-    Logger.info(`API Docs available at http://localhost:${port}/api-docs`); // Use Logger
+    Logger.info(`Server running on http://localhost:${port}`);
+    Logger.info(`API Docs available at http://localhost:${port}/api-docs`);
 });
 
 /**

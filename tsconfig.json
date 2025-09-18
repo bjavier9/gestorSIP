@@ -1,9 +1,16 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "module": "commonjs",
-    "sourceMap": true,
-    "outDir": "dist",
-    "esModuleInterop": true
-  }
+    "target": "ES2020",                 // Modernizar el target de JavaScript
+    "module": "commonjs",               // Mantener CommonJS para compatibilidad con Express
+    "moduleResolution": "node",         // ¡La clave! Ayuda a encontrar los tipos de los paquetes
+    "outDir": "./dist",                   // Directorio de salida para los archivos compilados
+    "strict": true,                    // Habilitar todas las verificaciones de tipo estrictas
+    "esModuleInterop": true,           // Permite una mejor interoperabilidad entre CommonJS y ES Modules
+    "skipLibCheck": true,              // Opcional: Acelera la compilación al no verificar los archivos de declaración de las dependencias
+    "forceConsistentCasingInFileNames": true, // Evita problemas de mayúsculas/minúsculas en los nombres de archivo
+    "resolveJsonModule": true,         // Permite la importación de archivos .json
+    "sourceMap": true                  // Generar source maps para facilitar el debugging
+  },
+  "include": ["src/**/*.ts"],           // Asegurarse de que solo se compile la carpeta src
+  "exclude": ["node_modules"]          // Excluir la carpeta node_modules de la compilación
 }
