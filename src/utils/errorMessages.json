@@ -1,0 +1,16 @@
+{
+  "AUTH_USER_EXISTS": { "status": 400, "description": "El correo electrónico ya está registrado." },
+  "AUTH_INVALID_CREDENTIALS": { "status": 401, "description": "Credenciales inválidas. Por favor, verifique su correo y contraseña." },
+  "AUTH_USER_NOT_FOUND": { "status": 404, "description": "Usuario no encontrado." },
+  "AUTH_TOKEN_MISSING": { "status": 401, "description": "No autorizado: Falta el token de autenticación." },
+  "AUTH_TOKEN_INVALID": { "status": 401, "description": "No autorizado: El token proporcionado es inválido." },
+
+  "VALIDATION_MISSING_FIELDS": { "status": 400, "description": "Petición inválida: Faltan campos obligatorios." },
+  "VALIDATION_INVALID_EMAIL": { "status": 400, "description": "Petición inválida: El formato del correo electrónico no es válido." },
+
+  "RESOURCE_NOT_FOUND": { "status": 404, "description": "El recurso solicitado no fue encontrado." },
+  "ROUTING_NOT_FOUND": { "status": 404, "description": "La ruta solicitada no existe." },
+
+  "SERVER_INTERNAL_ERROR": { "status": 500, "description": "Error interno del servidor. Por favor, intente de nuevo más tarde." },
+  "DB_ERROR": { "status": 500, "description": "Ocurrió un error al procesar su solicitud en la base de datos." }
+}
