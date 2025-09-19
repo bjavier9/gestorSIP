@@ -14,10 +14,14 @@ export class FirebaseUserRepository implements UserRepository {
         const userDoc = snapshot.docs[0];
         const userData = userDoc.data();
         
+        // FIX: Construct the full User object, matching the interface
         return {
+            id: userDoc.id, // The document ID is the User ID
             email: userData.email,
             password: userData.password,
-            createdAt: userData.createdAt.toDate(), // Firestore timestamp to Date
+            enteId: userData.enteId,
+            roles: userData.roles,
+            createdAt: userData.createdAt.toDate(),
         };
     }
 
@@ -27,7 +31,7 @@ export class FirebaseUserRepository implements UserRepository {
             createdAt: user.createdAt || new Date(),
         };
 
-        // Use the email as the document ID for easy lookup and to enforce uniqueness
-        await this.usersCollection.doc(user.email).set(userToSave);
+        // FIX: Use the user's ID as the document ID for data consistency
+        await this.usersCollection.doc(user.id).set(userToSave);
     }
 }

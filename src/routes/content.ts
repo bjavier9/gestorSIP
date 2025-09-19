@@ -56,9 +56,10 @@ router.post('/refine-prompt', asyncHandler(async (req, res, next) => {
 
   // 1. Validate input
   if (!prompt || !languageCode) {
-    throw new ApiError('VALIDATION_MISSING_FIELDS', 'The 'prompt' and 'languageCode' fields are required.');
+    throw new ApiError('VALIDATION_MISSING_FIELDS', 'The '+prompt+' and '+languageCode+' fields are required.');
   }
 
+ 
   if (!isValidLanguageCode(languageCode)) {
     throw new ApiError('VALIDATION_INVALID_EMAIL', `Invalid 'languageCode'. Please use one of the supported language codes.`);
   }

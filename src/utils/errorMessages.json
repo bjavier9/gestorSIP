@@ -38,5 +38,9 @@
   "ENTE_NOT_FOUND": {
     "status": 404,
     "description": "El ente especificado no fue encontrado."
+  },
+  "ROUTING_NOT_FOUND": {
+    "status": 404,
+    "description": "El endpoint al que intenta acceder no está disponible en la API."
   }
 }

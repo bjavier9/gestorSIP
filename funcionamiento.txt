@@ -1,0 +1,141 @@
+import pypandoc
+
+# Contenido en markdown ajustado con corrección sobre renovación de pólizas
+markdown_content = """
+# Funcionalidades y Reglas Detalladas de la Plataforma de Corretaje de Seguros
+
+Este documento describe en **lenguaje natural** todas las funcionalidades, reglas de negocio y flujos principales de la plataforma, con mayor detalle.
+
+---
+
+## 1. Creación de Compañías de Corretaje
+- **Acceso restringido:** Solo el **Super Admin** puede crear nuevas compañías.  
+- **Variables de entorno:** Este usuario está definido en las variables del sistema, lo que asegura que no pueda ser creado manualmente por terceros.  
+- **Redirección automática:** Al iniciar sesión con el Super Admin, la plataforma muestra un panel exclusivo de gestión de compañías.  
+- **Datos requeridos para la compañía:**
+  - Nombre legal y comercial.  
+  - RIF o identificación tributaria única.  
+  - Dirección y teléfonos de contacto.  
+  - Oficinas con moneda de operación definida.  
+  - Configuración de monedas aceptadas y la moneda por defecto.  
+- **Regla de unicidad:** no se pueden crear compañías duplicadas con el mismo RIF o nombre.  
+- **Auditoría:** cada creación queda registrada en un log con el usuario, fecha y datos básicos.  
+
+---
+
+## 2. Roles Principales y Sus Responsabilidades
+- **Super Admin:**
+  - Crear y administrar compañías de corretaje.  
+  - No puede gestionar pólizas ni clientes dentro de las compañías.  
+  - Mantiene privilegios globales.  
+
+- **Supervisor:**
+  - Administra usuarios dentro de su oficina.  
+  - Puede reasignar gestiones entre agentes.  
+  - Eliminar usuarios de la compañía en caso de despido o traslado.  
+  - Al eliminar un usuario, **todas las gestiones pendientes** se migran a un nuevo agente.  
+  - Supervisa reportes y métricas de oficina.  
+
+- **Agente:**
+  - Gestiona pólizas y clientes asignados.  
+  - Solo ve sus propias gestiones y pólizas cercanas a vencer.  
+  - **Restricción:** no puede autogestionarse una póliza (ejemplo: no puede ser a la vez el agente y el cliente asegurado).  
+
+---
+
+## 3. Flujo de Inicio de Sesión
+1. El usuario se autentica mediante contraseña o un código OTP enviado a su correo.  
+2. Selecciona la empresa de corretaje con la que trabajará.  
+3. El sistema carga el dashboard con:  
+   - Gestiones pendientes según su rol.  
+   - Pólizas próximas a vencer.  
+   - Accesos a reportes y funciones según permisos.  
+
+---
+
+## 4. Gestión de Pólizas (Flujos Existentes)
+- **Nueva póliza (cliente nuevo):**  
+  Se registra al cliente como *cliente_gestion* hasta que acepte la póliza. Una vez confirmada, se pasa a *entes*.  
+
+- **Nueva póliza (cliente existente):**  
+  Se selecciona directamente de *entes* y se genera la gestión.  
+
+- **Renovación de póliza:**  
+  El sistema detecta las pólizas próximas a vencer y **genera automáticamente una gestión en estado borrador**.  
+  - El borrador es visible para el agente responsable.  
+  - El agente debe revisarlo y completar manualmente la cotización de la renovación.  
+  - Una vez revisado, se convierte en una gestión activa (*en_gestion*).  
+
+- **Estados de gestiones:**  
+  - **Borrador:** generado automáticamente por proximidad de vencimiento.  
+  - **En gestión:** fase de cotización manual.  
+  - **En trámite:** pago y emisión.  
+  - **Gestionado con éxito:** póliza emitida.  
+  - **Desistido:** cliente rechazó la propuesta.  
+
+---
+
+## 5. Nuevos Flujos Propuestos
+- **Flujo de Suspensión de Usuario:**  
+  Un supervisor puede suspender temporalmente a un agente. Durante la suspensión:  
+  - Sus gestiones que esten pendientes se pueden reasignar.  
+  - No puede iniciar sesión.  
+  - Si el supervisor lo decide, las gestiones pendientes se reasignan.  
+
+- **Flujo de Cambio de Oficina:**  
+  Permite mover un agente de una oficina a otra dentro de la misma compañía.  
+  - Las pólizas históricas permanecen vinculadas a la oficina original.  
+  - Las gestiones pendientes se reasignan automáticamente a la nueva oficina.  
+
+- **Flujo de Auditoría de Operaciones:**  
+  Cada acción crítica (crear compañía, eliminar usuario, reasignar gestión) se registra en una colección de auditoría con fecha, usuario y detalle.  
+
+---
+
+## 6. Reglas Clave y su Detalle
+1. **Una gestión siempre debe crearse:**  
+   - Para cada nueva póliza o renovación, debe existir un registro en la colección *gestiones*.  
+   - Esto garantiza trazabilidad en cada caso.  
+
+2. **Cliente_gestion solo para clientes nuevos:**  
+   - Este registro temporal se destruye cuando el cliente se convierte en *ente*.  
+   - Evita duplicados y mantiene limpieza en la base de datos.  
+
+3. **No autogestión de pólizas por agentes:**  
+   - Un agente no puede iniciar o tramitar pólizas en las que figure como tomador, asegurado o beneficiario.  
+   - Esto protege contra fraudes o conflictos de interés.  
+
+4. **Eliminación de usuarios por supervisor:**  
+   - Un supervisor puede eliminar usuarios de oficina.  
+   - Las gestiones activas del usuario se migran a otro agente definido.  
+   - Nunca se borran gestiones para mantener la trazabilidad.  
+
+5. **Moneda definida por oficina:**  
+   - Cada oficina opera con una moneda principal.  
+   - Todos los cálculos de primas y montos se registran en esa moneda.  
+   - En reportes globales, se convierten según la configuración de monedas de la compañía.  
+
+6. **Auditoría obligatoria:**  
+   - Todas las acciones críticas quedan en la colección *auditoria*.  
+   - Campos mínimos: `usuario`, `accion`, `fecha`, `detalle`.  
+
+7. **Super Admin inmutable:**  
+   - El usuario Super Admin no puede ser eliminado ni modificado desde la plataforma.  
+   - Sus credenciales solo pueden actualizarse en las variables de entorno.  
+
+---
+
+## 7. Seguridad y Operaciones
+- **Control de acceso:** Reglas de Firestore garantizan que solo el Super Admin puede modificar compañías.  
+- **Registros inmutables:** las pólizas emitidas no pueden eliminarse, solo marcarse como canceladas.  
+- **Logs de actividad:** cada acción de usuario se almacena para auditorías posteriores.  
+- **Protección de datos:** los clientes (entes) no pueden ser eliminados; solo se marcan como inactivos.  
+
+---
+"""
+
+# Guardar el archivo markdown actualizado
+output_path = "/mnt/data/funcionalidades_plataforma_detalladas_v2.md"
+pypandoc.convert_text(markdown_content, 'md', format='md', outputfile=output_path, extra_args=['--standalone'])
+
+output_path

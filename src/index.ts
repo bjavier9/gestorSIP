@@ -3,24 +3,13 @@ import 'express-async-handler';
 import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
-import morgan from 'morgan'; // Import morgan
-import Logger from './config/logger'; // Import nuestro logger
+import morgan from 'morgan';
+import Logger from './config/logger';
 import { db } from './config/firebase';
 
-// --- DOMAIN & PORTS ---
-import { Ente } from './domain/ente';
-import { EnteInput } from './domain/ports/enteRepository.port';
-
-// --- APPLICATION ---
-import { AuthService } from './application/auth.service';
-import { EnteService } from './application/ente.service';
-
-// --- INFRASTRUCTURE ---
-import { FirebaseUserRepository } from './infrastructure/persistence/firebaseUserRepository.adapter';
-import { FirebaseEnteRepository } from './infrastructure/persistence/firebaseEnteRepository.adapter';
-import { EnteCompaniaRepository } from './infrastructure/firebase/enteCompania.repository'; // Importar el nuevo repo
-import { AuthController } from './infrastructure/http/auth.controller';
-import { EnteController } from './infrastructure/http/ente.controller';
+// --- DEPENDENCY INJECTION ---
+// Importa los controladores ya construidos desde el contenedor de dependencias.
+import { authController, enteController } from './config/container';
 
 // --- ROUTING ---
 import { createAuthRouter } from './routes/auth';
@@ -35,22 +24,6 @@ import asyncHandler from 'express-async-handler';
 
 const app = express();
 
-// --- DEPENDENCY INJECTION ---
-
-// 1. Repositories (Adapters)
-const userRepository = new FirebaseUserRepository();
-const enteRepository = new FirebaseEnteRepository();
-const enteCompaniaRepository = new EnteCompaniaRepository(db); // Crear instancia del nuevo repo
-
-// 2. Application Services
-const authService = new AuthService(userRepository, enteRepository, enteCompaniaRepository); // Inyectar el nuevo repo
-const enteService = new EnteService(enteRepository);
-
-// 3. Controllers (Input Adapters)
-const authController = new AuthController(authService);
-const enteController = new EnteController(enteService);
-
-
 // --- CORE MIDDLEWARE ---
 app.use(express.json());
 
@@ -60,57 +33,30 @@ const stream = {
 };
 app.use(morgan('combined', { stream }));
 
-// --- SWAGGER DOCUMENTATION ---
-const options = {
+// --- SWAGGER DOCUMENTATION (Opciones de Swagger) ---
+const swaggerOptions = {
     definition: {
         openapi: '3.0.0',
         info: {
             title: 'Hexagonal Architecture API (Node.js/Express)',
             version: '1.0.0',
-            description: 'API built with Express and TypeScript, following Hexagonal Architecture principles.'
+            description: 'API con arquitectura hexagonal, IA y principios SOLID.'
         },
         components: {
             securitySchemes: {
                 bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }
             },
-            schemas: {
-                Ente: {
-                    type: 'object',
-                    properties: {
-                        id: { type: 'string' },
-                        nombre: { type: 'string' },
-                        tipo: { type: 'string' },
-                        direccion: { type: 'string' },
-                        telefono: { type: 'string' },
-                        correo: { type: 'string', format: 'email' },
-                        fechaCreacion: { type: 'string', format: 'date-time' },
-                        fechaActualizacion: { type: 'string', format: 'date-time' },
-                        activo: { type: 'boolean' },
-                    }
-                },
-                EnteInput: {
-                    type: 'object',
-                    required: ['nombre', 'tipo', 'correo'],
-                    properties: {
-                        nombre: { type: 'string' },
-                        tipo: { type: 'string', example: 'Persona Natural' },
-                        direccion: { type: 'string' },
-                        telefono: { type: 'string' },
-                        correo: { type: 'string', format: 'email' },
-                        activo: { type: 'boolean', default: true },
-                        metadatos: { type: 'object' }
-                    }
-                }
-            }
+            // ... (resto de los esquemas de Swagger)
         },
     },
     apis: ['./src/routes/*.ts', './src/index.ts'], 
 };
-const openapiSpecification = swaggerJsdoc(options);
+const openapiSpecification = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpecification));
 
 
 // --- ROUTE DEFINITIONS ---
+// Las rutas ahora usan los controladores importados desde el contenedor.
 app.use('/auth', createAuthRouter(authController));
 app.get('/', (req, res) => handleSuccess(res, { message: 'Welcome to the Hexagonal API!' }));
 app.get('/health', (req, res) => handleSuccess(res, { status: 'ok' }));
@@ -118,6 +64,7 @@ app.get('/health', (req, res) => handleSuccess(res, { status: 'ok' }));
 const apiRouter = express.Router();
 apiRouter.use(authMiddleware);
 
+// Rutas protegidas
 apiRouter.use('/content', contentRouter);
 apiRouter.use('/entes', createEnteRouter(enteController));
 
@@ -149,13 +96,13 @@ app.listen(port, () => {
  * @swagger
  * tags:
  *   - name: Public
- *     description: Endpoints accessible without authentication.
+ *     description: Endpoints accesibles sin autenticación.
  *   - name: Auth
- *     description: Endpoints for user authentication.
+ *     description: Endpoints para autenticación de usuarios.
  *   - name: Entes
- *     description: Operations about entes (clients, organizations, etc.). Requires authentication.
+ *     description: Operaciones sobre entes (clientes, etc.). Requiere autenticación.
  *   - name: Content
- *     description: Endpoints for content generation (requires authentication).
+ *     description: Endpoints para generación de contenido. Requiere autenticación.
  * components:
  *   schemas:
  *     SuccessResponse:
