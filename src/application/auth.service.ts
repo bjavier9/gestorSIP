@@ -25,6 +25,7 @@ export class AuthService {
         const { email, password, nombre, telefono } = data;
 
         const jwtSecret = process.env.JWT_SECRET;
+        const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '1h';
         if (!jwtSecret) {
             throw new ApiError('SERVER_INTERNAL_ERROR', 'JWT secret is not configured.');
         }
@@ -47,11 +48,13 @@ export class AuthService {
         Logger.info(`Creating new ente for user: ${email}`);
         const newEnte = await this.enteRepository.save(enteInput);
 
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         const userId = uuidv4();
         const userToSave: Omit<User, 'createdAt'> = {
             id: userId,
             email,
-            password,
+            password: hashedPassword,
             enteId: newEnte.id,
             roles: ['user'],
         };
@@ -64,8 +67,7 @@ export class AuthService {
             createdAt: new Date(),
         };
         
-        // Hardcodeando expiresIn como paso de depuración
-        const token = jwt.sign({ id: newUser.id, email: newUser.email }, jwtSecret, { expiresIn: '1h' });
+        const token = jwt.sign({ id: newUser.id, email: newUser.email }, jwtSecret, { expiresIn: jwtExpiresIn });
 
         return { user: newUser, token };
     }
@@ -74,6 +76,8 @@ export class AuthService {
         Logger.info(`Login attempt for email: ${email}`);
 
         const jwtSecret = process.env.JWT_SECRET;
+        const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '1h';
+
         if (!jwtSecret) {
             throw new ApiError('SERVER_INTERNAL_ERROR', 'JWT secret is not configured.');
         }
@@ -90,10 +94,12 @@ export class AuthService {
             throw new ApiError('AUTH_INVALID_CREDENTIALS');
         }
         
-        // Hardcodeando expiresIn como paso de depuración
-        const token = jwt.sign({ id: user.id, email: user.email }, jwtSecret, { expiresIn: '1h' });
+        const token = jwt.sign({ id: user.id, email: user.email }, jwtSecret, { expiresIn: jwtExpiresIn });
 
         Logger.info(`User logged in successfully: ${email}`);
-        return { user, token };
+        
+        const { password, ...userWithoutPassword } = user;
+
+        return { user: userWithoutPassword, token };
     }
 }
