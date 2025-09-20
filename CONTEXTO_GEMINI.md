@@ -2,7 +2,7 @@
 # Instructions: Provide this file's content to Gemini at the start of a new chat session.
 
 project:
-  name: "SeguroPlus (inferred)"
+  name: "gestorSIP"
   description: "Backend API for an insurance management platform."
   tech_stack:
     - "Node.js"
@@ -79,4 +79,9 @@ testing:
     - role: "Super Admin"
       email: "admin@seguroplus.com"
       password: "password123"
-      source: "seed.js"
+      source: "seed.ts"
+  current_issue:
+    error: "TypeError: Cannot read properties of undefined (reading 'toDate')"
+    location: "firebaseUserRepository.adapter.ts"
+    cause: "The user documents in the 'usuarios_companias' collection are missing the 'createdAt' field."
+    resolution: "Add the 'createdAt' field to the user documents in the seeding script ('seed.ts') and re-run the seeding process."
