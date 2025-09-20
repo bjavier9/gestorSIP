@@ -1,8 +1,9 @@
-import { EnteRepository, EnteInput } from "../../domain/ports/enteRepository.port";
+import { injectable } from "inversify";
+import { EnteRepository, EnteInput, EnteUpdateInput } from "../../domain/ports/enteRepository.port";
 import { Ente } from "../../domain/ente";
 import { db } from "../../config/firebase";
-import { v4 as uuidv4 } from 'uuid';
 
+@injectable()
 export class FirebaseEnteRepository implements EnteRepository {
     private readonly collection = db.collection('entes');
 
@@ -10,66 +11,42 @@ export class FirebaseEnteRepository implements EnteRepository {
         const data = doc.data()!;
         return {
             id: doc.id,
-            nombre: data.nombre,
-            tipo: data.tipo,
-            direccion: data.direccion,
-            telefono: data.telefono,
-            correo: data.correo,
-            activo: data.activo,
-            fechaCreacion: data.fechaCreacion.toDate(),
-            fechaActualizacion: data.fechaActualizacion.toDate(),
-            metadatos: data.metadatos,
-        };
+            ...data
+        } as Ente;
     }
 
     async findById(id: string): Promise<Ente | null> {
         const doc = await this.collection.doc(id).get();
-        if (!doc.exists) {
-            return null;
-        }
-        return this.toDomain(doc);
+        return doc.exists ? this.toDomain(doc) : null;
     }
 
     async findAll(): Promise<Ente[]> {
         const snapshot = await this.collection.get();
-        return snapshot.docs.map(this.toDomain);
+        return snapshot.docs.map(doc => this.toDomain(doc));
     }
 
-    async save(ente: EnteInput): Promise<Ente> {
-        const id = ente.id || uuidv4();
+    async save(data: EnteInput): Promise<Ente> {
+        const docRef = this.collection.doc(); 
         const now = new Date();
-
         const newEnte = {
-            ...ente,
-            fechaCreacion: now,
-            fechaActualizacion: now,
+            ...data,
+            fecha_creacion: now,
+            fecha_actualizacion: now,
         };
-
-        await this.collection.doc(id).set(newEnte);
-        
-        return { ...newEnte, id, fechaCreacion: now, fechaActualizacion: now };
+        await docRef.set(newEnte);
+        return { id: docRef.id, ...newEnte } as Ente;
     }
 
-    async update(id: string, ente: Partial<EnteInput>): Promise<Ente | null> {
+    async update(id: string, data: EnteUpdateInput): Promise<Ente> {
         const docRef = this.collection.doc(id);
-        const doc = await docRef.get();
-
-        if (!doc.exists) {
-            return null;
-        }
-
-        const updatedData = {
-            ...ente,
-            fechaActualizacion: new Date(),
-        };
-
-        await docRef.update(updatedData);
-
+        await docRef.update({ ...data, fecha_actualizacion: new Date() });
         const updatedDoc = await docRef.get();
         return this.toDomain(updatedDoc);
     }
 
-    async delete(id: string): Promise<void> {
-        await this.collection.doc(id).delete();
+    async delete(id: string): Promise<boolean> {
+        const docRef = this.collection.doc(id);
+        await docRef.delete();
+        return true;
     }
 }

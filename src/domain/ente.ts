@@ -13,3 +13,5 @@ export interface Ente {
     version?: number;
   };
 }
+
+export type EnteInput = Partial<Ente>;

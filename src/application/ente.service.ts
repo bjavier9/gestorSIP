@@ -1,37 +1,46 @@
-import { EnteRepository, EnteInput } from "../domain/ports/enteRepository.port";
-import { Ente } from "../domain/ente";
-import ApiError from "../utils/ApiError";
+import { inject, injectable } from 'inversify';
+import { Ente, EnteInput } from '../domain/ente';
+import { EnteRepository } from '../domain/ports/enteRepository.port';
+import { TYPES } from '../config/types';
+import ApiError from '../utils/ApiError';
+import errorMessages from '../utils/errorMessages.json';
 
+@injectable()
 export class EnteService {
-    constructor(private readonly enteRepository: EnteRepository) {}
+  constructor(
+    @inject(TYPES.EnteRepository) private enteRepository: EnteRepository,
+  ) {}
 
-    async createEnte(enteData: EnteInput): Promise<Ente> {
-        // En el futuro, podríamos añadir lógica aquí, como validar campos
-        // o asegurar que no exista un 'correo' duplicado antes de guardar.
-        return this.enteRepository.save(enteData);
-    }
+  async getAllEntes(): Promise<Ente[]> {
+    return this.enteRepository.findAll();
+  }
 
-    async getEnteById(id: string): Promise<Ente> {
-        const ente = await this.enteRepository.findById(id);
-        if (!ente) {
-            throw new ApiError('NOT_FOUND', 'Ente not found');
-        }
-        return ente;
+  async getEnteById(id: string): Promise<Ente | null> {
+    const ente = await this.enteRepository.findById(id);
+    if (!ente) {
+      throw new ApiError(errorMessages.ENTE_NOT_FOUND);
     }
+    return ente;
+  }
 
-    async getAllEntes(): Promise<Ente[]> {
-        return this.enteRepository.findAll();
-    }
+  async createEnte(data: EnteInput): Promise<Ente> {
+    // Lógica de negocio antes de crear
+    return this.enteRepository.save(data);
+  }
 
-    async updateEnte(id: string, enteData: Partial<EnteInput>): Promise<Ente> {
-        const ente = await this.enteRepository.update(id, enteData);
-        if (!ente) {
-            throw new ApiError('NOT_FOUND', 'Ente not found');
-        }
-        return ente;
+  async updateEnte(id: string, data: Partial<EnteInput>): Promise<Ente> {
+    const ente = await this.enteRepository.findById(id);
+    if (!ente) {
+        throw new ApiError(errorMessages.ENTE_NOT_FOUND);
     }
+    return this.enteRepository.update(id, data);
+  }
 
-    async deleteEnte(id: string): Promise<void> {
-        await this.enteRepository.delete(id);
+  async deleteEnte(id: string): Promise<boolean> {
+    const ente = await this.enteRepository.findById(id);
+    if (!ente) {
+        throw new ApiError(errorMessages.ENTE_NOT_FOUND);
     }
+    return this.enteRepository.delete(id);
+  }
 }

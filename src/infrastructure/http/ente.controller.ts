@@ -1,45 +1,37 @@
 import { Request, Response, NextFunction } from 'express';
+import { inject, injectable } from 'inversify';
 import { EnteService } from '../../application/ente.service';
+import { TYPES } from '../../config/types';
+import { EnteInput } from '../../domain/ente';
 import { handleSuccess } from '../../utils/responseHandler';
-import ApiError from '../../utils/ApiError';
-import { EnteInput } from '../../domain/ports/enteRepository.port';
+import asyncHandler from 'express-async-handler';
 
+@injectable()
 export class EnteController {
-    constructor(private readonly enteService: EnteService) {}
+  constructor(@inject(TYPES.EnteService) private enteService: EnteService) {}
 
-    // Refactored back to arrow functions to preserve 'this' context.
-    // The asyncHandler wrapper is removed from here and used only in the router.
-    create = async (req: Request, res: Response): Promise<void> => {
-        const enteData: EnteInput = req.body;
-        if (!enteData.nombre || !enteData.tipo) {
-            // asyncHandler in the router will catch this and pass it to next().
-            throw new ApiError('VALIDATION_MISSING_FIELDS', 'Nombre and tipo are required');
-        }
-        const newEnte = await this.enteService.createEnte(enteData);
-        handleSuccess(res, newEnte, 201);
-    };
+  getAll = asyncHandler(async (req: Request, res: Response) => {
+    const entes = await this.enteService.getAllEntes();
+    handleSuccess(res, entes);
+  });
 
-    getById = async (req: Request, res: Response): Promise<void> => {
-        const { id } = req.params;
-        const ente = await this.enteService.getEnteById(id);
-        handleSuccess(res, ente);
-    };
+  getById = asyncHandler(async (req: Request, res: Response) => {
+    const ente = await this.enteService.getEnteById(req.params.id);
+    handleSuccess(res, ente);
+  });
 
-    getAll = async (req: Request, res: Response): Promise<void> => {
-        const entes = await this.enteService.getAllEntes();
-        handleSuccess(res, entes);
-    };
+  create = asyncHandler(async (req: Request, res: Response) => {
+    const newEnte = await this.enteService.createEnte(req.body as EnteInput);
+    handleSuccess(res, newEnte, 201);
+  });
 
-    update = async (req: Request, res: Response): Promise<void> => {
-        const { id } = req.params;
-        const enteData: Partial<EnteInput> = req.body;
-        const updatedEnte = await this.enteService.updateEnte(id, enteData);
-        handleSuccess(res, updatedEnte);
-    };
+  update = asyncHandler(async (req: Request, res: Response) => {
+    const updatedEnte = await this.enteService.updateEnte(req.params.id, req.body);
+    handleSuccess(res, updatedEnte);
+  });
 
-    delete = async (req: Request, res: Response): Promise<void> => {
-        const { id } = req.params;
-        await this.enteService.deleteEnte(id);
-        handleSuccess(res, { message: 'Ente deleted successfully' }, 204);
-    };
+  delete = asyncHandler(async (req: Request, res: Response) => {
+    await this.enteService.deleteEnte(req.params.id);
+    handleSuccess(res, null, 204);
+  });
 }

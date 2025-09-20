@@ -1,8 +1,8 @@
 export interface User {
-    id: string;
+    id: string,
     email: string;
-    password: string; // This is the hashed password
+    password: string; 
     enteId: string;
     roles: string[];
-    createdAt: Date;
+    createdAt: Date
 }

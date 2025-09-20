@@ -1,4 +1,4 @@
-
+import 'reflect-metadata';
 import 'express-async-handler';
 import express from 'express';
 import swaggerUi from 'swagger-ui-express';
@@ -6,14 +6,15 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import morgan from 'morgan';
 import Logger from './config/logger';
 import { db } from './config/firebase';
+import container from './config/container';
+import { TYPES } from './config/types';
 
 // --- DEPENDENCY INJECTION ---
-// Importa los controladores ya construidos desde el contenedor de dependencias.
-import { authController, enteController } from './config/container';
+import { AuthController } from './infrastructure/http/auth.controller';
 
 // --- ROUTING ---
 import { createAuthRouter } from './routes/auth';
-import { createEnteRouter } from './routes/entes';
+import enteRoutes from './routes/entes'; 
 import contentRouter from './routes/content';
 
 // --- MIDDLEWARE & UTILS ---
@@ -33,7 +34,7 @@ const stream = {
 };
 app.use(morgan('combined', { stream }));
 
-// --- SWAGGER DOCUMENTATION (Opciones de Swagger) ---
+// --- SWAGGER DOCUMENTATION ---
 const swaggerOptions = {
     definition: {
         openapi: '3.0.0',
@@ -46,7 +47,6 @@ const swaggerOptions = {
             securitySchemes: {
                 bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }
             },
-            // ... (resto de los esquemas de Swagger)
         },
     },
     apis: ['./src/routes/*.ts', './src/index.ts'], 
@@ -54,19 +54,20 @@ const swaggerOptions = {
 const openapiSpecification = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpecification));
 
+// --- OBTENER CONTROLADOR DE AUTH DEL CONTENEDOR ---
+const authController = container.get<AuthController>(TYPES.AuthController);
 
 // --- ROUTE DEFINITIONS ---
-// Las rutas ahora usan los controladores importados desde el contenedor.
 app.use('/auth', createAuthRouter(authController));
 app.get('/', (req, res) => handleSuccess(res, { message: 'Welcome to the Hexagonal API!' }));
 app.get('/health', (req, res) => handleSuccess(res, { status: 'ok' }));
 
+// --- RUTAS PROTEGIDAS ---
 const apiRouter = express.Router();
-apiRouter.use(authMiddleware);
+apiRouter.use(authMiddleware); // Middleware de autenticación para todas las rutas /api
 
-// Rutas protegidas
 apiRouter.use('/content', contentRouter);
-apiRouter.use('/entes', createEnteRouter(enteController));
+apiRouter.use('/entes', enteRoutes); // Corregido: Usar el router de entes directamente
 
 apiRouter.get('/test-db', asyncHandler(async (req, res) => {
     await db.collection('test').doc('health-check').set({ status: 'ok', timestamp: new Date() });
@@ -75,15 +76,9 @@ apiRouter.get('/test-db', asyncHandler(async (req, res) => {
 
 app.use('/api', apiRouter);
 
-
 // --- ERROR HANDLING MIDDLEWARE ---
-app.use((err: any, req: any, res: any, next: any) => {
-    Logger.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
-    next(err);
-});
 app.use(notFoundHandler);
 app.use(errorHandler);
-
 
 // --- SERVER STARTUP ---
 const port = parseInt(process.env.PORT || '3000');

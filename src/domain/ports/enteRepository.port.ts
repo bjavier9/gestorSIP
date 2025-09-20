@@ -1,12 +1,14 @@
+
 import { Ente } from "../ente";
 
-// El tipo de entrada para crear/actualizar puede ser parcial
-export type EnteInput = Omit<Ente, 'id' | 'fechaCreacion' | 'fechaActualizacion'> & { id?: string };
+// Definiendo los tipos para la entrada de datos, separando creación de actualización
+export type EnteInput = Omit<Ente, 'id' | 'fecha_creacion' | 'fecha_actualizacion'>;
+export type EnteUpdateInput = Partial<Omit<Ente, 'id' | 'fecha_creacion' | 'fecha_actualizacion'>>;
 
 export interface EnteRepository {
-  findById(id: string): Promise<Ente | null>;
-  findAll(): Promise<Ente[]>;
-  save(ente: EnteInput): Promise<Ente>;
-  update(id: string, ente: Partial<EnteInput>): Promise<Ente | null>;
-  delete(id: string): Promise<void>;
+    save(ente: EnteInput): Promise<Ente>;
+    findById(id: string): Promise<Ente | null>;
+    findAll(): Promise<Ente[]>;
+    update(id: string, ente: EnteUpdateInput): Promise<Ente | null>;
+    delete(id: string): Promise<boolean>;
 }
