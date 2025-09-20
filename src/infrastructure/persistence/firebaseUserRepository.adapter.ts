@@ -5,7 +5,7 @@ import { db } from "../../config/firebase";
 
 @injectable()
 export class FirebaseUserRepository implements UserRepository {
-    private readonly collection = db.collection('users');
+    private readonly collection = db.collection('usuarios_companias');
 
     async findByEmail(email: string): Promise<User | null> {
         const snapshot = await this.collection.where('email', '==', email).limit(1).get();

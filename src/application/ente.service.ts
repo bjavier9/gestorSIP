@@ -3,7 +3,6 @@ import { Ente, EnteInput } from '../domain/ente';
 import { EnteRepository } from '../domain/ports/enteRepository.port';
 import { TYPES } from '../config/types';
 import ApiError from '../utils/ApiError';
-import errorMessages from '../utils/errorMessages.json';
 
 @injectable()
 export class EnteService {
@@ -15,31 +14,33 @@ export class EnteService {
     return this.enteRepository.findAll();
   }
 
-  async getEnteById(id: string): Promise<Ente | null> {
+  async getEnteById(id: string): Promise<Ente> {
     const ente = await this.enteRepository.findById(id);
     if (!ente) {
-      throw new ApiError(errorMessages.ENTE_NOT_FOUND);
+      throw new ApiError('ENTE_NOT_FOUND');
     }
     return ente;
   }
 
-  async createEnte(data: EnteInput): Promise<Ente> {
-    // Lógica de negocio antes de crear
+  async createEnte(data:Ente): Promise<Ente> {
     return this.enteRepository.save(data);
   }
 
-  async updateEnte(id: string, data: Partial<EnteInput>): Promise<Ente> {
+  async updateEnte(id: string, data: Partial<EnteInput>):Promise<boolean>   {
     const ente = await this.enteRepository.findById(id);
     if (!ente) {
-        throw new ApiError(errorMessages.ENTE_NOT_FOUND);
+        throw new ApiError('ENTE_NOT_FOUND');
     }
-    return this.enteRepository.update(id, data);
+
+    const updatedEnte = { ...ente, ...data };
+
+    return this.enteRepository.update(id, updatedEnte);
   }
 
   async deleteEnte(id: string): Promise<boolean> {
     const ente = await this.enteRepository.findById(id);
     if (!ente) {
-        throw new ApiError(errorMessages.ENTE_NOT_FOUND);
+        throw new ApiError('ENTE_NOT_FOUND');
     }
     return this.enteRepository.delete(id);
   }

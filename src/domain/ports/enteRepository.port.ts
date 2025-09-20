@@ -9,6 +9,6 @@ export interface EnteRepository {
     save(ente: EnteInput): Promise<Ente>;
     findById(id: string): Promise<Ente | null>;
     findAll(): Promise<Ente[]>;
-    update(id: string, ente: EnteUpdateInput): Promise<Ente | null>;
+    update(id: string, ente: EnteUpdateInput):  Promise<boolean> ;
     delete(id: string): Promise<boolean>;
 }

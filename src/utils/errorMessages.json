@@ -46,5 +46,10 @@
   "AUTH_USER_ALREADY_EXISTS": {
     "status": 409,
     "description": "User already exists"
+  },
+  "INTERNAL_SERVER_ERROR":{
+    "status": 404,
+    "description": "Error interno del API."
+
   }
 }

@@ -1,13 +1,13 @@
 const axios = require('axios');
 
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = 'http://localhost:3001';
 
 async function testLogin() {
   try {
-    console.log('Attempting to log in with user: test@example.com');
+    console.log('Attempting to log in with user: admin@seguroplus.com');
 
     const response = await axios.post(`${API_BASE_URL}/auth/login`, {
-      email: 'test@example.com',
+      email: 'admin@seguroplus.com',
       password: 'password123',
     });
 

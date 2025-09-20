@@ -10,6 +10,8 @@ const TYPES = {
     // Controllers (HTTP Adapters)
     AuthController: Symbol.for('AuthController'),
     EnteController: Symbol.for('EnteController'),
+
+    
 };
 
 export { TYPES };

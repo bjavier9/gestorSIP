@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { container } from '../config/container';
+import container from '../config/container'; 
 import { EnteController } from '../infrastructure/http/ente.controller';
-import { TYPES } from '../config/container';
 import { authMiddleware } from '../middleware/authMiddleware';
+import { TYPES } from '../config/types';
 
 const router = Router();
 const enteController = container.get<EnteController>(TYPES.EnteController);

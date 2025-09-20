@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { inject, injectable } from 'inversify';
 import { EnteService } from '../../application/ente.service';
 import { TYPES } from '../../config/types';
-import { EnteInput } from '../../domain/ente';
+import { Ente } from '../../domain/ente';
 import { handleSuccess } from '../../utils/responseHandler';
 import asyncHandler from 'express-async-handler';
 
@@ -21,7 +21,7 @@ export class EnteController {
   });
 
   create = asyncHandler(async (req: Request, res: Response) => {
-    const newEnte = await this.enteService.createEnte(req.body as EnteInput);
+    const newEnte = await this.enteService.createEnte(req.body as Ente);
     handleSuccess(res, newEnte, 201);
   });
 
