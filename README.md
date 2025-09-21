@@ -1,28 +1,38 @@
-# Node.js & Express API con Arquitectura Hexagonal y IA
+# GestorSIP - Backend API
 
-Este proyecto es una API robusta y escalable construida con Node.js, Express y TypeScript. Sigue los principios de la **Arquitectura Hexagonal** para un diseño limpio y mantenible, e integra capacidades de **IA generativa** con el SDK de Gemini.
+Este proyecto es el backend para **GestorSIP**, una plataforma de gestión de seguros. La API está construida con Node.js, Express y TypeScript, siguiendo los principios de la **Arquitectura Hexagonal** para un diseño limpio, mantenible y escalable.
 
-## Características
+Además, integra capacidades de **IA generativa** con el SDK de Google Gemini para ofrecer funcionalidades avanzadas.
 
-*   **Arquitectura Limpia:** Separación clara entre el dominio, la aplicación y la infraestructura.
-*   **TypeScript:** Tipado estático para un código más robusto y mantenible.
-*   **Seguridad:** Autenticación con JWT y middleware para manejo de errores.
-*   **IA Integrada:** Generación de contenido dinámico usando la API de Gemini.
-*   **Documentación:** Documentación de API automatizada con Swagger.
-*   **Configuración Fácil:** Gestión de la configuración a través de variables de entorno.
+## Características Principales
+
+-   **Arquitectura Limpia:** Separación clara de responsabilidades entre el dominio, la aplicación y la infraestructura (Puertos y Adaptadores).
+-   **TypeScript:** Código robusto y mantenible gracias al tipado estático.
+-   **Seguridad:** Autenticación basada en JWT, hashing de contraseñas con `bcryptjs` y cabeceras de seguridad con `helmet`.
+-   **Inyección de Dependencias:** Uso de `Inversify` para gestionar las dependencias de forma desacoplada.
+-   **IA Integrada:** Endpoint para generación de contenido dinámico utilizando `gemini-1.5-pro`.
+-   **Documentación de API:** Generación automática de documentación con Swagger.
+-   **Logging:** Registro de peticiones y errores con `Winston`.
+
+## Scripts Principales
+
+-   `npm run dev`: Inicia el servidor en modo de desarrollo con recarga automática (`nodemon`).
+-   `npm start`: Inicia el servidor en modo de producción.
+-   `npm run build`: Compila el código de TypeScript a JavaScript.
+-   `npm test`: Ejecuta los tests de la aplicación.
 
 ## Primeros Pasos
 
 ### 1. Prerrequisitos
 
-*   Node.js (v18 o superior)
-*   npm
+-   Node.js (v18 o superior)
+-   npm
 
 ### 2. Clonar el Repositorio
 
 ```bash
 git clone <URL_DEL_REPOSITORIO>
-cd <NOMBRE_DEL_DIRECTORIO>
+cd gestorSIP
 ```
 
 ### 3. Instalar Dependencias
@@ -33,16 +43,18 @@ npm install
 
 ### 4. Configurar Variables de Entorno
 
-Copia el archivo de ejemplo y completa los valores requeridos:
+Crea un archivo `.env` en la raíz del proyecto. Puedes copiar `.env.example` como plantilla. Este archivo es **ignorado por git** para proteger la información sensible.
 
 ```bash
 cp .env.example .env
 ```
 
 Abre el archivo `.env` y añade tus credenciales para:
-*   `JWT_SECRET`: Una clave secreta para firmar los tokens.
-*   `GEMINI_API_KEY`: Tu clave de la API de Google Gemini.
-*   `FIREBASE_SERVICE_ACCOUNT`: El JSON de tu cuenta de servicio de Firebase.
+
+-   `PORT`: Puerto para el servidor (ej: 3000).
+-   `JWT_SECRET`: Clave secreta para firmar los tokens JWT.
+-   `GEMINI_API_KEY`: Tu clave de la API de Google Gemini.
+-   `FIREBASE_SERVICE_ACCOUNT`: El objeto JSON de tu cuenta de servicio de Firebase (codificado en Base64 o como una ruta a un archivo).
 
 ### 5. Iniciar el Servidor
 
@@ -50,61 +62,35 @@ Abre el archivo `.env` y añade tus credenciales para:
 npm run dev
 ```
 
-El servidor se iniciará en `http://localhost:3000`.
+El servidor se iniciará en `http://localhost:3000` (o el puerto que hayas configurado).
 
-## Documentación de la API
+## Documentación
 
-La documentación de la API, generada con Swagger, está disponible una vez que el servidor está en funcionamiento.
+### API (Swagger)
 
-*   **URL:** `http://localhost:3000/api-docs`
+La documentación interactiva de la API, generada con Swagger, está disponible una vez que el servidor está en funcionamiento.
 
-Desde esta interfaz puedes explorar y probar todos los endpoints de la API de forma interactiva.
+-   **URL:** `http://localhost:3000/api-docs`
 
-## Nueva Funcionalidad: Generación de Contenido con IA
+Desde esta interfaz puedes explorar y probar todos los endpoints de la API.
 
-Se ha añadido un nuevo endpoint para generar contenido utilizando el modelo `gemini-1.5-pro`.
+### Wiki / Guías
 
-*   **Endpoint:** `POST /api/content/generate`
-*   **Autenticación:** Requiere token JWT.
-*   **Cuerpo de la Petición:**
-    ```json
-    {
-      "prompt": "Describe la arquitectura hexagonal en 3 párrafos."
-    }
-    ```
+La carpeta `wiki/` contiene guías detalladas sobre la arquitectura y los procesos del proyecto.
 
-Este endpoint te permite enviar un `prompt` y recibir una respuesta generada por el modelo de IA, abriendo la puerta a la creación de contenido dinámico, chatbots, resúmenes automáticos y mucho más.
+-   **[Cómo Agregar un Nuevo Endpoint](./wiki/Agregar-Endpoint.md):** Guía paso a paso para añadir nuevas funcionalidades siguiendo la arquitectura hexagonal.
 
-## Arquitectura del Proyecto
+## Estructura del Proyecto
 
-El proyecto sigue la Arquitectura Hexagonal, que aísla la lógica de negocio de los detalles de la infraestructura. A continuación, un ejemplo de la distribución de archivos:
+El proyecto utiliza una Arquitectura Hexagonal. La estructura de carpetas principal es:
 
 ```
 src/
-├── application/         # Orquesta los casos de uso (Capa de Aplicación)
-│   ├── auth.service.ts  # Lógica para registrar y loguear usuarios.
-│   └── ente.service.ts  # Lógica de negocio para operaciones sobre "Entes".
-│
-├── domain/              # El núcleo de tu negocio (Capa de Dominio)
-│   ├── ente.ts          # Definición de la entidad Ente.
-│   ├── user.ts          # Definición de la entidad User.
-│   └── ports/           # "Puertos": Contratos (interfaces) que el dominio necesita.
-│       ├── enteRepository.port.ts
-│       └── userRepository.port.ts
-│
-├── infrastructure/      # Implementaciones concretas (Capa de Infraestructura)
-│   ├── http/            # Adaptadores de "entrada" (driving adapters)
-│   │   ├── auth.controller.ts # Maneja las peticiones HTTP para Auth.
-│   │   └── ente.controller.ts # Maneja las peticiones HTTP para Entes.
-│   └── persistence/     # Adaptadores de "salida" (driven adapters)
-│       ├── firebaseEnteRepository.adapter.ts
-│       └── firebaseUserRepository.adapter.ts
-│
-├── config/              # Configuración (Firebase, Logger, etc.)
-├── middleware/          # Middlewares de Express (autenticación, errores)
-├── routes/              # Define las rutas de Express y las conecta a los controladores
-├── utils/               # Funciones de utilidad
-└── index.ts             # Punto de entrada: Inyección de dependencias y arranque del servidor
+├── application/    # Lógica de orquestación de casos de uso (Servicios).
+├── domain/         # El núcleo del negocio (Entidades, Puertos/Interfaces).
+├── infrastructure/ # Implementaciones concretas (Controladores, Repositorios, etc.).
+├── routes/         # Definición de las rutas de la API y su conexión con los controladores.
+├── middleware/     # Middlewares de Express (autenticación, manejo de errores).
+├── config/         # Configuración de la aplicación (Firebase, Inversify, Winston).
+└── index.ts        # Punto de entrada de la aplicación.
 ```
-
-Para una explicación más detallada del flujo, consulta el código fuente, que está documentado para reflejar esta estructura.
