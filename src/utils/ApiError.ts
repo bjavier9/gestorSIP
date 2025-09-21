@@ -1,53 +1,53 @@
+// src/utils/ApiError.ts
+
 import errorMessages from './errorMessages.json';
 import Logger from '../config/logger';
 
-// Defines the possible keys for known API errors.
-export type ErrorKey = keyof typeof errorMessages;
+// Le damos una firma de índice al JSON importado
+const errorMessagesTyped: Record<string, { status: number; description: string }> = errorMessages;
 
-/**
- * Custom error class for API-specific errors.
- * It automatically looks up the status code and a generic description from `errorMessages.json`
- * using a provided key. This ensures consistent error responses.
- *
- * This class also automatically logs the error using the centralized logger,
- * providing structured data for better observability.
- */
 export class ApiError extends Error {
-    public readonly statusCode: number;
-    public readonly errorKey: ErrorKey;
-    public readonly originalError: any;
+  public readonly statusCode: number;
+  public readonly errorKey: string;
+  public readonly originalError: any;
 
-    constructor(key: ErrorKey, customMessage?: string, originalError?: any) {
-        // Use the custom message if provided, otherwise fall back to the one from the JSON file.
-        const message = customMessage || errorMessages[key].description;
-        super(message);
+  constructor(key: string, statusCodeOrMessage?: number | string, messageOrError?: string | any, originalError?: any) {
+    const errorConfig = errorMessagesTyped[key] || {};
 
-        // Set properties for the custom error
-        this.name = 'ApiError';
-        this.statusCode = errorMessages[key].status;
-        this.errorKey = key;
-        this.originalError = originalError;
+    let customStatusCode: number | undefined;
+    let customMessage: string | undefined;
+    let errorInstance: any;
 
-        // Automatically log the error with structured metadata upon creation.
-        // This is ideal for log management systems.
-        Logger.error(
-            `ApiError Caught: ${this.errorKey}`, // A concise primary message for quick scanning
-            {
-                // All other details are placed in a structured metadata object.
-                error: {
-                    key: this.errorKey,
-                    message: this.message, // The final display message
-                    statusCode: this.statusCode,
-                    stack: this.stack, // Include stack trace for debugging
-                    // Include the original error if it was wrapped
-                    ...(this.originalError && { originalError: this.originalError }),
-                }
-            }
-        );
-
-        // This is necessary to make `instanceof ApiError` work correctly in TypeScript.
-        Object.setPrototypeOf(this, ApiError.prototype);
+    if (typeof statusCodeOrMessage === 'number') {
+      customStatusCode = statusCodeOrMessage;
+      if (typeof messageOrError === 'string') {
+        customMessage = messageOrError;
+        errorInstance = originalError;
+      } else {
+        errorInstance = messageOrError;
+      }
+    } else if (typeof statusCodeOrMessage === 'string') {
+      customMessage = statusCodeOrMessage;
+      errorInstance = messageOrError;
+    } else {
+      errorInstance = statusCodeOrMessage;
     }
-}
 
-export default ApiError;
+    const message = customMessage || errorConfig.description || 'Ocurrió un error inesperado.';
+    const statusCode = customStatusCode || errorConfig.status || 500;
+
+    super(message);
+
+    this.name = 'ApiError';
+    this.statusCode = statusCode;
+    this.errorKey = key;
+    this.originalError = errorInstance;
+
+    Logger.error({
+      key: this.errorKey,
+      message: this.message,
+      statusCode: this.statusCode,
+      originalError: this.originalError,
+    });
+  }
+}

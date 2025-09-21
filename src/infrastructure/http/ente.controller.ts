@@ -1,37 +1,35 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { inject, injectable } from 'inversify';
 import { EnteService } from '../../application/ente.service';
 import { TYPES } from '../../config/types';
-import { Ente } from '../../domain/ente';
-import { handleSuccess } from '../../utils/responseHandler';
-import asyncHandler from 'express-async-handler';
+import { EnteInput, EnteUpdateInput } from '../../domain/ports/enteRepository.port';
 
 @injectable()
 export class EnteController {
   constructor(@inject(TYPES.EnteService) private enteService: EnteService) {}
 
-  getAll = asyncHandler(async (req: Request, res: Response) => {
-    const entes = await this.enteService.getAllEntes();
-    handleSuccess(res, entes);
-  });
+  async create(req: Request, res: Response): Promise<void> {
+    const ente = await this.enteService.createEnte(req.body as EnteInput);
+    res.status(201).json(ente);
+  }
 
-  getById = asyncHandler(async (req: Request, res: Response) => {
+  async getById(req: Request, res: Response): Promise<void> {
     const ente = await this.enteService.getEnteById(req.params.id);
-    handleSuccess(res, ente);
-  });
+    res.status(200).json(ente);
+  }
 
-  create = asyncHandler(async (req: Request, res: Response) => {
-    const newEnte = await this.enteService.createEnte(req.body as Ente);
-    handleSuccess(res, newEnte, 201);
-  });
+  async getAll(req: Request, res: Response): Promise<void> {
+    const entes = await this.enteService.getAllEntes();
+    res.status(200).json(entes);
+  }
 
-  update = asyncHandler(async (req: Request, res: Response) => {
-    const updatedEnte = await this.enteService.updateEnte(req.params.id, req.body);
-    handleSuccess(res, updatedEnte);
-  });
+  async update(req: Request, res: Response): Promise<void> {
+    const ente = await this.enteService.updateEnte(req.params.id, req.body as EnteUpdateInput);
+    res.status(200).json(ente);
+  }
 
-  delete = asyncHandler(async (req: Request, res: Response) => {
+  async delete(req: Request, res: Response): Promise<void> {
     await this.enteService.deleteEnte(req.params.id);
-    handleSuccess(res, null, 204);
-  });
+    res.status(204).send();
+  }
 }

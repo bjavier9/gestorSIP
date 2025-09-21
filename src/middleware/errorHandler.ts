@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { handleError } from '../utils/responseHandler';
-import ApiError from '../utils/ApiError';
+import { ApiError } from '../utils/ApiError';
 
 /**
  * A centralized error handling middleware for the Express application.

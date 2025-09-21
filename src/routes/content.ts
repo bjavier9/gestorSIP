@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { handleSuccess } from '../utils/responseHandler';
-import ApiError from '../utils/ApiError';
+import { ApiError } from '../utils/ApiError';
 import { refinePrompt } from '../services/contentService';
 import { isValidLanguageCode, LanguageCode } from '../utils/supportedLanguages';
 

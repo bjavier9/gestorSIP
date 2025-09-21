@@ -12,7 +12,6 @@ export class FirebaseEnteRepository implements EnteRepository {
     private toDomain(doc: FirebaseFirestore.DocumentSnapshot): Ente {
         const data = doc.data();
         if (!data) {
-            // No original error to pass here, but we can add a descriptive message.
             throw new ApiError('INTERNAL_SERVER_ERROR', 'Failed to parse data for doc id.');
         }
         return {
@@ -32,8 +31,22 @@ export class FirebaseEnteRepository implements EnteRepository {
             Logger.debug(`[FirebaseEnteRepository] Successfully found ente with id: ${id}.`);
             return this.toDomain(doc);
         } catch (error) {
-            // Pass the caught error to ApiError
             throw new ApiError('INTERNAL_SERVER_ERROR', 'Database query failed.', error);
+        }
+    }
+
+    async findByDocumento(documento: string): Promise<Ente | null> {
+        Logger.debug(`[FirebaseEnteRepository] Attempting to find ente by documento: ${documento}`);
+        try {
+            const snapshot = await this.collection.where('documento', '==', documento).limit(1).get();
+            if (snapshot.empty) {
+                Logger.debug(`[FirebaseEnteRepository] Ente with documento: ${documento} not found.`);
+                return null;
+            }
+            Logger.debug(`[FirebaseEnteRepository] Successfully found ente with documento: ${documento}.`);
+            return this.toDomain(snapshot.docs[0]);
+        } catch (error) {
+            throw new ApiError('INTERNAL_SERVER_ERROR', `Database query failed for documento ${documento}.`, error);
         }
     }
 
@@ -44,7 +57,6 @@ export class FirebaseEnteRepository implements EnteRepository {
             Logger.debug(`[FirebaseEnteRepository] Successfully found ${snapshot.size} entes.`);
             return snapshot.docs.map(doc => this.toDomain(doc));
         } catch (error) {
-            // Pass the caught error to ApiError
             throw new ApiError('INTERNAL_SERVER_ERROR', 'Database query failed.', error);
         }
     }
@@ -63,21 +75,34 @@ export class FirebaseEnteRepository implements EnteRepository {
             Logger.debug(`[FirebaseEnteRepository] Successfully saved new ente with id: ${docRef.id}.`);
             return { id: docRef.id, ...newEnte } as Ente;
         } catch (error) {
-            // Pass the caught error to ApiError
             throw new ApiError('INTERNAL_SERVER_ERROR', 'Database insert failed.', error);
         }
     }
 
-    async update(id: string, data: EnteUpdateInput): Promise<boolean> {
+    async update(id: string, data: EnteUpdateInput): Promise<Ente | null> {
         Logger.debug(`[FirebaseEnteRepository] Attempting to update ente with id: ${id}.`);
+        const docRef = this.collection.doc(id);
         try {
-            const docRef = this.collection.doc(id);
-            await docRef.update({ ...data, fecha_actualizacion: new Date() });
-            Logger.debug(`[FirebaseEnteRepository] Successfully updated ente with id: ${id}.`);
-            return true;
+            // Firestore transactions are a safe way to read-and-write.
+            return await db.runTransaction(async (transaction) => {
+                const doc = await transaction.get(docRef);
+                if (!doc.exists) {
+                    Logger.warn(`[FirebaseEnteRepository] Attempted to update non-existent ente with id: ${id}.`);
+                    return null;
+                }
+                transaction.update(docRef, { ...data, fecha_actualizacion: new Date() });
+                // After the transaction commits, we can return the updated object.
+                // We construct it manually to avoid a second read.
+                const updatedData = { ...doc.data(), ...data };
+                return {
+                    id: doc.id,
+                    ...updatedData
+                } as Ente;
+            });
         } catch (error) {
             Logger.error(`[FirebaseEnteRepository] Error updating ente with id: ${id}.`, { error });
-            return false;
+            // On any transaction error, return null as per the interface contract.
+            return null;
         }
     }
 

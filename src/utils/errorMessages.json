@@ -1,5 +1,5 @@
 {
-  "SERVER_INTERNAL_ERROR": {
+  "INTERNAL_SERVER_ERROR": {
     "status": 500,
     "description": "Ocurrió un error inesperado en el servidor."
   },
@@ -31,6 +31,22 @@
     "status": 401,
     "description": "El token de autenticación es inválido o ha expirado."
   },
+  "AUTH_INVALID_FIREBASE_TOKEN": {
+    "status": 401,
+    "description": "El token de Firebase ID es inválido o ha expirado."
+  },
+  "AUTH_NO_COMPANIES_ASSIGNED": {
+    "status": 403,
+    "description": "El usuario no tiene asignada ninguna compañía."
+  },
+  "AUTH_COMPANY_ALREADY_SELECTED": {
+    "status": 400,
+    "description": "La compañía de trabajo ya ha sido seleccionada."
+  },
+  "AUTH_INVALID_COMPANY_SELECTION": {
+    "status": 403,
+    "description": "El usuario no pertenece a la compañía seleccionada."
+  },
   "USER_NOT_FOUND": {
     "status": 404,
     "description": "El usuario especificado no fue encontrado."
@@ -45,11 +61,6 @@
   },
   "AUTH_USER_ALREADY_EXISTS": {
     "status": 409,
-    "description": "User already exists"
-  },
-  "INTERNAL_SERVER_ERROR":{
-    "status": 404,
-    "description": "Error interno del API."
-
+    "description": "El usuario ya existe."
   }
 }

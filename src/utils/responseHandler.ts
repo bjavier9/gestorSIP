@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import ApiError from './ApiError';
+import { ApiError } from './ApiError';
 
 interface SuccessResponse {
   success: true;

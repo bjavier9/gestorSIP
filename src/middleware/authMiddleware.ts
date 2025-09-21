@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import asyncHandler from 'express-async-handler';
-import ApiError from '../utils/ApiError';
+import { ApiError } from '../utils/ApiError';
 
 // Extend Express Request type to include a user property
 interface AuthenticatedRequest extends Request {

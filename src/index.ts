@@ -11,10 +11,11 @@ import { TYPES } from './config/types';
 
 // --- DEPENDENCY INJECTION ---
 import { AuthController } from './infrastructure/http/auth.controller';
+import { EnteController } from './infrastructure/http/ente.controller';
 
 // --- ROUTING ---
 import { createAuthRouter } from './routes/auth';
-import enteRoutes from './routes/entes'; 
+import { createEnteRouter } from './routes/entes';
 import contentRouter from './routes/content';
 
 // --- MIDDLEWARE & UTILS ---
@@ -54,8 +55,9 @@ const swaggerOptions = {
 const openapiSpecification = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpecification));
 
-// --- OBTENER CONTROLADOR DE AUTH DEL CONTENEDOR ---
+// --- OBTENER CONTROLADORES DEL CONTENEDOR ---
 const authController = container.get<AuthController>(TYPES.AuthController);
+const enteController = container.get<EnteController>(TYPES.EnteController);
 
 // --- ROUTE DEFINITIONS ---
 app.use('/auth', createAuthRouter(authController));
@@ -67,7 +69,7 @@ const apiRouter = express.Router();
 apiRouter.use(authMiddleware); // Middleware de autenticación para todas las rutas /api
 
 apiRouter.use('/content', contentRouter);
-apiRouter.use('/entes', enteRoutes); // Corregido: Usar el router de entes directamente
+apiRouter.use('/entes', createEnteRouter(enteController)); // Correctly injected router
 
 apiRouter.get('/test-db', asyncHandler(async (req, res) => {
     await db.collection('test').doc('health-check').set({ status: 'ok', timestamp: new Date() });
@@ -86,33 +88,3 @@ app.listen(port, () => {
     Logger.info(`Server running on http://localhost:${port}`);
     Logger.info(`API Docs available at http://localhost:${port}/api-docs`);
 });
-
-/**
- * @swagger
- * tags:
- *   - name: Public
- *     description: Endpoints accesibles sin autenticación.
- *   - name: Auth
- *     description: Endpoints para autenticación de usuarios.
- *   - name: Entes
- *     description: Operaciones sobre entes (clientes, etc.). Requiere autenticación.
- *   - name: Content
- *     description: Endpoints para generación de contenido. Requiere autenticación.
- * components:
- *   schemas:
- *     SuccessResponse:
- *       type: object
- *       properties:
- *         success: { type: boolean, example: true }
- *         data: { type: object }
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         success: { type: boolean, example: false }
- *         status: { type: integer, example: 400 }
- *         error:
- *           type: object
- *           properties:
- *             key: { type: string, example: "VALIDATION_ERROR" }
- *             message: { type: string, example: "Invalid input." }
- */
