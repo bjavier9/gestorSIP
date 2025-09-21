@@ -17,3 +17,4 @@ yarn-error.log*
 
 # Secrets and credentials
 firebase-credentials.json
+temp-firebase-credentials.json
