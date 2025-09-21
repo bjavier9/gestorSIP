@@ -22,7 +22,7 @@ export interface AuthPayload {
   uid: string; // Firebase UID
   email: string;
   rol?: 'admin' | 'supervisor' | 'agent' | 'viewer';
-  companiaCorretajeId?: string; // Reverted to the correct field name
+  companiaCorretajeId?: string; 
   oficinaId?: string;
   enteId?: number; 
   pendienteCia?: boolean; // Flag to indicate company selection is pending
@@ -30,8 +30,8 @@ export interface AuthPayload {
 
 export interface LoginResponse {
   token: string;
-  companias?: UsuarioCompania[]; // List of companies for selection
-  needsSelection?: boolean; // True if user needs to select a company
+  companias: UsuarioCompania[]; // Always return the list of companies
+  needsSelection: boolean; // True if user needs to select a company
 }
 
 @injectable()
@@ -59,6 +59,7 @@ export class AuthService {
       throw new ApiError('AUTH_NO_COMPANIES_ASSIGNED', 403, 'User is not assigned to any company.');
     }
 
+    // Auto-select if user is supervisor or has only one company
     const isSupervisor = userCompanias.some(uc => uc.rol === 'supervisor');
     if (isSupervisor || userCompanias.length === 1) {
       const primaryRelation = userCompanias[0];
@@ -66,14 +67,16 @@ export class AuthService {
         uid,
         email: email!,
         rol: primaryRelation.rol,
-        companiaCorretajeId: primaryRelation.companiaCorretajeId, // Reverted to the correct field name
+        companiaCorretajeId: primaryRelation.companiaCorretajeId,
         oficinaId: primaryRelation.oficinaId,
         enteId: primaryRelation.enteId,
       };
       const token = this.signToken(payload);
-      return { token, needsSelection: false };
+      // Always return the list of companies
+      return { token, companias: userCompanias, needsSelection: false };
     }
 
+    // If multiple companies and not a supervisor, require selection
     const payload: AuthPayload = { uid, email: email!, pendienteCia: true };
     const token = this.signToken(payload);
 
@@ -102,7 +105,7 @@ export class AuthService {
       uid: currentUser.uid,
       email: currentUser.email,
       rol: userCompania.rol,
-      companiaCorretajeId: userCompania.companiaCorretajeId, // Reverted to the correct field name
+      companiaCorretajeId: userCompania.companiaCorretajeId,
       oficinaId: userCompania.oficinaId,
       enteId: userCompania.enteId,
     };

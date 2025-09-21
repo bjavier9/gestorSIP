@@ -5,7 +5,7 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "dev": "PORT=3001 nodemon -e ts --watch src --exec ts-node src/index.ts",
+    "dev": "PORT=3000 nodemon -e ts --watch src --exec ts-node src/index.ts",
     "build": "tsc",
     "start": "ts-node src/index.ts",
     "db:seed": "ts-node src/infrastructure/persistence/firestore/seed.ts"

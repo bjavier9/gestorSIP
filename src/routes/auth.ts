@@ -4,8 +4,31 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { AuthController } from '../infrastructure/http/auth.controller';
-import { authMiddleware } from '../middleware/authMiddleware'; // Assuming you have this middleware
+import { authMiddleware } from '../middleware/authMiddleware';
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     UsuarioCompania: 
+ *       type: object
+ *       properties:
+ *         id: { type: 'string', description: 'Firebase UID of the user.' }
+ *         enteId: { type: 'number', example: 6200 }
+ *         companiaCorretajeId: { type: 'string', example: 'comp_001' }
+ *         oficinaId: { type: 'string', example: 'oficina_001' }
+ *         rol: { type: 'string', enum: ['admin', 'supervisor', 'agent', 'viewer'] }
+ *         activo: { type: 'boolean' }
+ *     LoginResponse:
+ *       type: object
+ *       properties:
+ *         token: { type: 'string', description: 'JWT for authenticating subsequent requests.' }
+ *         needsSelection: { type: 'boolean', description: 'True if the user must select a company from the list.' }
+ *         companias:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/UsuarioCompania'
+ */
 export const createAuthRouter = (controller: AuthController): Router => {
   const router = Router();
 
@@ -27,11 +50,15 @@ export const createAuthRouter = (controller: AuthController): Router => {
    *               idToken: { type: string, description: 'The Firebase ID token obtained from the client-side authentication.' }
    *     responses:
    *       200:
-   *         description: Authentication successful. Returns a JWT and, if needed, a list of companies for selection.
+   *         description: Authentication successful. Returns a JWT and a list of companies.
    *         content:
    *           application/json:
    *             schema:
-   *               $ref: '#/components/schemas/LoginResponse'
+   *               type: object
+   *               properties:
+   *                 status: { type: 'string', example: 'success' }
+   *                 data: 
+   *                   $ref: '#/components/schemas/LoginResponse'
    *       401:
    *         description: Invalid or expired Firebase token.
    *       403:

@@ -4,31 +4,36 @@ import swaggerJSDoc from 'swagger-jsdoc';
 const swaggerDefinition = {
   openapi: '3.0.0',
   info: {
-    title: 'Express API with Swagger',
+    title: 'Express API for SeguroPlus',
     version: '1.0.0',
-    description: 'A simple CRUD API application made with Express and documented with Swagger',
+    description: 'API documentation for the SeguroPlus backend services.',
   },
   servers: [
     {
-      url: 'http://localhost:3000/api',
+      url: 'http://localhost:3001', // Updated port
       description: 'Development server',
     },
   ],
   components: {
+    securitySchemes: {
+        bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+        }
+    },
     schemas: {
-      SuccessResponse: {
-        type: 'object',
-        properties: {
-          status: { type: 'string', example: 'success' },
-          data: { type: 'object' },
-        },
-      },
       ErrorResponse: {
         type: 'object',
         properties: {
           status: { type: 'string', example: 'error' },
-          message: { type: 'string' },
-          code: { type: 'string' },
+          error: {
+            type: 'object',
+            properties: {
+                code: { type: 'string', example: 'AUTH_INVALID_TOKEN' },
+                message: { type: 'string' }
+            }
+          }
         },
       },
     },
@@ -38,8 +43,8 @@ const swaggerDefinition = {
 // Options for swagger-jsdoc
 const options = {
   swaggerDefinition,
-  // Path to the API docs
-  apis: ['./src/routes/*.ts', './src/domain/*.ts'], // Looks for JSDoc in these files
+  // Paths to the API docs. The processor will look for JSDoc comments in these files.
+  apis: ['./src/routes/*.ts'], 
 };
 
 // Initialize swagger-jsdoc
