@@ -1,6 +1,8 @@
+
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { EnteController } from '../infrastructure/http/ente.controller';
+import { authMiddleware } from '../middleware/authMiddleware';
 
 /**
  * @swagger
@@ -19,7 +21,7 @@ import { EnteController } from '../infrastructure/http/ente.controller';
  *           example: "John Doe"
  *         type:
  *           type: string
- *           description: The type of the entity (e.g., client, agent).
+ *           description: The type of the entity. (e.g., client, agent).
  *           example: "cliente"
  *         email:
  *           type: string
@@ -51,6 +53,7 @@ import { EnteController } from '../infrastructure/http/ente.controller';
  */
 export const createEnteRouter = (enteController: EnteController): Router => {
     const router = Router();
+    router.use(authMiddleware);
 
     /**
      * @swagger

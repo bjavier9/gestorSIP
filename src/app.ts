@@ -6,7 +6,7 @@ import compression from 'compression';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './config/swagger';
 import { errorHandler } from './middleware/errorHandler';
-import { requestLogger } from './middleware/loggerMiddleware'; // Assuming you have this middleware
+// import { requestLogger } from './middleware/loggerMiddleware'; // Assuming you have this middleware
 import { initializeFirebase, db } from './config/firebase';
 
 // Import Routers
@@ -25,7 +25,7 @@ import { EnteService } from './application/ente.service';
 // Import Repositories (Adapters)
 import { FirebaseUserRepository } from './infrastructure/persistence/firebaseUserRepository.adapter';
 import { FirebaseEnteRepository } from './infrastructure/persistence/firebaseEnteRepository.adapter';
-import { FirebaseEnteCompaniaRepository } from './infrastructure/persistence/firebaseEnteCompania.adapter';
+import { FirebaseUsuarioCompaniaAdapter } from './infrastructure/persistence/firebaseUsuarioCompania.adapter'; // Corrected class name
 
 // Initialize Firebase
 initializeFirebase();
@@ -37,7 +37,7 @@ app.use(helmet());
 app.use(cors());
 app.use(compression());
 app.use(express.json());
-app.use(requestLogger); // Make sure you have this middleware file created
+// app.use(requestLogger); // Make sure you have this middleware file created
 
 // --- API Documentation ---
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -47,10 +47,11 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // 1. Repositories (Data Access Layer)
 const userRepository = new FirebaseUserRepository();
 const enteRepository = new FirebaseEnteRepository();
-const enteCompaniaRepository = new FirebaseEnteCompaniaRepository(db); // Assuming it needs the db instance
+// Corrected instantiation with the correct class name and no 'db' argument
+const usuarioCompaniaRepository = new FirebaseUsuarioCompaniaAdapter(); 
 
 // 2. Services (Application/Business Logic Layer)
-const authService = new AuthService(userRepository, enteRepository, enteCompaniaRepository);
+const authService = new AuthService(usuarioCompaniaRepository);
 const enteService = new EnteService(enteRepository);
 
 // 3. Controllers (Presentation Layer)
@@ -64,7 +65,7 @@ const enteRouter = createEnteRouter(enteController);
 // --- Route Definitions ---
 app.use('/api/auth', authRouter);
 app.use('/api/entes', enteRouter);
-app.use('/api/content', contentRoutes); // This one doesn't seem to need DI
+app.use('/api/content', contentRoutes);
 
 // --- Centralized Error Handling ---
 app.use(errorHandler);

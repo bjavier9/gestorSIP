@@ -1,3 +1,4 @@
+import 'dotenv/config'; // Carga las variables de entorno ANTES que cualquier otra cosa
 import 'reflect-metadata';
 import 'express-async-handler';
 import express from 'express';
@@ -5,9 +6,12 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import morgan from 'morgan';
 import Logger from './config/logger';
-import { db } from './config/firebase';
+import { initializeFirebase, db } from './config/firebase'; // Importar la función de inicialización
 import container from './config/container';
 import { TYPES } from './config/types';
+
+// --- INICIALIZACIÓN DE SERVICIOS ESENCIALES ---
+initializeFirebase(); // Llamar a la inicialización de Firebase aquí
 
 // --- DEPENDENCY INJECTION ---
 import { AuthController } from './infrastructure/http/auth.controller';
