@@ -1,53 +1,154 @@
-import swaggerJSDoc from 'swagger-jsdoc';
+import swaggerJsdoc from 'swagger-jsdoc';
 
-// Basic Swagger definition
-const swaggerDefinition = {
-  openapi: '3.0.0',
-  info: {
-    title: 'Express API for SeguroPlus',
-    version: '1.0.0',
-    description: 'API documentation for the SeguroPlus backend services.',
-  },
-  servers: [
-    {
-      url: 'http://localhost:3001', // Updated port
-      description: 'Development server',
-    },
-  ],
-  components: {
-    securitySchemes: {
-        bearerAuth: {
-            type: 'http',
-            scheme: 'bearer',
-            bearerFormat: 'JWT',
-        }
-    },
-    schemas: {
-      ErrorResponse: {
-        type: 'object',
-        properties: {
-          status: { type: 'string', example: 'error' },
-          error: {
-            type: 'object',
-            properties: {
-                code: { type: 'string', example: 'AUTH_INVALID_TOKEN' },
-                message: { type: 'string' }
-            }
-          }
+const options: swaggerJsdoc.Options = {
+    definition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'GestorSIP API Documentation',
+            version: '1.1.0', // Incremented version after fixes
+            description: 'API backend for an insurance management platform, built with Node.js, Express, and a Hexagonal Architecture.',
+            contact: {
+                name: 'API Support',
+                email: 'dev@seguroplus.com',
+            },
         },
-      },
+        servers: [
+            {
+                url: 'http://localhost:3001', // Updated port
+                description: 'Development server',
+            },
+        ],
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT',
+                },
+            },
+            schemas: {
+                // Generic Error
+                ErrorResponse: {
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean', example: false },
+                        status: { type: 'integer' },
+                        error: {
+                            type: 'object',
+                            properties: {
+                                code: { type: 'string' },
+                                message: { type: 'string' },
+                            },
+                        },
+                    },
+                },
+
+                // --- Auth Schemas ---
+                LoginRequest: {
+                    type: 'object',
+                    required: ['idToken'],
+                    properties: {
+                        idToken: { type: 'string', description: "Firebase Auth ID Token." },
+                    },
+                },
+                SelectCompaniaRequest: {
+                    type: 'object',
+                    required: ['companiaId'],
+                    properties: {
+                        companiaId: { type: 'string', description: "ID of the company to scope the session to." },
+                    },
+                },
+                LoginResponse: {
+                    type: 'object',
+                    properties: {
+                        user: { $ref: '#/components/schemas/Usuario' },
+                        token: { type: 'string', description: "Final or partial JWT.", nullable: true },
+                        needsSelection: { type: 'boolean', description: "True if user must select a company.", nullable: true },
+                        companias: {
+                            type: 'array',
+                            items: { $ref: '#/components/schemas/UsuarioCompania' },
+                            nullable: true,
+                        },
+                    },
+                },
+
+                // --- Main Data Models ---
+                Usuario: {
+                    type: 'object',
+                    properties: {
+                        uid: { type: 'string', readOnly: true },
+                        email: { type: 'string', format: 'email', readOnly: true },
+                        nombre: { type: 'string' },
+                        activo: { type: 'boolean' },
+                        fechaCreacion: { type: 'string', format: 'date-time', readOnly: true },
+                        ultimoAcceso: { type: 'string', format: 'date-time', readOnly: true },
+                    },
+                },
+                UsuarioCompania: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string' },
+                        nombre: { type: 'string' },
+                        roles: { type: 'array', items: { type: 'string' } },
+                    },
+                },
+                Ente: {
+                    type: 'object',
+                    required: ['enteId', 'tipoEnte', 'activo', 'fechaCreacion'],
+                    properties: {
+                        enteId: { type: 'string', readOnly: true },
+                        tipoEnte: { type: 'string', enum: ['persona_natural', 'persona_juridica'] },
+                        activo: { type: 'boolean' },
+                        fechaCreacion: { type: 'string', format: 'date-time', readOnly: true },
+                        // Discriminator-like properties
+                        metadataNatural: { $ref: '#/components/schemas/MetadataNatural', nullable: true },
+                        metadataJuridica: { $ref: '#/components/schemas/MetadataJuridica', nullable: true },
+                    },
+                },
+                MetadataNatural: {
+                    type: 'object',
+                    properties: {
+                        nombres: { type: 'string' },
+                        apellidos: { type: 'string' },
+                        cedula: { type: 'string' },
+                        fechaNacimiento: { type: 'string', format: 'date' },
+                    },
+                },
+                MetadataJuridica: {
+                    type: 'object',
+                    properties: {
+                        razonSocial: { type: 'string' },
+                        rif: { type: 'string' },
+                        fechaConstitucion: { type: 'string', format: 'date' },
+                    },
+                },
+
+                // --- DTOs for Input/Update ---
+                EnteInput: {
+                    type: 'object',
+                    description: "Schema for creating a new ente."
+                    // Define properties based on what's needed to create an Ente
+                },
+                EnteUpdateInput: {
+                    type: 'object',
+                    description: "Schema for updating an existing ente."
+                    // Define properties that are updatable
+                },
+                SuccessResponse: {
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean', example: true },
+                        status: { type: 'integer' },
+                        data: { type: 'object' }, 
+                    }
+                },
+            },
+        },
     },
-  },
+    // IMPORTANT: Path to the files containing OpenAPI annotations
+    apis: ['./src/routes/*.ts'],
 };
 
-// Options for swagger-jsdoc
-const options = {
-  swaggerDefinition,
-  // Paths to the API docs. The processor will look for JSDoc comments in these files.
-  apis: ['./src/routes/*.ts'], 
-};
-
-// Initialize swagger-jsdoc
-const swaggerSpec = swaggerJSDoc(options);
+const swaggerSpec = swaggerJsdoc(options);
 
 export default swaggerSpec;

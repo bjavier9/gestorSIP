@@ -2,7 +2,7 @@ import { inject, injectable } from 'inversify';
 import { EnteRepository, EnteInput, EnteUpdateInput } from '../domain/ports/enteRepository.port';
 import { Ente } from '../domain/ente';
 import { TYPES } from '../config/types';
-import { ApiError } from '../utils/ApiError'; // Corrected import statement
+import { ApiError } from '../utils/ApiError';
 
 @injectable()
 export class EnteService {
@@ -11,16 +11,15 @@ export class EnteService {
   ) {}
 
   async createEnte(data: EnteInput): Promise<Ente> {
-    // Additional business logic for creation can go here.
-    // For example, checking for duplicate documents before saving.
+    // The repository now handles checking for existing documents.
     const existingEnte = await this.enteRepository.findByDocumento(data.documento);
     if (existingEnte) {
-      throw new ApiError('AUTH_USER_ALREADY_EXISTS', 409, 'An ente with this document number already exists.');
+      throw new ApiError('ENTE_ALREADY_EXISTS', 409, 'An ente with this document number already exists.');
     }
     return this.enteRepository.save(data);
   }
 
-  async getEnteById(id: string): Promise<Ente | null> {
+  async getEnteById(id: string): Promise<Ente> {
     const ente = await this.enteRepository.findById(id);
     if (!ente) {
       throw new ApiError('ENTE_NOT_FOUND', 404, 'Ente not found.');
@@ -32,20 +31,17 @@ export class EnteService {
     return this.enteRepository.findAll();
   }
 
-  async updateEnte(id: string, data: EnteUpdateInput): Promise<Ente | null> {
-    const ente = await this.enteRepository.update(id, data);
-    if (!ente) {
-      throw new ApiError('ENTE_NOT_FOUND', 404, 'Ente not found for update.');
+  async updateEnte(id: string, data: EnteUpdateInput): Promise<Ente> {
+    // The repository now handles the not-found case and returns the updated entity.
+    const updatedEnte = await this.enteRepository.update(id, data);
+    if (!updatedEnte) {
+        throw new ApiError('ENTE_NOT_FOUND', 404, 'Ente not found for update.');
     }
-    return ente;
+    return updatedEnte;
   }
 
-  async deleteEnte(id: string): Promise<boolean> {
-    const success = await this.enteRepository.delete(id);
-    if (!success) {
-      // This might happen if the ente doesn't exist.
-      throw new ApiError('ENTE_NOT_FOUND', 404, 'Ente not found for deletion.');
-    }
-    return success;
+  async deleteEnte(id: string): Promise<void> {
+    // The repository now handles the not-found case and throws an error.
+    await this.enteRepository.delete(id);
   }
 }

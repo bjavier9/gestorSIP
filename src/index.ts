@@ -1,94 +1,66 @@
-import 'dotenv/config'; // Carga las variables de entorno ANTES que cualquier otra cosa
+import 'dotenv/config';
 import 'reflect-metadata';
-import 'express-async-handler';
 import express from 'express';
 import swaggerUi from 'swagger-ui-express';
-import swaggerJsdoc from 'swagger-jsdoc';
 import morgan from 'morgan';
 import Logger from './config/logger';
-import { initializeFirebase, db } from './config/firebase'; // Importar la función de inicialización
-import container from './config/container';
-import { TYPES } from './config/types';
+import { initializeFirebase } from './config/firebase';
 
-// --- INICIALIZACIÓN DE SERVICIOS ESENCIALES ---
-initializeFirebase(); // Llamar a la inicialización de Firebase aquí
+async function startServer() {
+    // --- 1. INITIALIZE EXTERNAL SERVICES ---
+    // Must be done BEFORE any other app module is imported
+    initializeFirebase();
+    Logger.info('Firebase has been initialized.');
 
-// --- DEPENDENCY INJECTION ---
-import { AuthController } from './infrastructure/http/auth.controller';
-import { EnteController } from './infrastructure/http/ente.controller';
+    // --- 2. DYNAMICALLY IMPORT MODULES THAT DEPEND ON INITIALIZED SERVICES ---
+    // This prevents race conditions where modules try to access services (e.g., DB) before they are ready.
+    const { default: swaggerSpec } = await import('./config/swagger');
+    const { default: authRouter } = await import('./routes/auth');
+    const { default: enteRouter } = await import('./routes/entes');
+    const { default: contentRouter } = await import('./routes/content');
+    const { errorHandler, notFoundHandler } = await import('./middleware/errorHandler');
+    const { handleSuccess } = await import('./utils/responseHandler');
 
-// --- ROUTING ---
-import { createAuthRouter } from './routes/auth';
-import { createEnteRouter } from './routes/entes';
-import contentRouter from './routes/content';
+    // --- 3. CREATE AND CONFIGURE EXPRESS APP ---
+    const app = express();
 
-// --- MIDDLEWARE & UTILS ---
-import { authMiddleware } from './middleware/authMiddleware';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler';
-import { handleSuccess } from './utils/responseHandler';
-import asyncHandler from 'express-async-handler';
+    // Core Middleware
+    app.use(express.json());
 
-const app = express();
+    // HTTP Logging
+    const stream = { write: (message: string) => Logger.http(message.trim()) };
+    app.use(morgan('combined', { stream }));
 
-// --- CORE MIDDLEWARE ---
-app.use(express.json());
+    // API Documentation
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// --- HTTP REQUEST LOGGING ---
-const stream = {
-    write: (message: string) => Logger.http(message.trim()),
-};
-app.use(morgan('combined', { stream }));
+    // API Routes
+    app.use('/api/auth', authRouter);
+    app.use('/api/entes', enteRouter);
+    app.use('/api/content', contentRouter);
 
-// --- SWAGGER DOCUMENTATION ---
-const swaggerOptions = {
-    definition: {
-        openapi: '3.0.0',
-        info: {
-            title: 'Hexagonal Architecture API (Node.js/Express)',
-            version: '1.0.0',
-            description: 'API con arquitectura hexagonal, IA y principios SOLID.'
-        },
-        components: {
-            securitySchemes: {
-                bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }
-            },
-        },
-    },
-    apis: ['./src/routes/*.ts', './src/index.ts'], 
-};
-const openapiSpecification = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpecification));
+    // Public Routes
+    app.get('/', (req, res) => handleSuccess(res, { message: 'Welcome to the gestorSIP API!' }));
+    app.get('/health', (req, res) => handleSuccess(res, { status: 'ok' }));
 
-// --- OBTENER CONTROLADORES DEL CONTENEDOR ---
-const authController = container.get<AuthController>(TYPES.AuthController);
-const enteController = container.get<EnteController>(TYPES.EnteController);
+    // Error Handling (must be last)
+    app.use(notFoundHandler);
+    app.use(errorHandler);
 
-// --- ROUTE DEFINITIONS ---
-app.use('/auth', createAuthRouter(authController));
-app.get('/', (req, res) => handleSuccess(res, { message: 'Welcome to the Hexagonal API!' }));
-app.get('/health', (req, res) => handleSuccess(res, { status: 'ok' }));
+    // --- 4. START THE HTTP SERVER ---
+    const port = parseInt(process.env.PORT || '3001');
+    app.listen(port, () => {
+        Logger.info(`Server running on http://localhost:${port}`);
+        Logger.info(`API Docs available at http://localhost:${port}/api-docs`);
+    });
+}
 
-// --- RUTAS PROTEGIDAS ---
-const apiRouter = express.Router();
-apiRouter.use(authMiddleware); // Middleware de autenticación para todas las rutas /api
-
-apiRouter.use('/content', contentRouter);
-apiRouter.use('/entes', createEnteRouter(enteController)); // Correctly injected router
-
-apiRouter.get('/test-db', asyncHandler(async (req, res) => {
-    await db.collection('test').doc('health-check').set({ status: 'ok', timestamp: new Date() });
-    handleSuccess(res, { message: 'Successfully connected to and wrote to Firestore!' });
-}));
-
-app.use('/api', apiRouter);
-
-// --- ERROR HANDLING MIDDLEWARE ---
-app.use(notFoundHandler);
-app.use(errorHandler);
-
-// --- SERVER STARTUP ---
-const port = parseInt(process.env.PORT || '3000');
-app.listen(port, () => {
-    Logger.info(`Server running on http://localhost:${port}`);
-    Logger.info(`API Docs available at http://localhost:${port}/api-docs`);
+startServer().catch(error => {
+    // Use a logger that will definitely work, like console.error
+    console.error("Failed to start server:", error);
+    // Log with the application logger if it's available
+    if (Logger) {
+        Logger.error("Failed to start server:", { error: error.stack });
+    }
+    process.exit(1);
 });

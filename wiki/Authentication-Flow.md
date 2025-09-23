@@ -1,47 +1,56 @@
 # Flujo de Autenticación en la Aplicación
 
-Este documento explica el proceso de autenticación de dos fases que utiliza la aplicación, clarificando el rol del cliente, del servidor y de las diferentes credenciales de Firebase.
+Este documento explica el proceso de autenticación de dos fases, clarificando el rol del cliente, el servidor y las diferentes credenciales de Firebase. Nuestra API está diseñada para ser agnóstica al método de autenticación del cliente; solo requiere un `idToken` de Firebase válido.
 
-## La Diferencia Clave: API Key vs. ID Token
+---
 
-A menudo hay confusión sobre por qué se necesita una `FIREBASE_API_KEY` en el lado del cliente y cómo interactúa con el back-end. El proceso se divide en dos destinos diferentes con propósitos distintos.
+## Fase 1: Obtención del `idToken` (El Cliente habla con Google)
 
-### Fase 1: Autenticación del Usuario (El Cliente habla con Google)
+En esta fase, el cliente (sea una aplicación web, móvil o un script) se comunica **directamente con los servidores de autenticación de Google**. El objetivo es que el usuario demuestre su identidad a Google por cualquier medio soportado y reciba a cambio un **`idToken`**.
 
-En esta fase, el cliente (sea un script de prueba, una aplicación web o una app móvil) se comunica **directamente con los servidores de autenticación de Google**, no con nuestra API.
+La `FIREBASE_API_KEY` (una clave pública) se usa en este proceso para identificar a qué proyecto de Firebase pertenece el usuario.
 
-1.  **El Actor:** Un cliente que necesita probar la identidad de un usuario.
-2.  **El Destino:** Un endpoint público de la API de Google, por ejemplo:
-    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=...`
-3.  **El Propósito de la `FIREBASE_API_KEY`:**
-    -   La `FIREBASE_API_KEY` **identifica públicamente tu proyecto de Firebase** ante Google. No es una credencial secreta.
-    -   Le dice a Google: "El usuario que intenta iniciar sesión con este email y contraseña pertenece a este proyecto específico". Sin ella, Google no sabría en qué base de datos de usuarios buscar.
-4.  **El Resultado:**
-    -   Si las credenciales (email/contraseña) son correctas para ese proyecto, el servidor de autenticación de Google genera y devuelve un **`idToken`** (JSON Web Token).
-    -   Este `idToken` es una **prueba criptográfica** firmada por Google que certifica que el usuario es quien dice ser.
+### Método A: Email y Contraseña (Flujo Tradicional)
 
-### Fase 2: Autorización en nuestra API (El Cliente habla con nuestro Servidor)
+1.  **Actor**: El cliente.
+2.  **Acción**: El usuario introduce su email y contraseña.
+3.  **Lógica del Cliente**: Usando el SDK de Firebase para cliente, se llama a la función `signInWithEmailAndPassword(auth, email, password)`.
+4.  **Destino**: La petición va a un endpoint de Google como `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=...`.
+5.  **Resultado**: Si las credenciales son correctas, Google devuelve un `idToken`.
 
-Una vez que el cliente tiene el `idToken`, puede usarlo para autenticarse en nuestra propia API.
+### Método B: Vínculo de Correo Electrónico (Acceso sin Contraseña)
+
+Este es un flujo más complejo orquestado completamente por el cliente. El back-end no participa hasta la Fase 2.
+
+1.  **Actor**: El cliente.
+2.  **Acción Inicial**: El usuario introduce su dirección de correo electrónico.
+3.  **Lógica del Cliente (Paso 1 - Enviar enlace)**:
+    -   Se define un `ActionCodeSettings` que incluye la `url` a la que el usuario será redirigido tras hacer clic en el enlace desde su correo (ej: `https://miapp.com/finish-login`).
+    -   Se llama a la función `sendSignInLinkToEmail(auth, email, actionCodeSettings)` del SDK de cliente.
+4.  **Destino**: La petición va a los servidores de Google para generar y enviar el correo.
+5.  **Acción del Usuario**: El usuario abre su correo y hace clic en el enlace de inicio de sesión.
+6.  **Lógica del Cliente (Paso 2 - Confirmar enlace y obtener token)**:
+    -   La aplicación cliente, en la URL de redirección (ej: `/finish-login`), comprueba si la URL actual es un enlace de inicio de sesión con `isSignInWithEmailLink(auth, window.location.href)`.
+    -   Si es `true`, se extrae el email (que debe ser almacenado previamente por el cliente, por ejemplo en `localStorage`).
+    -   Se llama a `signInWithEmailLink(auth, email, window.location.href)`.
+7.  **Resultado Final**: Si el enlace es válido, esta última función devuelve el **`idToken`**.
+
+---
+
+## Fase 2: Autorización en nuestra API (El Cliente habla con nuestro Servidor)
+
+Esta fase es **idéntica para todos los métodos de autenticación**.
+
+Una vez que el cliente tiene el `idToken` (obtenido por el Método A, B o cualquier otro como Google Sign-In), puede usarlo para autenticarse en nuestra propia API.
 
 1.  **El Actor:** El cliente, que ahora posee un `idToken` válido.
-2.  **El Destino:** Nuestra API, específicamente el endpoint de login (ej: `http://localhost:3001/auth/login`).
+2.  **El Destino:** Nuestra API, específicamente el endpoint `/api/auth/login`.
 3.  **El Propósito del `idToken`:**
-    -   El cliente envía el `idToken` a nuestra API (en el cuerpo de la petición, según el diseño de esta aplicación).
-    -   Ya no se envían el email y la contraseña. El `idToken` es la única prueba de identidad que necesita nuestro servidor.
+    -   El cliente envía el `idToken` en el cuerpo de la petición. Ya no se usan email/contraseña.
 4.  **La Lógica del Servidor (Back-end):**
     -   Nuestro servidor recibe la petición y extrae el `idToken`.
-    -   Utilizando el **SDK de `firebase-admin`** (que se inicializa con credenciales de administrador secretas, como el archivo `.json`), verifica la validez del `idToken`.
-    -   Esta verificación confirma que el token fue emitido por Google para nuestro proyecto y que no ha expirado.
+    -   Utilizando el **SDK de `firebase-admin`**, verifica la validez y firma del `idToken`.
 5.  **El Resultado Final:**
     -   Si la verificación es exitosa, nuestro servidor confía en la identidad del usuario.
-    -   Genera su **propio JWT de aplicación**, que contiene los roles, permisos y otros datos necesarios para que el usuario opere dentro de nuestra plataforma.
-    -   Este JWT de la aplicación es el que el cliente usará para las siguientes peticiones a nuestra API.
-
-## Resumen del Flujo
-
-1.  **Cliente → Google:** Envía `email`, `password` y `FIREBASE_API_KEY`.
-2.  **Google → Cliente:** Valida y devuelve un `idToken`.
-3.  **Cliente → Nuestra API:** Envía el `idToken` al endpoint `/auth/login`.
-4.  **Nuestra API → Google (usando Admin SDK):** Verifica que el `idToken` sea válido.
-5.  **Nuestra API → Cliente:** Si es válido, crea y devuelve un JWT propio de la aplicación para la sesión del usuario.
+    -   Genera su **propio JWT de aplicación**, que contiene roles y permisos, y lo devuelve al cliente.
+    -   Este JWT de la aplicación es el que se usará como `Bearer Token` para las siguientes peticiones a nuestra API.

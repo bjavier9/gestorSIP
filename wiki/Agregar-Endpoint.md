@@ -1,198 +1,265 @@
 # Guía Definitiva para Agregar un Endpoint en GestorSIP
 
-Este documento detalla el proceso para agregar un endpoint, explicando la arquitectura real del proyecto, que se basa en **InversifyJS** para la Inyección de Dependencias (DI) y un flujo de arranque claro que separa la configuración del servidor.
+Este documento detalla el proceso completo y actualizado para agregar un nuevo endpoint, reflejando la arquitectura real del proyecto, que se basa en **InversifyJS** para la Inyección de Dependencias (DI) y un flujo de arranque asíncrono que garantiza la estabilidad.
 
 ---
 
-## Arquitectura Real: Hexagonal con InversifyJS
+## Arquitectura y Flujo de Arranque
 
-La arquitectura del proyecto es **Hexagonal (Puertos y Adaptadores)**, pero utiliza **InversifyJS** como un contenedor de DI para gestionar y conectar las dependencias de forma automática. Esto es más escalable y mantenible que la inyección manual.
+La arquitectura es **Hexagonal (Puertos y Adaptadores)** con InversifyJS como contenedor de DI. El flujo de arranque en `src/index.ts` es clave:
 
-### Flujo de Arranque: `index.ts` y el Contenedor de Inversify
+1.  **Inicialización de Servicios Externos**: La función `startServer` primero llama y espera a `initializeFirebase()`.
+2.  **Carga Dinámica de Módulos**: **Después** de que Firebase está listo, se usan `await import()` para cargar los routers. Esto evita errores de servicios no disponibles.
+3.  **Configuración del Servidor Express**: Finalmente, se configura y se inicia el servidor.
 
-1.  **`src/config/types.ts`**: Este archivo es un diccionario de identificadores únicos (`Symbol`). Cada "tipo" que queremos que Inversify gestione (un servicio, un repositorio) debe tener una entrada aquí. Esto evita colisiones de nombres y permite una vinculación segura.
-
-2.  **`src/config/container.ts` (El Verdadero "Composition Root")**: Este es el corazón del ensamblaje de la aplicación. Aquí le decimos a Inversify cómo resolver las dependencias:
-    *   `container.bind<Interface>(TYPES.InterfaceName).to(ClassName)`: Esta línea le dice al contenedor: "Cuando alguien pida la `Interface` identificada por `TYPES.InterfaceName`, crea y entrégale una instancia de `ClassName`".
-    *   **Inyección Automática**: Inversify lee los constructores de las clases. Si el constructor de `EnteService` pide un `IEnteRepository`, el contenedor busca su binding, crea una instancia de `FirebaseEnteRepository` y la inyecta automáticamente.
-
-3.  **`src/index.ts` (El Punto de Entrada)**: Este archivo es el responsable de iniciar la aplicación. Su rol es:
-    *   Importar y configurar middleware (Express, Morgan, Swagger).
-    *   **Obtener los controladores ya construidos** del contenedor de Inversify: `container.get<AuthController>(TYPES.AuthController)`.
-    *   Pasar los controladores a las funciones que crean los routers (ej: `createAuthRouter(authController)`).
-    *   Iniciar el servidor (`app.listen()`).
-
-**Nota Importante:** El archivo `src/app.ts` **no se utiliza** en el flujo de arranque actual. Parece ser un vestigio de una configuración anterior con inyección manual. **Debe ser ignorado**.
+Cualquier nuevo módulo de rutas que creemos deberá ser importado de esta manera en `src/index.ts`.
 
 ---
 
-## Proceso Detallado para Agregar un Endpoint con Inversify
+## Proceso Paso a Paso: Ejemplo de un Endpoint `GET /polizas/:id`
 
-Ejemplo: Agregar una nueva funcionalidad para **"Gestionar Pólizas (Policies)"**. Crearemos un endpoint para obtener una póliza por su ID.
+Vamos a crear un endpoint completo para obtener una póliza por su ID.
 
-### Paso 1: Definir la Lógica de Negocio (Dominio)
+### Paso 1: Definir los Tipos en `types.ts`
 
-1.  **Crear la Entidad (`src/domain/policy.ts`)**:
+Antes de crear cualquier clase que necesite ser inyectada, debemos declarar sus identificadores. Esto previene colisiones y errores de DI.
 
-    ```typescript
-    // src/domain/policy.ts
-    export interface Policy {
-      id: string;
-      policyNumber: string;
-      clientName: string;
-    }
-    ```
+```typescript
+// src/config/types.ts
 
-2.  **Crear el Puerto del Repositorio (`src/domain/ports/policyRepository.port.ts`)**:
+export const TYPES = {
+    // ... otros tipos existentes
+    AuthService: Symbol.for("AuthService"),
+    AuthController: Symbol.for("AuthController"),
+    // ... etc
 
-    ```typescript
-    // src/domain/ports/policyRepository.port.ts
-    import { Policy } from '../policy';
+    // --- Tipos para el nuevo módulo de Pólizas ---
+    PolizaRepository: Symbol.for("PolizaRepository"),
+    PolizaService: Symbol.for("PolizaService"),
+    PolizaController: Symbol.for("PolizaController"),
+};
+```
 
-    export interface IPolicyRepository {
-      findById(id: string): Promise<Policy | null>;
-    }
-    ```
+### Paso 2: El Núcleo del Dominio
 
-### Paso 2: Orquestar el Caso de Uso (Aplicación)
+Aquí definimos la entidad de negocio y el "puerto" (la interfaz del repositorio).
 
-1.  **Crear el Servicio (`src/application/policy.service.ts`)**: Este servicio usará el puerto del repositorio. Nota el decorador `@injectable` y el `@inject` en el constructor.
+**1. Crear la Entidad `poliza.ts`:**
+```typescript
+// src/domain/poliza.ts
 
-    ```typescript
-    // src/application/policy.service.ts
-    import { injectable, inject } from 'inversify';
-    import { IPolicyRepository } from '../domain/ports/policyRepository.port';
-    import { TYPES } from '../config/types';
-    import { Policy } from '../domain/policy';
+export interface Poliza {
+    id: string;
+    numero: string;
+    aseguradoId: string;
+    compania: string;
+    ramo: string;
+    fechaVencimiento: Date;
+    // ...otras propiedades
+}
+```
 
-    @injectable()
-    export class PolicyService {
-      constructor(
-        @inject(TYPES.PolicyRepository) private readonly policyRepository: IPolicyRepository
-      ) {}
+**2. Crear el Puerto del Repositorio `polizaRepository.port.ts`:**
+```typescript
+// src/domain/ports/polizaRepository.port.ts
 
-      async findPolicyById(id: string): Promise<Policy | null> {
-        return this.policyRepository.findById(id);
-      }
-    }
-    ```
+import { Poliza } from '../poliza';
 
-### Paso 3: Implementar la Tecnología (Infraestructura)
+export interface PolizaRepository {
+    findById(id: string): Promise<Poliza | null>;
+    // ...otros métodos como findAll, save, etc.
+}
+```
 
-1.  **Crear el Adaptador de Persistencia (`src/infrastructure/persistence/firebasePolicyRepository.adapter.ts`)**:
+### Paso 3: La Lógica de la Aplicación (Caso de Uso)
 
-    ```typescript
-    // src/infrastructure/persistence/firebasePolicyRepository.adapter.ts
-    import { injectable } from 'inversify';
-    import { IPolicyRepository } from '../../domain/ports/policyRepository.port';
-    import { Policy } from '../../domain/policy';
-    import { db } from '../../config/firebase';
+Creamos el servicio que orquesta la lógica de negocio, usando el puerto del dominio pero sin conocer la implementación.
 
-    @injectable()
-    export class FirebasePolicyRepository implements IPolicyRepository {
-      private readonly collection = db.collection('policies');
+```typescript
+// src/application/poliza.service.ts
 
-      async findById(id: string): Promise<Policy | null> {
-        const doc = await this.collection.doc(id).get();
-        if (!doc.exists) return null;
-        return { id: doc.id, ...doc.data() } as Policy;
-      }
-    }
-    ```
+import { inject, injectable } from 'inversify';
+import { PolizaRepository } from '../domain/ports/polizaRepository.port';
+import { Poliza } from '../domain/poliza';
+import { TYPES } from '../config/types';
+import { ApiError } from '../utils/ApiError';
 
-2.  **Crear el Controlador (`src/infrastructure/http/policy.controller.ts`)**:
+@injectable()
+export class PolizaService {
+    constructor(
+        @inject(TYPES.PolizaRepository) private polizaRepository: PolizaRepository
+    ) {}
 
-    ```typescript
-    // src/infrastructure/http/policy.controller.ts
-    import { injectable, inject } from 'inversify';
-    import { Request, Response, NextFunction } from 'express';
-    import { PolicyService } from '../../application/policy.service';
-    import { TYPES } from '../../config/types';
-    import { responseHandler } from '../../utils/responseHandler';
-    import ApiError from '../../utils/ApiError';
-
-    @injectable()
-    export class PolicyController {
-      constructor(@inject(TYPES.PolicyService) private policyService: PolicyService) {}
-
-      async getPolicyById(req: Request, res: Response, next: NextFunction) {
-        try {
-          const policy = await this.policyService.findPolicyById(req.params.id);
-          if (!policy) throw new ApiError(404, 'Póliza no encontrada');
-          responseHandler(res, { statusCode: 200, data: policy, message: 'Póliza obtenida' });
-        } catch (error) {
-          next(error);
+    public async getPolizaById(id: string): Promise<Poliza> {
+        const poliza = await this.polizaRepository.findById(id);
+        if (!poliza) {
+            throw new ApiError('POLIZA_NOT_FOUND', 404, `La póliza con id ${id} no fue encontrada.`);
         }
-      }
+        return poliza;
     }
-    ```
+}
+```
 
-### Paso 4: Configurar la Inyección de Dependencias
+### Paso 4: La Capa de Infraestructura
 
-1.  **Añadir Tipos en `src/config/types.ts`**: Agrega los nuevos símbolos para el controlador, servicio y repositorio.
+Aquí implementamos la tecnología específica (Firebase, Express).
 
-    ```typescript
-    // src/config/types.ts
-    const TYPES = {
-        // ... existing types
-        PolicyService: Symbol.for('PolicyService'),
-        PolicyRepository: Symbol.for('PolicyRepository'),
-        PolicyController: Symbol.for('PolicyController'),
-    };
-    ```
+**1. Crear el Adaptador del Repositorio `firebasePolizaRepository.adapter.ts`:**
+```typescript
+// src/infrastructure/persistence/firebasePolizaRepository.adapter.ts
 
-2.  **Vincular en `src/config/container.ts`**: Enseña a Inversify cómo resolver las nuevas interfaces.
+import { injectable } from 'inversify';
+import { PolizaRepository } from '../../domain/ports/polizaRepository.port';
+import { Poliza } from '../../domain/poliza';
+import { db } from '../../config/firebase';
+import { ApiError } from '../../utils/ApiError';
 
-    ```typescript
-    // src/config/container.ts
-    // ... imports for new classes
+@injectable()
+export class FirebasePolizaRepository implements PolizaRepository {
+    private readonly collection = db.collection('polizas');
 
-    // ... existing bindings
+    async findById(id: string): Promise<Poliza | null> {
+        const doc = await this.collection.doc(id).get();
+        if (!doc.exists) {
+            return null;
+        }
+        return { id: doc.id, ...doc.data() } as Poliza;
+    }
+    // Implementar otros métodos...
+}
+```
 
-    // BINDINGS PARA POLICIES
-    container.bind<IPolicyRepository>(TYPES.PolicyRepository).to(FirebasePolicyRepository);
-    container.bind<PolicyService>(TYPES.PolicyService).to(PolicyService);
-    container.bind<PolicyController>(TYPES.PolicyController).to(PolicyController);
-    ```
+**2. Crear el Controlador `poliza.controller.ts`:**
+```typescript
+// src/infrastructure/http/poliza.controller.ts
 
-### Paso 5: Crear la Ruta y Conectarla en el Servidor
+import { inject, injectable } from 'inversify';
+import { Request, Response } from 'express';
+import { PolizaService } from '../../application/poliza.service';
+import { TYPES } from '../../config/types';
 
-1.  **Crear el Archivo de Rutas (`src/routes/policies.ts`)**:
+@injectable()
+export class PolizaController {
+    constructor(
+        @inject(TYPES.PolizaService) private polizaService: PolizaService
+    ) {}
 
-    ```typescript
-    // src/routes/policies.ts
-    import { Router } from 'express';
-    import { PolicyController } from '../infrastructure/http/policy.controller';
+    async getById(req: Request, res: Response): Promise<void> {
+        const { id } = req.params;
+        const poliza = await this.polizaService.getPolizaById(id);
+        // Suponiendo que tienes un manejador de respuestas exitosas
+        res.status(200).json(poliza);
+    }
+}
+```
 
-    export const createPolicyRouter = (controller: PolicyController): Router => {
-      const router = Router();
-      router.get('/:id', (req, res, next) => controller.getPolicyById(req, res, next));
-      return router;
-    };
-    ```
+### Paso 5: Vincular Todo en el Contenedor de Inversify
 
-2.  **Usar la Ruta en `src/index.ts`**: Obtén el controlador del contenedor y úsalo para crear y montar el enrutador.
+Ahora le decimos a Inversify qué implementación concreta usar cuando se solicite una interfaz (un puerto).
 
-    ```typescript
-    // src/index.ts
-    // ... imports
-    import { PolicyController } from './infrastructure/http/policy.controller'; // Importar nuevo controlador
-    import { createPolicyRouter } from './routes/policies'; // Importar nuevo router
+```typescript
+// src/config/container.ts
 
-    // ... app setup ...
+// ... imports
+import { PolizaRepository } from '../domain/ports/polizaRepository.port';
+import { FirebasePolizaRepository } from '../infrastructure/persistence/firebasePolizaRepository.adapter';
+import { PolizaService } from '../application/poliza.service';
+import { PolizaController } from '../infrastructure/http/poliza.controller';
 
-    // --- OBTENER CONTROLADORES DEL CONTENEDOR ---
-    const authController = container.get<AuthController>(TYPES.AuthController);
-    const enteController = container.get<EnteController>(TYPES.EnteController);
-    const policyController = container.get<PolicyController>(TYPES.PolicyController); // <- Obtener nuevo controlador
+// ... vinculaciones existentes
 
-    // --- ROUTE DEFINITIONS ---
-    // ... rutas existentes ...
+// --- Vinculaciones del Módulo de Pólizas ---
+container.bind<PolizaRepository>(TYPES.PolizaRepository).to(FirebasePolizaRepository);
+container.bind<PolizaService>(TYPES.PolizaService).to(PolizaService);
+container.bind<PolizaController>(TYPES.PolizaController).to(PolizaController);
 
-    // --- RUTAS PROTEGIDAS ---
+export default container;
+```
+
+### Paso 6: Crear y Documentar la Ruta
+
+Finalmente, creamos el archivo de la ruta y lo conectamos al controlador. También añadimos la documentación de Swagger aquí.
+
+```typescript
+// src/routes/polizas.ts
+
+import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
+import container from '../config/container';
+import { TYPES } from '../config/types';
+import { PolizaController } from '../infrastructure/http/poliza.controller';
+import { authMiddleware } from '../middleware/authMiddleware';
+
+const polizaController = container.get<PolizaController>(TYPES.PolizaController);
+
+const router = Router();
+
+/**
+ * @swagger
+ * /api/polizas/{id}:
+ *   get:
+ *     tags: [Pólizas]
+ *     summary: Obtener una póliza por su ID
+ *     description: Retorna los detalles de una póliza específica.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: El ID único de la póliza.
+ *     responses:
+ *       200:
+ *         description: Póliza encontrada exitosamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Poliza' // Asumiendo que defines Poliza en swagger.ts
+ *       404:
+ *         description: Póliza no encontrada.
+ */
+router.get('/:id', authMiddleware, asyncHandler(polizaController.getById.bind(polizaController)));
+
+export default router;
+```
+
+*No olvides también agregar el schema de `Poliza` en `src/config/swagger.ts`.*
+
+### Paso 7: Conectar la Ruta en `index.ts`
+
+El último paso es importar dinámicamente y usar el nuevo router en el punto de entrada de la aplicación.
+
+```typescript
+// src/index.ts
+
+async function startServer() {
+    // ... inicialización y otras importaciones
+
+    // --- 2. DYNAMICALLY IMPORT MODULES ---
+    const { default: authRouter } = await import('./routes/auth');
+    const { default: enteRouter } = await import('./routes/entes');
+    const { default: contentRouter } = await import('./routes/content');
+    const { default: polizaRouter } = await import('./routes/polizas'); // <-- AÑADIR
+    
     // ...
-    apiRouter.use('/policies', createPolicyRouter(policyController)); // <- Usar el nuevo enrutador
+
+    // --- 3. CREATE AND CONFIGURE EXPRESS APP ---
     // ...
-    ```
+
+    // API Routes
+    app.use('/api/auth', authRouter);
+    app.use('/api/entes', enteRouter);
+    app.use('/api/content', contentRouter);
+    app.use('/api/polizas', polizaRouter); // <-- AÑADIR
+
+    // ... resto del archivo
+}
+
+startServer().catch(/*...*/);
+```
+
+---
 
 ¡Listo! Acabas de agregar un nuevo módulo completo a la aplicación siguiendo su arquitectura real, asegurando que el código esté limpio, desacoplado y sea fácil de mantener a largo plazo.

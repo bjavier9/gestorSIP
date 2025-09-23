@@ -1,38 +1,47 @@
-# GestorSIP - Backend API
+# GestorSIP - API de Gestión de Seguros
 
-Este proyecto es el backend para **GestorSIP**, una plataforma de gestión de seguros. La API está construida con Node.js, Express y TypeScript, siguiendo los principios de la **Arquitectura Hexagonal** para un diseño limpio, mantenible y escalable.
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white) ![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white) ![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
 
-Además, integra capacidades de **IA generativa** con el SDK de Google Gemini para ofrecer funcionalidades avanzadas.
+Bienvenido al backend de **GestorSIP**, una plataforma robusta para la administración de pólizas de seguros, clientes (entes) y contenido relacionado. Este sistema está construido siguiendo las mejores prácticas de la industria, con un enfoque en la escalabilidad, mantenibilidad y seguridad.
+
+---
+
+## Tabla de Contenidos
+
+1.  [Características Principales](#características-principales)
+2.  [Guía de Inicio Rápido](#guía-de-inicio-rápido)
+3.  [Variables de Entorno](#variables-de-entorno)
+4.  [Flujo de Autenticación](#flujo-de-autenticación)
+5.  [Estructura del Proyecto (Arquitectura Hexagonal)](#estructura-del-proyecto-arquitectura-hexagonal)
+6.  [Scripts Disponibles](#scripts-disponibles)
+7.  [Documentación y Guías](#documentación-y-guías)
+
+---
 
 ## Características Principales
 
--   **Arquitectura Limpia:** Separación clara de responsabilidades entre el dominio, la aplicación y la infraestructura (Puertos y Adaptadores).
--   **TypeScript:** Código robusto y mantenible gracias al tipado estático.
--   **Seguridad:** Autenticación basada en JWT, hashing de contraseñas con `bcryptjs` y cabeceras de seguridad con `helmet`.
--   **Inyección de Dependencias:** Uso de `Inversify` para gestionar las dependencias de forma desacoplada.
--   **IA Integrada:** Endpoint para generación de contenido dinámico utilizando `gemini-1.5-pro`.
--   **Documentación de API:** Generación automática de documentación con Swagger.
--   **Logging:** Registro de peticiones y errores con `Winston`.
+-   **Arquitectura Limpia**: El proyecto implementa la **Arquitectura Hexagonal (Puertos y Adaptadores)**, garantizando una separación clara entre la lógica de negocio y las tecnologías externas.
+-   **TypeScript y Node.js**: Código fuertemente tipado para reducir errores en tiempo de ejecución y mejorar la mantenibilidad.
+-   **Inyección de Dependencias**: Uso de **InversifyJS** para desacoplar los componentes y facilitar las pruebas.
+-   **Autenticación Segura con Firebase**: Soporte para múltiples métodos de autenticación (Email/Contraseña, Email Link) gestionados por Firebase Authentication.
+-   **Base de Datos Firestore**: Persistencia de datos utilizando Cloud Firestore, una base de datos NoSQL flexible y escalable.
+-   **Documentación de API Automatizada**: Endpoint `/api-docs` con **Swagger/OpenAPI** para explorar y probar la API de forma interactiva.
+-   **Seguridad por Defecto**: Middleware `helmet` para proteger contra vulnerabilidades web comunes y `authMiddleware` para proteger rutas.
 
-## Scripts Principales
+## Guía de Inicio Rápido
 
--   `npm run dev`: Inicia el servidor en modo de desarrollo con recarga automática (`nodemon`).
--   `npm start`: Inicia el servidor en modo de producción.
--   `npm run build`: Compila el código de TypeScript a JavaScript.
--   `npm test`: Ejecuta los tests de la aplicación.
-
-## Primeros Pasos
+Sigue estos pasos para tener el entorno de desarrollo funcionando localmente.
 
 ### 1. Prerrequisitos
 
--   Node.js (v18 o superior)
--   npm
+-   Node.js (se recomienda v18 o superior)
+-   npm (o yarn)
 
 ### 2. Clonar el Repositorio
 
 ```bash
 git clone <URL_DEL_REPOSITORIO>
-cd gestorSIP
+cd gestor-sip-backend # O el nombre del directorio
 ```
 
 ### 3. Instalar Dependencias
@@ -43,54 +52,78 @@ npm install
 
 ### 4. Configurar Variables de Entorno
 
-Crea un archivo `.env` en la raíz del proyecto. Puedes copiar `.env.example` como plantilla. Este archivo es **ignorado por git** para proteger la información sensible.
+Este es el paso más importante. Crea un archivo llamado `.env` en la raíz del proyecto. **Este archivo no debe ser subido a Git**.
 
 ```bash
+# Puedes copiar la plantilla si existe
 cp .env.example .env
 ```
 
-Abre el archivo `.env` y añade tus credenciales para:
+Abre el archivo `.env` y complétalo con tus credenciales. Consulta la sección [Variables de Entorno](#variables-de-entorno) para más detalles.
 
--   `PORT`: Puerto para el servidor (ej: 3000).
--   `JWT_SECRET`: Clave secreta para firmar los tokens JWT.
--   `GEMINI_API_KEY`: Tu clave de la API de Google Gemini.
--   `FIREBASE_SERVICE_ACCOUNT`: El objeto JSON de tu cuenta de servicio de Firebase (codificado en Base64 o como una ruta a un archivo).
-
-### 5. Iniciar el Servidor
+### 5. Iniciar el Servidor de Desarrollo
 
 ```bash
 npm run dev
 ```
 
-El servidor se iniciará en `http://localhost:3000` (o el puerto que hayas configurado).
+El servidor se iniciará y escuchará en el puerto que hayas definido (por defecto `http://localhost:3001`). Gracias a `ts-node-dev`, se reiniciará automáticamente cada vez que guardes un cambio.
 
-## Documentación
+## Variables de Entorno
 
-### API (Swagger)
+El archivo `.env` es crucial para el funcionamiento de la aplicación. Estas son las variables que necesitas definir:
 
-La documentación interactiva de la API, generada con Swagger, está disponible una vez que el servidor está en funcionamiento.
+| Variable                  | Descripción                                                                                                 |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `PORT`                    | El puerto en el que correrá el servidor (ej: `3001`).                                                         |
+| `JWT_SECRET`              | Una cadena de texto larga y secreta para firmar los tokens JWT de la aplicación.                             |
+| `FIREBASE_SERVICE_ACCOUNT`| El **objeto JSON completo** de tu cuenta de servicio de Firebase. Debe estar en una sola línea.                 |
+| `GEMINI_API_KEY`          | (Opcional) Tu clave de API para usar las funcionalidades de IA Generativa de Google Gemini.                |
 
--   **URL:** `http://localhost:3000/api-docs`
+> **Importante:** La variable `FIREBASE_SERVICE_ACCOUNT` debe contener el JSON de las credenciales de tu proyecto de Firebase, que puedes obtener desde la consola de Firebase > Configuración del proyecto > Cuentas de servicio.
 
-Desde esta interfaz puedes explorar y probar todos los endpoints de la API.
+## Flujo de Autenticación
 
-### Wiki / Guías
+La autenticación es un proceso de dos fases que desacopla la validación de credenciales de la autorización en nuestra API.
 
-La carpeta `wiki/` contiene guías detalladas sobre la arquitectura y los procesos del proyecto.
+1.  **Fase 1 (Cliente ↔️ Firebase):** El cliente (front-end) usa el SDK de Firebase para autenticar al usuario (con email/contraseña, link de email, etc.) y recibe un `idToken`.
+2.  **Fase 2 (Cliente ↔️ Nuestra API):** El cliente envía ese `idToken` a nuestro endpoint `/api/auth/login`. Nuestro servidor verifica el token usando el SDK de Admin de Firebase y, si es válido, emite un JWT propio de la aplicación, que será usado para las siguientes peticiones.
 
--   **[Cómo Agregar un Nuevo Endpoint](./wiki/Agregar-Endpoint.md):** Guía paso a paso para añadir nuevas funcionalidades siguiendo la arquitectura hexagonal.
+Para más detalles, consulta la [Guía de Flujo de Autenticación](./wiki/Authentication-Flow.md).
 
-## Estructura del Proyecto
+## Estructura del Proyecto (Arquitectura Hexagonal)
 
-El proyecto utiliza una Arquitectura Hexagonal. La estructura de carpetas principal es:
+La estructura de carpetas refleja la separación de responsabilidades:
 
 ```
 src/
-├── application/    # Lógica de orquestación de casos de uso (Servicios).
-├── domain/         # El núcleo del negocio (Entidades, Puertos/Interfaces).
-├── infrastructure/ # Implementaciones concretas (Controladores, Repositorios, etc.).
-├── routes/         # Definición de las rutas de la API y su conexión con los controladores.
-├── middleware/     # Middlewares de Express (autenticación, manejo de errores).
-├── config/         # Configuración de la aplicación (Firebase, Inversify, Winston).
-└── index.ts        # Punto de entrada de la aplicación.
+├── application/    # Lógica de orquestación (Servicios/Casos de Uso).
+│
+├── domain/         # El corazón del negocio. Contiene las entidades, y los puertos (interfaces).
+│   └── ports/      # Interfaces que definen lo que la aplicación necesita del exterior.
+│
+├── infrastructure/ # Implementaciones concretas de los puertos y tecnologías externas.
+│   ├── http/       # Controladores de Express.
+│   └── persistence/ # Adaptadores de repositorios (ej: implementaciones para Firestore).
+│
+├── routes/         # Definición de las rutas de la API y su vinculación con los controladores.
+├── middleware/     # Middlewares de Express (autenticación, errores, etc.).
+├── config/         # Configuración global (Firebase, Inversify, Swagger, Winston).
+│
+└── index.ts        # Punto de entrada: inicializa y arranca el servidor.
 ```
+
+Para una guía detallada sobre cómo añadir funcionalidades, consulta [Cómo Agregar un Nuevo Endpoint](./wiki/Agregar-Endpoint.md).
+
+## Scripts Disponibles
+
+-   `npm run dev`: Inicia el servidor en modo desarrollo con recarga automática.
+-   `npm start`: Compila el código a JavaScript y lo inicia en modo producción.
+-   `npm run build`: Solo compila el código TypeScript a la carpeta `dist/`.
+
+## Documentación y Guías
+
+La documentación es una parte fundamental de este proyecto y se mantiene en dos lugares principales:
+
+-   **Documentación de la API (Swagger):** Una vez que el servidor está corriendo, puedes acceder a la documentación interactiva en `http://localhost:3001/api-docs`.
+-   **Guías Internas (`/wiki`):** La carpeta `wiki` contiene documentos markdown con guías detalladas sobre la arquitectura y los flujos de trabajo del proyecto.

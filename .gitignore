@@ -1,21 +1,51 @@
+# --- Node.js & TypeScript ---
+# Node modules
+node_modules/
 
-# Dependencies
-/node_modules
+# Transpiled JavaScript files
+dist/
+build/
 
-# Production
-/build
-/dist
-/src/tests
-
-# Miscellaneous
-.DS_Store
+# NPM debug logs
 npm-debug.log*
+npm-debug.log.*.log
 yarn-debug.log*
 yarn-error.log*
 
-# Environment variables
+# --- Secrets & Environment ---
+# Environment variables file
 .env
+.env.*
+!.env.example
 
-# Secrets and credentials
-firebase-credentials.json
-temp-firebase-credentials.json
+# Firebase Service Account credentials
+*.json
+!google-services.json # Keep if it's a config file for client apps
+!serviceAccountKey.json # Common name, explicitly ignore
+google-credentials.json
+
+# --- Operating System ---
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# --- IDE & Editor Config ---
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# --- Logs ---
+logs
+*.log
+
+# --- Testing ---
+coverage/

@@ -1,3 +1,4 @@
+
 import { injectable } from "inversify";
 import { EnteRepository, EnteInput, EnteUpdateInput } from "../../domain/ports/enteRepository.port";
 import { Ente } from "../../domain/ente";
@@ -12,7 +13,7 @@ export class FirebaseEnteRepository implements EnteRepository {
     private toDomain(doc: FirebaseFirestore.DocumentSnapshot): Ente {
         const data = doc.data();
         if (!data) {
-            throw new ApiError('INTERNAL_SERVER_ERROR', 'Failed to parse data for doc id.');
+            throw new ApiError('INTERNAL_SERVER_ERROR', 500, `Failed to parse data for document ${doc.id}.`);
         }
         return {
             id: doc.id,
@@ -31,7 +32,8 @@ export class FirebaseEnteRepository implements EnteRepository {
             Logger.debug(`[FirebaseEnteRepository] Successfully found ente with id: ${id}.`);
             return this.toDomain(doc);
         } catch (error) {
-            throw new ApiError('INTERNAL_SERVER_ERROR', 'Database query failed.', error);
+            Logger.error(`[FirebaseEnteRepository] Error finding ente by id: ${id}.`, { error });
+            throw new ApiError('INTERNAL_SERVER_ERROR', 500, 'Database query failed.', error);
         }
     }
 
@@ -46,7 +48,8 @@ export class FirebaseEnteRepository implements EnteRepository {
             Logger.debug(`[FirebaseEnteRepository] Successfully found ente with documento: ${documento}.`);
             return this.toDomain(snapshot.docs[0]);
         } catch (error) {
-            throw new ApiError('INTERNAL_SERVER_ERROR', `Database query failed for documento ${documento}.`, error);
+            Logger.error(`[FirebaseEnteRepository] Error finding ente by documento: ${documento}.`, { error });
+            throw new ApiError('INTERNAL_SERVER_ERROR', 500, `Database query failed for documento ${documento}.`, error);
         }
     }
 
@@ -57,7 +60,8 @@ export class FirebaseEnteRepository implements EnteRepository {
             Logger.debug(`[FirebaseEnteRepository] Successfully found ${snapshot.size} entes.`);
             return snapshot.docs.map(doc => this.toDomain(doc));
         } catch (error) {
-            throw new ApiError('INTERNAL_SERVER_ERROR', 'Database query failed.', error);
+            Logger.error(`[FirebaseEnteRepository] Error finding all entes.`, { error });
+            throw new ApiError('INTERNAL_SERVER_ERROR', 500, 'Database query failed.', error);
         }
     }
 
@@ -73,49 +77,55 @@ export class FirebaseEnteRepository implements EnteRepository {
             };
             await docRef.set(newEnte);
             Logger.debug(`[FirebaseEnteRepository] Successfully saved new ente with id: ${docRef.id}.`);
-            return { id: docRef.id, ...newEnte } as Ente;
+            const savedDoc = await docRef.get();
+            return this.toDomain(savedDoc);
         } catch (error) {
-            throw new ApiError('INTERNAL_SERVER_ERROR', 'Database insert failed.', error);
+            Logger.error(`[FirebaseEnteRepository] Error saving new ente.`, { error });
+            throw new ApiError('INTERNAL_SERVER_ERROR', 500, 'Database insert failed.', error);
         }
     }
 
-    async update(id: string, data: EnteUpdateInput): Promise<Ente | null> {
+    async update(id: string, data: EnteUpdateInput): Promise<Ente> {
         Logger.debug(`[FirebaseEnteRepository] Attempting to update ente with id: ${id}.`);
         const docRef = this.collection.doc(id);
         try {
-            // Firestore transactions are a safe way to read-and-write.
-            return await db.runTransaction(async (transaction) => {
+            await db.runTransaction(async (transaction) => {
                 const doc = await transaction.get(docRef);
                 if (!doc.exists) {
-                    Logger.warn(`[FirebaseEnteRepository] Attempted to update non-existent ente with id: ${id}.`);
-                    return null;
+                    throw new ApiError('ENTE_NOT_FOUND', 404, `Ente with id: ${id} not found for update.`);
                 }
                 transaction.update(docRef, { ...data, fecha_actualizacion: new Date() });
-                // After the transaction commits, we can return the updated object.
-                // We construct it manually to avoid a second read.
-                const updatedData = { ...doc.data(), ...data };
-                return {
-                    id: doc.id,
-                    ...updatedData
-                } as Ente;
             });
+
+            const updatedDoc = await docRef.get();
+            return this.toDomain(updatedDoc);
         } catch (error) {
+            if (error instanceof ApiError && error.errorKey === 'ENTE_NOT_FOUND') { // DEFINITIVE FIX: Use errorKey
+                throw error;
+            }
             Logger.error(`[FirebaseEnteRepository] Error updating ente with id: ${id}.`, { error });
-            // On any transaction error, return null as per the interface contract.
-            return null;
+            throw new ApiError('INTERNAL_SERVER_ERROR', 500, `Database transaction failed for ente ${id}.`, error);
         }
     }
 
-    async delete(id: string): Promise<boolean> {
+    async delete(id: string): Promise<void> {
         Logger.debug(`[FirebaseEnteRepository] Attempting to delete ente with id: ${id}.`);
         try {
             const docRef = this.collection.doc(id);
+
+            const doc = await docRef.get();
+            if (!doc.exists) {
+                throw new ApiError('ENTE_NOT_FOUND', 404, `Ente with id: ${id} not found for deletion.`);
+            }
+
             await docRef.delete();
             Logger.debug(`[FirebaseEnteRepository] Successfully deleted ente with id: ${id}.`);
-            return true;
         } catch (error) {
+            if (error instanceof ApiError && error.errorKey === 'ENTE_NOT_FOUND') { // DEFINITIVE FIX: Use errorKey
+                throw error;
+            }
             Logger.error(`[FirebaseEnteRepository] Error deleting ente with id: ${id}.`, { error });
-            return false;
+            throw new ApiError('INTERNAL_SERVER_ERROR', 500, `Database delete failed for ente ${id}.`, error);
         }
     }
 }
