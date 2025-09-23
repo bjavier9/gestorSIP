@@ -106,5 +106,9 @@ export const createAuthRouter = (controller: AuthController): Router => {
     asyncHandler((req, res) => controller.selectCompania(req, res))
   );
 
+  router.get('/info', asyncHandler((req, res) => controller.getAuthInfo(req, res)));
+
+  router.post('/test-token', asyncHandler((req, res) => controller.getTestToken(req, res)));
+
   return router;
 };

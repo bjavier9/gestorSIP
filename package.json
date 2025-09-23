@@ -9,7 +9,7 @@
     "build": "tsc",
     "start": "ts-node -r dotenv/config src/index.ts",
     "db:seed": "ts-node -r dotenv/config src/infrastructure/persistence/firestore/seed.ts",
-    "test": "node tests/entes-crud-test.js"
+    "test": "node -r dotenv/config tests/entes-crud-test.js"
   },
   "author": "Google LLC",
   "license": "Apache-2.0",

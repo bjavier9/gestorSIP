@@ -113,4 +113,39 @@ export class AuthService {
     const token = this.signToken(newPayload);
     return { token };
   }
+
+  public async getTestToken(secret: string): Promise<{ token: string }> {
+    const isTestEnv = ['development', 'test'].includes(process.env.NODE_ENV || 'development');
+    const testSecret = process.env.TEST_SECRET;
+
+    if (!isTestEnv) {
+      throw new ApiError('AUTH_ENDPOINT_NOT_AVAILABLE', 404, 'This endpoint is not available in this environment.');
+    }
+
+    if (!testSecret || secret !== testSecret) {
+      throw new ApiError('AUTH_INVALID_SECRET', 401, 'Invalid secret for test token.');
+    }
+
+    // In a real scenario, you would fetch or define a specific test user
+    const adminUser = {
+        uid: 'admin_user_uid',
+        email: 'admin@seguroplus.com',
+        rol: 'admin' as 'admin',
+        companiaCorretajeId: 'comp_001',
+        oficinaId: 'oficina_001',
+        enteId: 6200,
+    };
+    
+    const payload: AuthPayload = {
+      uid: adminUser.uid,
+      email: adminUser.email,
+      rol: adminUser.rol,
+      companiaCorretajeId: adminUser.companiaCorretajeId,
+      oficinaId: adminUser.oficinaId,
+      enteId: adminUser.enteId,
+    };
+
+    const token = this.signToken(payload);
+    return { token };
+  }
 }

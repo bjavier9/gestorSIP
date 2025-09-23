@@ -39,4 +39,23 @@ export class AuthController {
     const result = await this.authService.selectCompania(currentUser, companiaId);
     handleSuccess(res, result);
   }
+
+  async getAuthInfo(req: Request, res: Response) {
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    if (!projectId) {
+      throw new ApiError('CONFIG_ERROR', 500, 'FIREBASE_PROJECT_ID is not configured on the server.');
+    }
+    handleSuccess(res, { projectId });
+  }
+
+  async getTestToken(req: Request, res: Response) {
+    const { secret } = req.body;
+
+    if (!secret) {
+      throw new ApiError('AUTH_MISSING_SECRET', 400, 'Secret is required for test token.');
+    }
+
+    const result = await this.authService.getTestToken(secret);
+    handleSuccess(res, result);
+  }
 }

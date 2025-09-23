@@ -5,6 +5,7 @@
 # Production
 /build
 /dist
+/src/tests
 
 # Miscellaneous
 .DS_Store

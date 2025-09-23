@@ -1,8 +1,6 @@
 const axios = require('axios');
 
 const API_BASE_URL = 'http://localhost:3000/api';
-const FIREBASE_API_KEY = 'AIzaSyD6zReyecIiMKqNVbUe7d6bGKsO2Vlum3E'; 
-const FIREBASE_AUTH_URL = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`;
 
 // --- Colores para la consola ---
 const RESET = '\x1b[0m';
@@ -31,20 +29,12 @@ function printError(message, error) {
 }
 
 /**
- * Obtiene el token de autenticación de Firebase y luego de la app.
+ * Obtiene el token de autenticación de la app.
  */
 async function getAppToken() {
   try {
-    // 1. Autenticar con Firebase
-    const firebaseResponse = await axios.post(FIREBASE_AUTH_URL, {
-      email: 'admin@seguroplus.com',
-      password: 'password123',
-      returnSecureToken: true,
-    });
-    const idToken = firebaseResponse.data.idToken;
-
-    // 2. Autenticar con nuestra API
-    const appResponse = await axios.post(`${API_BASE_URL}/auth/login`, { idToken });
+    // 1. Autenticar con nuestra API
+    const appResponse = await axios.post(`http://localhost:3000/auth/test-token`, { secret: process.env.TEST_SECRET });
     printSuccess('Authentication successful.');
     return appResponse.data.data.token;
   } catch (error) {
@@ -70,20 +60,33 @@ async function runEnteCrudTests() {
   try {
     console.log(`\n${CYAN}--- Paso 1: Creando un nuevo ente... ---${RESET}`);
     const nuevoEnte = {
-      nombre: 'Ente de Prueba CRUD',
-      tipo: 'Asegurado',
-      identificacion: `V-CRUD-${Date.now()}`,
-      telefonos: ['0412-9998877'],
-      email: ['crud.test@example.com']
+        nombre: 'Ente de Prueba CRUD',
+        tipo: 'Persona Natural',
+        documento: `V-CRUD-${Date.now()}`,
+        tipo_documento: 'V',
+        direccion: 'Caracas, Venezuela',
+        telefono: '0412-9998877',
+        correo: 'crud.test@example.com',
+        idregion: 1,
+        idReferido: null,
+        activo: true,
+        metadatos: {
+            creadoPor: 'test-suite',
+            fechaNacimiento: new Date('1990-01-01'),
+            genero: 'M',
+            estadoCivil: 'Soltero/a',
+            profesion: 'Ingeniero',
+            nacionalidad: 'Venezolano',
+        }
     };
     const response = await axios.post(`${API_BASE_URL}/entes`, nuevoEnte, axiosConfig);
 
-    if (response.status === 201 && response.data.data.id) {
+    if (response.status === 201 && response.data.id) {
       printSuccess('Ente creado exitosamente!');
-      enteId = response.data.data.id;
+      enteId = response.data.id;
       console.log('ID del nuevo ente:', enteId);
     } else {
-      printError('La respuesta de creación no fue la esperada.');
+      printError('La respuesta de creación no fue la esperada.', response.data);
     }
   } catch (error) {
     printError('Falló la creación del ente.', error);
@@ -94,9 +97,9 @@ async function runEnteCrudTests() {
   try {
     console.log(`\n${CYAN}--- Paso 2: Obteniendo el ente creado... ---${RESET}`);
     const response = await axios.get(`${API_BASE_URL}/entes/${enteId}`, axiosConfig);
-    if (response.status === 200 && response.data.data.id === enteId) {
+    if (response.status === 200 && response.data.id === enteId) {
       printSuccess('Ente obtenido exitosamente!');
-      console.log('Datos:', response.data.data);
+      console.log('Datos:', response.data);
     } else {
       printError('La respuesta de obtención no fue la esperada.');
     }
@@ -110,9 +113,9 @@ async function runEnteCrudTests() {
     const datosActualizados = { nombre: 'Ente de Prueba CRUD Actualizado' };
     const response = await axios.put(`${API_BASE_URL}/entes/${enteId}`, datosActualizados, axiosConfig);
 
-    if (response.status === 200 && response.data.data.nombre === datosActualizados.nombre) {
+    if (response.status === 200 && response.data.nombre === datosActualizados.nombre) {
       printSuccess('Ente actualizado exitosamente!');
-      console.log('Datos actualizados:', response.data.data);
+      console.log('Datos actualizados:', response.data);
     } else {
       printError('La respuesta de actualización no fue la esperada.');
     }
@@ -124,7 +127,7 @@ async function runEnteCrudTests() {
   try {
     console.log(`\n${CYAN}--- Paso 4: Eliminando el ente... ---${RESET}`);
     const response = await axios.delete(`${API_BASE_URL}/entes/${enteId}`, axiosConfig);
-    if (response.status === 200) {
+    if (response.status === 204) {
       printSuccess('Ente eliminado exitosamente!');
     } else {
       printError('La respuesta de eliminación no fue la esperada.');
