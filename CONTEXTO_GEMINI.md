@@ -1,91 +1,28 @@
-# Gemini Project Context (Format: YAML)
-# Instructions: Provide this file's content to Gemini at the start of a new chat session.
 
-project:
-  name: "gestorSIP"
-  description: "Backend API for an insurance management platform, designed with a clean architecture."
-  tech_stack:
-    - "Node.js"
-    - "Express"
-    - "TypeScript"
-    - "Firebase/Firestore (as the primary database)"
-    - "Inversify (for Dependency Injection)"
-    - "jsonwebtoken (for JWT)"
-    - "Swagger (JSDoc) (for API documentation)"
-    - "@google/generative-ai (for AI features)"
-    - "Winston (for logging)"
-    - "Helmet (for security headers)"
+project_architecture:
+  framework: "Node.js with Express"
+  language: "TypeScript"
+  design_pattern: "Hexagonal Architecture (Ports and Adapters)"
+  di_container: "InversifyJS"
+  database: "Cloud Firestore"
+  authentication: "Firebase Authentication with custom JWTs"
 
-architecture:
-  pattern: "Hexagonal (Ports and Adapters)"
-  layers:
-    - domain: "Contains core business logic, entities (e.g., Ente, UsuarioCompania), and repository ports (interfaces)."
-    - application: "Contains services that orchestrate domain logic (e.g., AuthService, EnteService)."
-    - infrastructure: "Contains technical implementations: Firestore repositories, Express controllers, and external service clients."
-  dependency_injection:
-    library: "Inversify"
-    implementation_note: "A central IoC container is configured in `src/config/container.ts`. Controllers and services are resolved from this container within the route definition files (e.g., `src/routes/entes.ts`), promoting loose coupling."
-
-roles_and_permissions:
-  - role: "Super Admin"
-    responsibilities:
-      - "Create and administer brokerage companies."
-      - "Has global privileges but cannot manage policies or clients within specific companies."
-  - role: "Supervisor"
-    responsibilities:
-      - "Administer users within their own office."
-      - "Reassign tasks ('gestiones') between agents."
-      - "Delete users, which triggers the migration of pending tasks to another agent."
-      - "Monitor office-level reports and metrics."
-  - role: "Agente (Agent)"
-    responsibilities:
-      - "Manage their own assigned policies and clients."
-      - "Can only view their own tasks and policies nearing expiration."
-    restrictions:
-      - "Cannot manage a policy where they are an interested party (e.g., the insured client)."
-
-features:
-  - name: "Multi-Step Authentication"
-    type: "JWT & Firebase Auth"
-    base_path: "/api/auth"
-    flow:
-      - "1. Initial Login: `POST /login` with a Firebase ID Token (`LoginRequest`)."
-      - "2. Server Response: Returns a `LoginResponse` which may include a partial JWT, `needsSelection: true`, and a list of `companias` the user belongs to."
-      - "3. Company Selection: If `needsSelection` is true, client calls `POST /select-compania` with a `companiaId` (`SelectCompaniaRequest`)."
-      - "4. Final Token: Server returns a new, final JWT scoped to the selected company."
-  - name: "Entity Management (Entes)"
-    description: "CRUD operations for all entities (people, companies, etc.)."
-    base_path: "/api/entes"
-    authentication_required: true
-    schemas:
-      - "Ente: A complex model using a discriminated union for 'Persona Natural' and 'Persona Jurídica', each with its own metadata."
-      - "EnteInput: DTO for creating new entities."
-      - "EnteUpdateInput: DTO for partially updating existing entities."
-  - name: "Policy Management (Gestiones)"
-    description: "Handles the lifecycle of insurance policies."
-    flow:
-      - "New Policy (New Client): A temporary record is created in `clientes_gestion`. Upon confirmation, it becomes a permanent `ente`."
-      - "New Policy (Existing Client): The `ente` is selected directly to create the new 'gestion'."
-      - "Renewal: The system automatically detects policies nearing expiration and generates a draft 'gestion' for an agent."
-  - name: "AI Content Generation"
-    description: "Uses 'gemini-1.5-pro' to refine and generate text from a prompt."
-    base_path: "/api/content"
-    authentication_required: true
+key_directories:
+  - path: "src/domain"
+    description: "Core business logic, entities, and repository interfaces (ports)."
+  - path: "src/application"
+    description: "Orchestration services that implement the use cases."
+  - path: "src/infrastructure"
+    description: "Concrete implementations of ports (e.g., Firestore adapters) and external-facing code (Express controllers)."
+  - path: "src/config"
+    description: "Configuration for InversifyJS container, Firebase, etc."
+  - path: "src/routes"
+    description: "API route definitions."
+  - path: "src/index.ts"
+    description: "Main application entry point. Handles async initialization and module loading."
 
 business_rules:
-  - rule_id: "BR01_GESTION_TRACEABILITY"
-    description: "A 'gestion' record must be created for every new policy or renewal to ensure full traceability."
-  - rule_id: "BR02_NO_SELF_MANAGEMENT"
-    description: "Agents cannot process policies where they are an interested party (policyholder, insured, beneficiary) to prevent conflicts of interest."
-  - rule_id: "BR03_USER_DELETION_POLICY"
-    description: "When a supervisor deletes a user, their active 'gestiones' are reassigned to another agent, never deleted."
-  - rule_id: "BR04_OFFICE_CURRENCY"
-    description: "Each office operates with a primary currency. Global reports require conversion to a standard reference currency."
-  - rule_id: "BR05_AUDIT_TRAIL"
-    description: "All critical actions (creation, modification, deletion) must be logged in the 'auditoria' collection with user, action, date, and details."
-  - rule_id: "BR06_IMMUTABLE_SUPER_ADMIN"
-    description: "The Super Admin user cannot be modified or deleted via the API. Changes must be made through environment variables or secure, direct database access."
-  - rule_id: "BR07_TEMP_CLIENT_LIFECYCLE"
+  - rule_id: "BR07_CLIENT_PROMOTION"
     description: "The 'clientes_gestion' record is temporary and is destroyed once the client accepts the policy and becomes a permanent 'ente'."
   - rule_id: "BR08_COMPANY_UNIQUENESS"
     description: "Cannot create duplicate companies with the same RIF (tax ID) or name."
@@ -96,3 +33,49 @@ testing:
       email: "admin@seguroplus.com"
       password: "password123"
       source: "Defined in a seed file (`seed.ts` or similar) for populating the development database."
+
+development_playbooks:
+  - playbook_id: "ADD_NEW_ENDPOINT"
+    description: "A step-by-step guide for creating a new API endpoint following the project's Hexagonal Architecture with InversifyJS."
+    steps:
+      - step: 1
+        component: "Domain"
+        description: "Define the core business concepts."
+        tasks:
+          - "Define the entity class or interface in `src/domain/<entity>.ts`. This represents the complete data structure of the business object."
+          - "Define the repository port (interface) in `src/domain/ports/<entity>Repository.port.ts`. This defines the contract for persistence operations (e.g., `create`, `findById`)."
+
+      - step: 2
+        component: "DTOs & Types"
+        description: "Define the specific data shapes for API communication."
+        tasks:
+          - "Create a DTO (Data Transfer Object) file, e.g., `src/domain/dtos/<entity>.dto.ts`."
+          - "Inside this file, define interfaces for request bodies (e.g., `Create<Entity>Dto`, `Update<Entity>Dto`) and responses. This decouples the API layer from the internal domain model."
+
+      - step: 3
+        component: "Application"
+        description: "Implement the use case logic."
+        tasks:
+          - "Create the service class in `src/application/<entity>.service.ts`. This class will use the DTOs for its input and output, and call repository methods via the port interface."
+
+      - step: 4
+        component: "Infrastructure"
+        description: "Implement technology-specific details."
+        tasks:
+          - "Create the repository adapter in `src/infrastructure/persistence/firebase<Entity>.adapter.ts`. This class implements the repository port for Firestore."
+          - "Create the controller in `src/infrastructure/http/<entity>.controller.ts`. This class handles HTTP requests, validates the request body against the DTO, and calls the application service."
+
+      - step: 5
+        component: "Configuration (DI & Routing)"
+        description: "Wire everything together."
+        tasks:
+          - "In `src/config/container.ts`, bind the repository interface to its adapter implementation, and bind the service and controller."
+          - "Create a new router file in `src/routes/<entity>.ts`. Define the Express route, get the controller from the container, and link them."
+          - "In `src/index.ts`, inside the `startServer` function, dynamically import the new router file and mount it with `app.use()`."
+
+      - step: 6
+        component: "Finalization"
+        description: "Update API documentation and validate."
+        tasks:
+          - "Ensure the controller and routes have appropriate JSDoc/Swagger comments so the new endpoint appears correctly in `/api-docs`."
+          - "Run tests and validate the new endpoint's behavior."
