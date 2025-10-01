@@ -41,3 +41,11 @@ export const authMiddleware = asyncHandler(async (req: AuthenticatedRequest, res
         throw new ApiError('AUTH_TOKEN_INVALID', 'El token proporcionado no es válido o ha expirado.', 403);
     }
 });
+
+export const superAdminMiddleware = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    if (req.user && req.user.role === 'superadmin') {
+        next();
+    } else {
+        throw new ApiError('FORBIDDEN', 'Acceso denegado. Se requiere rol de Super Admin.', 403);
+    }
+});

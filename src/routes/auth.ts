@@ -12,6 +12,38 @@ const router = Router();
 
 /**
  * @swagger
+ * /api/auth/login/superadmin:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Login for Super Admin
+ *     description: Authenticates the Super Admin using environment credentials.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email: { type: 'string' }
+ *               password: { type: 'string' }
+ *     responses:
+ *       200:
+ *         description: Super Admin authentication successful.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token: { type: 'string' }
+ *       401:
+ *         description: Invalid credentials.
+ *       500:
+ *         description: Super Admin is not configured.
+ */
+router.post('/login/superadmin', asyncHandler(authController.loginSuperAdmin.bind(authController)));
+
+/**
+ * @swagger
  * /api/auth/login:
  *   post:
  *     tags: [Auth]

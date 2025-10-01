@@ -12,6 +12,17 @@ import { ApiError } from '../../utils/ApiError';
 export class AuthController {
   constructor(@inject(TYPES.AuthService) private readonly authService: AuthService) {}
 
+  async loginSuperAdmin(req: Request, res: Response) {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      throw new ApiError('AUTH_MISSING_CREDENTIALS', 400, 'Email and password are required.');
+    }
+
+    const result = await this.authService.loginSuperAdmin(email, password);
+    handleSuccess(res, result);
+  }
+
   async login(req: Request, res: Response) {
     const { idToken } = req.body;
 

@@ -21,7 +21,7 @@ if (!JWT_SECRET) {
 export interface AuthPayload {
   uid: string; // Firebase UID
   email: string;
-  rol?: 'admin' | 'supervisor' | 'agent' | 'viewer';
+  role?: 'superadmin' | 'admin' | 'supervisor' | 'agent' | 'viewer';
   companiaCorretajeId?: string; 
   oficinaId?: string;
   enteId?: number; 
@@ -42,6 +42,28 @@ export class AuthService {
 
   private signToken(payload: AuthPayload): string {
     return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN } as SignOptions);
+  }
+
+  public async loginSuperAdmin(email: string, password: string): Promise<{ token: string }> {
+    const superAdminEmail = process.env.SUPERADMIN_EMAIL;
+    const superAdminPassword = process.env.SUPERADMIN_PASSWORD;
+
+    if (!superAdminEmail || !superAdminPassword) {
+      throw new ApiError('SUPERADMIN_NOT_CONFIGURED', 500, 'Super admin credentials are not configured.');
+    }
+
+    if (email !== superAdminEmail || password !== superAdminPassword) {
+      throw new ApiError('AUTH_INVALID_CREDENTIALS', 401, 'Invalid credentials for super admin.');
+    }
+
+    const payload: AuthPayload = {
+      uid: 'super_admin',
+      email: superAdminEmail,
+      role: 'superadmin',
+    };
+
+    const token = this.signToken(payload);
+    return { token };
   }
 
   public async login(idToken: string): Promise<LoginResponse> {
@@ -66,7 +88,7 @@ export class AuthService {
       const payload: AuthPayload = {
         uid,
         email: email!,
-        rol: primaryRelation.rol,
+        role: primaryRelation.rol,
         companiaCorretajeId: primaryRelation.companiaCorretajeId,
         oficinaId: primaryRelation.oficinaId,
         enteId: primaryRelation.enteId,
@@ -104,7 +126,7 @@ export class AuthService {
     const newPayload: AuthPayload = {
       uid: currentUser.uid,
       email: currentUser.email,
-      rol: userCompania.rol,
+      role: userCompania.rol,
       companiaCorretajeId: userCompania.companiaCorretajeId,
       oficinaId: userCompania.oficinaId,
       enteId: userCompania.enteId,
@@ -139,7 +161,7 @@ export class AuthService {
     const payload: AuthPayload = {
       uid: adminUser.uid,
       email: adminUser.email,
-      rol: adminUser.rol,
+      role: adminUser.rol,
       companiaCorretajeId: adminUser.companiaCorretajeId,
       oficinaId: adminUser.oficinaId,
       enteId: adminUser.enteId,

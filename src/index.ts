@@ -18,6 +18,7 @@ async function startServer() {
     const { default: authRouter } = await import('./routes/auth');
     const { default: enteRouter } = await import('./routes/entes');
     const { default: contentRouter } = await import('./routes/content');
+    const { default: companiaCorretajeRouter } = await import('./routes/companiaCorretaje');
     const { errorHandler, notFoundHandler } = await import('./middleware/errorHandler');
     const { handleSuccess } = await import('./utils/responseHandler');
 
@@ -38,6 +39,7 @@ async function startServer() {
     app.use('/api/auth', authRouter);
     app.use('/api/entes', enteRouter);
     app.use('/api/content', contentRouter);
+    app.use('/api/companias', companiaCorretajeRouter);
 
     // Public Routes
     app.get('/', (req, res) => handleSuccess(res, { message: 'Welcome to the gestorSIP API!' }));
