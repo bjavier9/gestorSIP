@@ -4,6 +4,7 @@ import { CompaniaCorretajeService } from '../../application/companiaCorretaje.se
 import { handleSuccess } from '../../utils/responseHandler';
 import { TYPES } from '../../config/types';
 import { ApiError } from '../../utils/ApiError';
+import { CompaniaCorretaje } from '../../domain/companiaCorretaje';
 
 @injectable()
 export class CompaniaCorretajeController {
@@ -12,13 +13,13 @@ export class CompaniaCorretajeController {
   ) {}
 
   async create(req: Request, res: Response) {
-    const { nombre, rif } = req.body;
+    const companiaData: CompaniaCorretaje = req.body;
 
-    if (!nombre || !rif) {
-      throw new ApiError('VALIDATION_MISSING_FIELD', 400, 'Nombre and RIF are required.');
+    if (!companiaData.nombre || !companiaData.rif) {
+      throw new ApiError('VALIDATION_MISSING_FIELD', 'Nombre and RIF are required.', 400);
     }
 
-    const result = await this.companiaService.createCompania(nombre, rif);
+    const result = await this.companiaService.createCompania(companiaData);
     handleSuccess(res, result, 201);
   }
 }

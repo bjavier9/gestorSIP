@@ -49,3 +49,6 @@ logs
 
 # --- Testing ---
 coverage/
+
+.firebaserc
+firebase.json

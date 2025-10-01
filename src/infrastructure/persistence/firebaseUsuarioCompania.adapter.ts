@@ -19,7 +19,7 @@ export class FirebaseUsuarioCompaniaAdapter implements UsuarioCompaniaRepository
 
   private docToUsuarioCompania(doc: FirebaseFirestore.QueryDocumentSnapshot): UsuarioCompania {
     if (!doc.exists) {
-      throw new ApiError('NOT_FOUND', 404, 'Document not found.');
+      throw new ApiError('NOT_FOUND', 'Document not found.', 404);
     }
     const data = doc.data();
     return {

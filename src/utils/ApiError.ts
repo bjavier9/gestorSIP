@@ -1,53 +1,54 @@
-// src/utils/ApiError.ts
+const defaultMessages: { [key: number]: string } = {
+    400: 'Solicitud incorrecta.',
+    401: 'No autorizado.',
+    403: 'Prohibido.',
+    404: 'Recurso no encontrado.',
+    500: 'Error interno del servidor.'
+};
 
-import errorMessages from './errorMessages.json';
-import Logger from '../config/logger';
+const defaultKeys: { [key: number]: string } = {
+    400: 'BAD_REQUEST',
+    401: 'UNAUTHORIZED',
+    403: 'FORBIDDEN',
+    404: 'NOT_FOUND',
+    500: 'INTERNAL_SERVER_ERROR'
+};
 
-// Le damos una firma de índice al JSON importado
-const errorMessagesTyped: Record<string, { status: number; description: string }> = errorMessages;
+const getErrorMessage = (statusCode: number) => defaultMessages[statusCode] || 'Error desconocido.';
+const getErrorKey = (statusCode: number) => defaultKeys[statusCode] || 'UNKNOWN_ERROR';
 
+/**
+ * A custom error class for handling API-specific errors in a structured way.
+ * It ensures that all errors sent back to the client have a consistent format.
+ */
 export class ApiError extends Error {
-  public readonly statusCode: number;
-  public readonly errorKey: string;
-  public readonly originalError: any;
+  public statusCode: number;
+  public errorKey: string;
+  public originalError?: any; // Add optional originalError property
 
-  constructor(key: string, statusCodeOrMessage?: number | string, messageOrError?: string | any, originalError?: any) {
-    const errorConfig = errorMessagesTyped[key] || {};
-
-    let customStatusCode: number | undefined;
-    let customMessage: string | undefined;
-    let errorInstance: any;
-
-    if (typeof statusCodeOrMessage === 'number') {
-      customStatusCode = statusCodeOrMessage;
-      if (typeof messageOrError === 'string') {
-        customMessage = messageOrError;
-        errorInstance = originalError;
-      } else {
-        errorInstance = messageOrError;
-      }
-    } else if (typeof statusCodeOrMessage === 'string') {
-      customMessage = statusCodeOrMessage;
-      errorInstance = messageOrError;
-    } else {
-      errorInstance = statusCodeOrMessage;
-    }
-
-    const message = customMessage || errorConfig.description || 'Ocurrió un error inesperado.';
-    const statusCode = customStatusCode || errorConfig.status || 500;
-
-    super(message);
+  /**
+   * Creates an instance of ApiError.
+   * @param errorKey A specific key for the error (e.g., 'AUTH_TOKEN_MISSING').
+   * @param message A human-readable message describing the error.
+   * @param statusCode The HTTP status code for the response.
+   * @param originalError The original error object, for logging or debugging.
+   */
+  constructor(
+    errorKey: string,
+    message?: string,
+    statusCode: number = 500,
+    originalError?: any // Add optional originalError parameter
+  ) {
+    // Si no se proporciona un mensaje, intenta obtener uno predeterminado basado en el statusCode.
+    const finalMessage = message || getErrorMessage(statusCode);
+    super(finalMessage);
 
     this.name = 'ApiError';
     this.statusCode = statusCode;
-    this.errorKey = key;
-    this.originalError = errorInstance;
+    this.errorKey = errorKey;
+    this.originalError = originalError; // Assign it to the property
 
-    Logger.error({
-      key: this.errorKey,
-      message: this.message,
-      statusCode: this.statusCode,
-      originalError: this.originalError,
-    });
+    // Esto es importante para que `instanceof` funcione correctamente con errores en TypeScript.
+    Object.setPrototypeOf(this, ApiError.prototype);
   }
 }

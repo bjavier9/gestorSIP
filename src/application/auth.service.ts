@@ -40,7 +40,7 @@ export class AuthService {
     @inject(TYPES.UsuarioCompaniaRepository) private usuarioCompaniaRepo: UsuarioCompaniaRepository
   ) {}
 
-  private signToken(payload: AuthPayload): string {
+  private signToken(payload: object): string {
     return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN } as SignOptions);
   }
 
@@ -49,17 +49,19 @@ export class AuthService {
     const superAdminPassword = process.env.SUPERADMIN_PASSWORD;
 
     if (!superAdminEmail || !superAdminPassword) {
-      throw new ApiError('SUPERADMIN_NOT_CONFIGURED', 500, 'Super admin credentials are not configured.');
+      throw new ApiError('SUPERADMIN_NOT_CONFIGURED', 'Super admin credentials are not configured.', 500);
     }
 
     if (email !== superAdminEmail || password !== superAdminPassword) {
-      throw new ApiError('AUTH_INVALID_CREDENTIALS', 401, 'Invalid credentials for super admin.');
+      throw new ApiError('AUTH_INVALID_CREDENTIALS', 'Invalid credentials for super admin.', 401);
     }
 
-    const payload: AuthPayload = {
-      uid: 'super_admin',
-      email: superAdminEmail,
-      role: 'superadmin',
+    const payload = {
+      user: {
+        uid: 'super_admin',
+        email: superAdminEmail,
+        role: 'superAdmin',
+      }
     };
 
     const token = this.signToken(payload);
@@ -71,14 +73,14 @@ export class AuthService {
     try {
       decodedToken = await getAuth().verifyIdToken(idToken);
     } catch (error) {
-      throw new ApiError('AUTH_INVALID_FIREBASE_TOKEN', 401, 'Invalid Firebase token.', error);
+      throw new ApiError('AUTH_INVALID_FIREBASE_TOKEN', 'Invalid Firebase token.', 401);
     }
 
     const { uid, email } = decodedToken;
     const userCompanias = await this.usuarioCompaniaRepo.findByUserId(uid);
 
     if (userCompanias.length === 0) {
-      throw new ApiError('AUTH_NO_COMPANIES_ASSIGNED', 403, 'User is not assigned to any company.');
+      throw new ApiError('AUTH_NO_COMPANIES_ASSIGNED', 'User is not assigned to any company.', 403);
     }
 
     // Auto-select if user is supervisor or has only one company
@@ -93,13 +95,13 @@ export class AuthService {
         oficinaId: primaryRelation.oficinaId,
         enteId: primaryRelation.enteId,
       };
-      const token = this.signToken(payload);
+      const token = this.signToken({ user: payload });
       // Always return the list of companies
       return { token, companias: userCompanias, needsSelection: false };
     }
 
     // If multiple companies and not a supervisor, require selection
-    const payload: AuthPayload = { uid, email: email!, pendienteCia: true };
+    const payload = { user: { uid, email: email!, pendienteCia: true } };
     const token = this.signToken(payload);
 
     return {
@@ -109,30 +111,30 @@ export class AuthService {
     };
   }
 
-  public async selectCompania(currentUser: AuthPayload, selectedCompaniaId: string): Promise<{ token: string }> {
-    if (!currentUser.pendienteCia) {
-      throw new ApiError('AUTH_COMPANY_ALREADY_SELECTED', 400, 'Company has already been selected.');
+  public async selectCompania(currentUser: any, selectedCompaniaId: string): Promise<{ token: string }> {
+    if (!currentUser.user.pendienteCia) {
+      throw new ApiError('AUTH_COMPANY_ALREADY_SELECTED', 'Company has already been selected.', 400);
     }
 
     const userCompania = await this.usuarioCompaniaRepo.findByUserAndCompania(
-      currentUser.uid,
+      currentUser.user.uid,
       selectedCompaniaId
     );
 
     if (!userCompania) {
-      throw new ApiError('AUTH_INVALID_COMPANY_SELECTION', 403, 'User does not belong to the selected company.');
+      throw new ApiError('AUTH_INVALID_COMPANY_SELECTION', 'User does not belong to the selected company.', 403);
     }
 
     const newPayload: AuthPayload = {
-      uid: currentUser.uid,
-      email: currentUser.email,
+      uid: currentUser.user.uid,
+      email: currentUser.user.email,
       role: userCompania.rol,
       companiaCorretajeId: userCompania.companiaCorretajeId,
       oficinaId: userCompania.oficinaId,
       enteId: userCompania.enteId,
     };
 
-    const token = this.signToken(newPayload);
+    const token = this.signToken({ user: newPayload });
     return { token };
   }
 
@@ -141,30 +143,19 @@ export class AuthService {
     const testSecret = process.env.TEST_SECRET;
 
     if (!isTestEnv) {
-      throw new ApiError('AUTH_ENDPOINT_NOT_AVAILABLE', 404, 'This endpoint is not available in this environment.');
+      throw new ApiError('AUTH_ENDPOINT_NOT_AVAILABLE', 'This endpoint is not available in this environment.', 404);
     }
 
     if (!testSecret || secret !== testSecret) {
-      throw new ApiError('AUTH_INVALID_SECRET', 401, 'Invalid secret for test token.');
+      throw new ApiError('AUTH_INVALID_SECRET', 'Invalid secret for test token.', 401);
     }
 
-    // In a real scenario, you would fetch or define a specific test user
-    const adminUser = {
-        uid: 'admin_user_uid',
-        email: 'admin@seguroplus.com',
-        rol: 'admin' as 'admin',
-        companiaCorretajeId: 'comp_001',
-        oficinaId: 'oficina_001',
-        enteId: 6200,
-    };
-    
-    const payload: AuthPayload = {
-      uid: adminUser.uid,
-      email: adminUser.email,
-      role: adminUser.rol,
-      companiaCorretajeId: adminUser.companiaCorretajeId,
-      oficinaId: adminUser.oficinaId,
-      enteId: adminUser.enteId,
+    const payload = {
+        user: {
+            uid: 'test_user_uid',
+            email: 'test@example.com',
+            role: 'user',
+        }
     };
 
     const token = this.signToken(payload);

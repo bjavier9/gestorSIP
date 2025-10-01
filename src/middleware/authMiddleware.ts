@@ -43,7 +43,8 @@ export const authMiddleware = asyncHandler(async (req: AuthenticatedRequest, res
 });
 
 export const superAdminMiddleware = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    if (req.user && req.user.role === 'superadmin') {
+    // Corregido: Compara con 'superAdmin' (distingue mayúsculas y minúsculas) para que coincida con el payload del JWT
+    if (req.user && req.user.user && req.user.user.role === 'superAdmin') {
         next();
     } else {
         throw new ApiError('FORBIDDEN', 'Acceso denegado. Se requiere rol de Super Admin.', 403);

@@ -124,5 +124,30 @@ router.post(
  */
 router.get('/info', authMiddleware, asyncHandler(authController.getAuthInfo.bind(authController)));
 
+/**
+ * @swagger
+ * /api/auth/test-token:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Get a Test JWT for a Regular User
+ *     description: (DEV/TEST ONLY) Returns a JWT for a regular user without Firebase authentication.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               secret: { type: 'string' }
+ *     responses:
+ *       200:
+ *         description: Test token generated successfully.
+ *       401:
+ *         description: Invalid secret.
+ *       404:
+ *         description: Endpoint not available in this environment.
+ */
+router.post('/test-token', asyncHandler(authController.getTestToken.bind(authController)));
+
 
 export default router;

@@ -50,7 +50,7 @@ async function startServer() {
     app.use(errorHandler);
 
     // --- 4. START THE HTTP SERVER ---
-    const port = parseInt(process.env.PORT || '3001');
+    const port = parseInt(process.env.PORT || '3000');
     app.listen(port, () => {
         Logger.info(`Server running on http://localhost:${port}`);
         Logger.info(`API Docs available at http://localhost:${port}/api-docs`);

@@ -10,15 +10,13 @@ export class CompaniaCorretajeService {
     @inject(TYPES.CompaniaCorretajeRepository) private companiaRepo: CompaniaCorretajeRepository
   ) {}
 
-  async createCompania(nombre: string, rif: string): Promise<CompaniaCorretaje> {
+  async createCompania(companiaData: CompaniaCorretaje): Promise<CompaniaCorretaje> {
     // Aquí podrías agregar validaciones, como verificar que el RIF no exista
+    const existingCompania = await this.companiaRepo.findByRif(companiaData.rif);
+    if (existingCompania) {
+      throw new ApiError('RIF_ALREADY_EXISTS', 'A company with this RIF already exists.', 409);
+    }
 
-    const nuevaCompania: CompaniaCorretaje = {
-      id: '' /* El ID se generará en la capa de persistencia */,
-      nombre,
-      rif,
-    };
-
-    return this.companiaRepo.create(nuevaCompania);
+    return this.companiaRepo.create(companiaData);
   }
 }

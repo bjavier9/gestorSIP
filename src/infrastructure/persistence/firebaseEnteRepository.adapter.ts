@@ -13,7 +13,7 @@ export class FirebaseEnteRepository implements EnteRepository {
     private toDomain(doc: FirebaseFirestore.DocumentSnapshot): Ente {
         const data = doc.data();
         if (!data) {
-            throw new ApiError('INTERNAL_SERVER_ERROR', 500, `Failed to parse data for document ${doc.id}.`);
+            throw new ApiError('INTERNAL_SERVER_ERROR', `Failed to parse data for document ${doc.id}.`, 500);
         }
         return {
             id: doc.id,
@@ -33,7 +33,7 @@ export class FirebaseEnteRepository implements EnteRepository {
             return this.toDomain(doc);
         } catch (error) {
             Logger.error(`[FirebaseEnteRepository] Error finding ente by id: ${id}.`, { error });
-            throw new ApiError('INTERNAL_SERVER_ERROR', 500, 'Database query failed.', error);
+            throw new ApiError('INTERNAL_SERVER_ERROR', 'Database query failed.', 500, error);
         }
     }
 
@@ -49,7 +49,7 @@ export class FirebaseEnteRepository implements EnteRepository {
             return this.toDomain(snapshot.docs[0]);
         } catch (error) {
             Logger.error(`[FirebaseEnteRepository] Error finding ente by documento: ${documento}.`, { error });
-            throw new ApiError('INTERNAL_SERVER_ERROR', 500, `Database query failed for documento ${documento}.`, error);
+            throw new ApiError('INTERNAL_SERVER_ERROR', `Database query failed for documento ${documento}.`, 500, error);
         }
     }
 
@@ -61,7 +61,7 @@ export class FirebaseEnteRepository implements EnteRepository {
             return snapshot.docs.map(doc => this.toDomain(doc));
         } catch (error) {
             Logger.error(`[FirebaseEnteRepository] Error finding all entes.`, { error });
-            throw new ApiError('INTERNAL_SERVER_ERROR', 500, 'Database query failed.', error);
+            throw new ApiError('INTERNAL_SERVER_ERROR', 'Database query failed.', 500, error);
         }
     }
 
@@ -81,7 +81,7 @@ export class FirebaseEnteRepository implements EnteRepository {
             return this.toDomain(savedDoc);
         } catch (error) {
             Logger.error(`[FirebaseEnteRepository] Error saving new ente.`, { error });
-            throw new ApiError('INTERNAL_SERVER_ERROR', 500, 'Database insert failed.', error);
+            throw new ApiError('INTERNAL_SERVER_ERROR', 'Database insert failed.', 500, error);
         }
     }
 
@@ -92,7 +92,7 @@ export class FirebaseEnteRepository implements EnteRepository {
             await db.runTransaction(async (transaction) => {
                 const doc = await transaction.get(docRef);
                 if (!doc.exists) {
-                    throw new ApiError('ENTE_NOT_FOUND', 404, `Ente with id: ${id} not found for update.`);
+                    throw new ApiError('ENTE_NOT_FOUND', `Ente with id: ${id} not found for update.`, 404);
                 }
                 transaction.update(docRef, { ...data, fecha_actualizacion: new Date() });
             });
@@ -100,11 +100,11 @@ export class FirebaseEnteRepository implements EnteRepository {
             const updatedDoc = await docRef.get();
             return this.toDomain(updatedDoc);
         } catch (error) {
-            if (error instanceof ApiError && error.errorKey === 'ENTE_NOT_FOUND') { // DEFINITIVE FIX: Use errorKey
+            if (error instanceof ApiError && error.errorKey === 'ENTE_NOT_FOUND') {
                 throw error;
             }
             Logger.error(`[FirebaseEnteRepository] Error updating ente with id: ${id}.`, { error });
-            throw new ApiError('INTERNAL_SERVER_ERROR', 500, `Database transaction failed for ente ${id}.`, error);
+            throw new ApiError('INTERNAL_SERVER_ERROR', `Database transaction failed for ente ${id}.`, 500, error);
         }
     }
 
@@ -115,17 +115,17 @@ export class FirebaseEnteRepository implements EnteRepository {
 
             const doc = await docRef.get();
             if (!doc.exists) {
-                throw new ApiError('ENTE_NOT_FOUND', 404, `Ente with id: ${id} not found for deletion.`);
+                throw new ApiError('ENTE_NOT_FOUND', `Ente with id: ${id} not found for deletion.`, 404);
             }
 
             await docRef.delete();
             Logger.debug(`[FirebaseEnteRepository] Successfully deleted ente with id: ${id}.`);
         } catch (error) {
-            if (error instanceof ApiError && error.errorKey === 'ENTE_NOT_FOUND') { // DEFINITIVE FIX: Use errorKey
+            if (error instanceof ApiError && error.errorKey === 'ENTE_NOT_FOUND') {
                 throw error;
             }
             Logger.error(`[FirebaseEnteRepository] Error deleting ente with id: ${id}.`, { error });
-            throw new ApiError('INTERNAL_SERVER_ERROR', 500, `Database delete failed for ente ${id}.`, error);
+            throw new ApiError('INTERNAL_SERVER_ERROR', `Database delete failed for ente ${id}.`, 500, error);
         }
     }
 }

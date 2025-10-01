@@ -14,7 +14,7 @@ export class EnteService {
     // The repository now handles checking for existing documents.
     const existingEnte = await this.enteRepository.findByDocumento(data.documento);
     if (existingEnte) {
-      throw new ApiError('ENTE_ALREADY_EXISTS', 409, 'An ente with this document number already exists.');
+      throw new ApiError('ENTE_ALREADY_EXISTS', 'An ente with this document number already exists.', 409);
     }
     return this.enteRepository.save(data);
   }
@@ -22,7 +22,7 @@ export class EnteService {
   async getEnteById(id: string): Promise<Ente> {
     const ente = await this.enteRepository.findById(id);
     if (!ente) {
-      throw new ApiError('ENTE_NOT_FOUND', 404, 'Ente not found.');
+      throw new ApiError('ENTE_NOT_FOUND', 'Ente not found.', 404);
     }
     return ente;
   }
@@ -35,7 +35,7 @@ export class EnteService {
     // The repository now handles the not-found case and returns the updated entity.
     const updatedEnte = await this.enteRepository.update(id, data);
     if (!updatedEnte) {
-        throw new ApiError('ENTE_NOT_FOUND', 404, 'Ente not found for update.');
+        throw new ApiError('ENTE_NOT_FOUND', 'Ente not found for update.', 404);
     }
     return updatedEnte;
   }

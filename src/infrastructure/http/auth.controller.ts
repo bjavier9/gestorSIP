@@ -16,7 +16,7 @@ export class AuthController {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      throw new ApiError('AUTH_MISSING_CREDENTIALS', 400, 'Email and password are required.');
+      throw new ApiError('AUTH_MISSING_CREDENTIALS', 'Email and password are required.', 400);
     }
 
     const result = await this.authService.loginSuperAdmin(email, password);
@@ -27,7 +27,7 @@ export class AuthController {
     const { idToken } = req.body;
 
     if (!idToken) {
-      throw new ApiError('AUTH_MISSING_ID_TOKEN', 400, 'Firebase ID token is required.');
+      throw new ApiError('AUTH_MISSING_ID_TOKEN', 'Firebase ID token is required.', 400);
     }
 
     const result = await this.authService.login(idToken);
@@ -40,11 +40,11 @@ export class AuthController {
     const { companiaId } = req.body;
 
     if (!currentUser) {
-      throw new ApiError('AUTH_INVALID_TOKEN', 401, 'Invalid or missing authentication token.');
+      throw new ApiError('AUTH_INVALID_TOKEN', 'Invalid or missing authentication token.', 401);
     }
 
     if (!companiaId) {
-      throw new ApiError('VALIDATION_MISSING_FIELD', 400, 'companiaId is required.');
+      throw new ApiError('VALIDATION_MISSING_FIELD', 'companiaId is required.', 400);
     }
 
     const result = await this.authService.selectCompania(currentUser, companiaId);
@@ -54,7 +54,7 @@ export class AuthController {
   async getAuthInfo(req: Request, res: Response) {
     const projectId = process.env.FIREBASE_PROJECT_ID;
     if (!projectId) {
-      throw new ApiError('CONFIG_ERROR', 500, 'FIREBASE_PROJECT_ID is not configured on the server.');
+      throw new ApiError('CONFIG_ERROR', 'FIREBASE_PROJECT_ID is not configured on the server.', 500);
     }
     handleSuccess(res, { projectId });
   }
@@ -63,7 +63,7 @@ export class AuthController {
     const { secret } = req.body;
 
     if (!secret) {
-      throw new ApiError('AUTH_MISSING_SECRET', 400, 'Secret is required for test token.');
+      throw new ApiError('AUTH_MISSING_SECRET', 'Secret is required for test token.', 400);
     }
 
     const result = await this.authService.getTestToken(secret);
