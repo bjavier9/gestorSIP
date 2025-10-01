@@ -47,11 +47,11 @@ async function getSeedData() {
     }
   ];
 
-  // 2. OFICINAS
+  // 2. OFICINAS (ahora anidadas)
   const oficinas = [
     {
       id: "oficina_001",
-      companiaCorretajeId: "comp_001",
+      companiaCorretajeId: "comp_001", // Se mantiene para referencia lógica si es necesario
       nombre: "Oficina Principal Caracas",
       direccion: "Calle Falsa 456, Edif. Central, Caracas",
       telefono: "+58-212-5555678",
@@ -469,6 +469,28 @@ async function seedCollection(collectionName, data) {
   console.log(`${collectionName} seeded successfully!`);
 }
 
+async function seedCompaniasConOficinas(companias, oficinas) {
+  console.log('Seeding companias_corretaje with anidado oficinas...');
+  const batch = db.batch();
+
+  for (const compania of companias) {
+    const companiaRef = db.collection('companias_corretaje').doc(compania.id.toString());
+    batch.set(companiaRef, compania);
+
+    const oficinasDeCompania = oficinas.filter(o => o.companiaCorretajeId === compania.id);
+    
+    for (const oficina of oficinasDeCompania) {
+      // Ya no necesitamos el `companiaCorretajeId` dentro del documento de la oficina
+      const { companiaCorretajeId, ...oficinaData } = oficina;
+      const oficinaRef = companiaRef.collection('oficinas').doc(oficinaData.id.toString());
+      batch.set(oficinaRef, oficinaData);
+    }
+  }
+
+  await batch.commit();
+  console.log('companias_corretaje and their oficinas seeded successfully!');
+}
+
 async function seedConfigurations(configData) {
     console.log('Seeding configurations...');
     const batch = db.batch();
@@ -580,8 +602,9 @@ async function seedDatabase() {
     );
 
     // El orden es importante por las relaciones entre colecciones
-    await seedCollection('companias_corretaje', data.companias_corretaje);
-    await seedCollection('oficinas', data.oficinas);
+    // Usamos la nueva función para sembrar compañías y sus oficinas anidadas
+    await seedCompaniasConOficinas(data.companias_corretaje, data.oficinas);
+
     await seedCollection('aseguradoras', data.aseguradoras);
     await seedCollection('tipos_polizas', data.tipos_polizas);
     await seedCollection('entes', updatedData.entes);
