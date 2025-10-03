@@ -15,7 +15,8 @@ import oficinaRoutes from './routes/oficinas';
 import usuariosCompaniasRoutes from './routes/usuariosCompanias';
 import entesRoutes from './routes/entes';
 import configurationRoutes from './routes/configurations';
-import aseguradorasRoutes from './routes/aseguradoras'; // <-- Nueva ruta
+import aseguradorasRoutes from './routes/aseguradoras';
+import leadRoutes from './routes/leads'; // <-- Nueva ruta
 
 dotenv.config();
 
@@ -37,7 +38,8 @@ async function startServer() {
         app.use('/api/usuarios-companias', usuariosCompaniasRoutes);
         app.use('/api/entes', entesRoutes);
         app.use('/api/configurations', configurationRoutes);
-        app.use('/api/aseguradoras', aseguradorasRoutes); // <-- Nueva ruta
+        app.use('/api/aseguradoras', aseguradorasRoutes);
+        app.use('/api/leads', leadRoutes); // <-- Nueva ruta
 
         // Ruta de Swagger
         app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

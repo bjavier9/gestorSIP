@@ -62,6 +62,15 @@ export const adminSupervisorOrSuperadminMiddleware = asyncHandler(async (req: Au
     throw new ApiError('FORBIDDEN', 'Acceso denegado. Rol insuficiente.', 403);
 });
 
+export const agentSupervisorMiddleware = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const role = req.user && req.user.user ? req.user.user.role : undefined;
+    const allowed = ['agente', 'supervisor'];
+    if (typeof role === 'string' && allowed.includes(role.toLowerCase())) {
+        return next();
+    }
+    throw new ApiError('FORBIDDEN', 'Acceso denegado. Se requiere rol de Agente o Supervisor.', 403);
+});
+
 export const authorizeCompaniaAccess = (allowedRoles: string[]) => asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const user = req.user?.user;
     const { companiaId } = req.params;

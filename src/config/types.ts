@@ -1,29 +1,25 @@
 
-export const TYPES = {
-    // Services
-    AuthService: Symbol.for('AuthService'),
-    CompaniaCorretajeService: Symbol.for('CompaniaCorretajeService'),
-    OficinaService: Symbol.for('OficinaService'),
-    UsuarioCompaniaService: Symbol.for('UsuarioCompaniaService'),
-    EnteService: Symbol.for('EnteService'),
-    ConfigurationService: Symbol.for('ConfigurationService'),
-    AseguradoraService: Symbol.for('AseguradoraService'), // Added
-
-    // Repositories
-    UserRepository: Symbol.for('UserRepository'),
-    CompaniaCorretajeRepository: Symbol.for('CompaniaCorretajeRepository'),
-    OficinaRepository: Symbol.for('OficinaRepository'),
-    UsuarioCompaniaRepository: Symbol.for('UsuarioCompaniaRepository'),
-    EnteRepository: Symbol.for('EnteRepository'),
-    ConfigurationRepository: Symbol.for('ConfigurationRepository'),
-    AseguradoraRepository: Symbol.for('AseguradoraRepository'), // Added
-
-    // Controllers
-    AuthController: Symbol.for('AuthController'),
-    CompaniaCorretajeController: Symbol.for('CompaniaCorretajeController'),
-    OficinaController: Symbol.for('OficinaController'),
-    UsuarioCompaniaController: Symbol.for('UsuarioCompaniaController'),
-    EnteController: Symbol.for('EnteController'),
-    ConfigurationController: Symbol.for('ConfigurationController'),
-    AseguradoraController: Symbol.for('AseguradoraController'), // Added
+const TYPES = {
+    // UsuarioCompania
+    UsuarioCompaniaRepository: Symbol.for("UsuarioCompaniaRepository"),
+    UsuarioCompaniaService: Symbol.for("UsuarioCompaniaService"),
+    UsuarioCompaniaController: Symbol.for("UsuarioCompaniaController"),
+    // CompaniaCorretaje
+    CompaniaCorretajeRepository: Symbol.for("CompaniaCorretajeRepository"),
+    CompaniaCorretajeService: Symbol.for("CompaniaCorretajeService"),
+    CompaniaCorretajeController: Symbol.for("CompaniaCorretajeController"),
+    // Oficina
+    OficinaRepository: Symbol.for("OficinaRepository"),
+    OficinaService: Symbol.for("OficinaService"),
+    OficinaController: Symbol.for("OficinaController"),
+    // Aseguradora
+    AseguradoraRepository: Symbol.for("AseguradoraRepository"),
+    AseguradoraService: Symbol.for("AseguradoraService"),
+    AseguradoraController: Symbol.for("AseguradoraController"),
+    // Leads
+    LeadRepository: Symbol.for('LeadRepository'),
+    LeadService: Symbol.for('LeadService'),
+    LeadController: Symbol.for('LeadController'),
 };
+
+export { TYPES };
