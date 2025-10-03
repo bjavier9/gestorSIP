@@ -1,85 +1,178 @@
+# Proyecto GestorSIP - Contexto actualizado para herramientas LLM
 
-# Reglas y Contexto para la Asistencia de IA (Gemini)
+### 1. Panorama general
+- API backend en Node.js + Express, escrito en TypeScript.
+- Arquitectura hexagonal (dominio, aplicacion, infraestructura, rutas, config, utils).
+- InversifyJS maneja DI y resolucion de dependencias.
+- Firebase Admin SDK provee autenticacion (creacion de usuarios) y Firestore como base de datos.
+- Todas las respuestas HTTP de controladores deben usar `handleSuccess` o `handleError` para exponer `{ success, status, data }`.
+- El servidor se levanta desde `src/index.ts`. Inicializa Firebase, carga rutas dinamicamente y expone Swagger en `/api-docs`.
 
-Este documento proporciona el contexto esencial y las reglas de codificación para el proyecto `gestorinsurance`. Seguir estas directrices es crucial para evitar errores comunes y mantener la coherencia del código.
+### 2. Directivas criticas
+1. **FIREBASE_CONFIG_LOCK**: no modificar `src/config/firebase.ts`; lee credenciales desde `firebase-credentials.json` en raiz.
+2. **SUPERADMIN_ENFORCEMENT**: rutas de companias requieren rol `superadmin` y correo igual a `process.env.SUPERADMIN_EMAIL` (middleware `superAdminMiddleware`).
+3. **CONTENT_API_REMOVED**: las rutas `/api/content` fueron eliminadas. No reintroducir sin requerimiento explicito.
+4. **USER_COMPANIA_ROLES**: solo roles admin, supervisor o superadmin pueden crear/habilitar/inhabilitar documentos en `usuarios_companias`.
+5. **GESTIONES_ROLE_CONTROL**: solo roles agent y supervisor pueden crear, actualizar o eliminar gestiones. Lectura habilitada para cualquier usuario autenticado de la compania.
 
-## 1. Principio Arquitectónico CRÍTICO: Inicialización de Firebase y Dependencias
+### 3. Tecnologias y convenciones
+- Node 18+, npm scripts (`npm run dev`, `npm run build`).
+- TypeScript estricto (`strict: true`).
+- Firestore trabaja con colecciones principales:
+  - `companias_corretaje`
+  - `oficinas` (subcoleccion dentro de companias)
+  - `usuarios_companias`
+  - `entes`
+  - `leads`
+  - `gestiones`
+  - `configurations`
+  - `auditoria`
+  - `clientes_gestion`
+- Firebase Auth acumula usuarios y devuelve UID utilizado como ID en `usuarios_companias`.
+- Rutas se montan bajo `/api`. Toda ruta debe documentarse en Swagger (`src/config/swagger.ts`) y usar `asyncHandler` + middlewares de auth.
 
-Este es el punto más importante a tener en cuenta durante el desarrollo.
+### 4. Roles y permisos (token JWT)
+| Rol           | Accesos clave |
+|---------------|---------------|
+| superadmin    | Crear/editar companias, usuarios de alto nivel. Requiere email exacto en `SUPERADMIN_EMAIL` |
+| admin         | Gestion interna (usuarios_companias, leads, gestiones) |
+| supervisor    | Igual que admin + reasignaciones |
+| agent         | Gestiona sus leads/gestiones |- solo lectura extendida
+| viewer        | Lectura basica |
 
-**EL PROBLEMA:** La aplicación utiliza **InversifyJS** para la inyección de dependencias y **Firebase** como backend. InversifyJS instancia los objetos (como los adaptadores de persistencia) de forma síncrona al inicio de la aplicación. Sin embargo, la conexión a Firebase (`initializeApp()`) se realiza de forma **asíncrona**.
+### 5. Capas y responsabilidades
+- **Dominio (`src/domain`)**: interfaces, entidades tipadas y puertos (ej. `Lead`, `Gestion`, `CompaniaCorretaje`).
+- **Aplicacion (`src/application`)**: servicios orquestan reglas y validaciones (ej. `LeadService`, `GestionService`, `CompaniaCorretajeService`).
+- **Infraestructura**:
+  - `http`: controladores que validan request y retornan `handleSuccess`.
+  - `persistence`: adapters Firestore que implementan puertos.
+- **Rutas (`src/routes`)**: definen middlewares y Swagger JSDoc.
+- **Middleware**: autenticacion JWT (obtiene `req.user.user`), restricciones por rol, helpers (`handleSuccess`, `ApiError`).
+- **Config**: contenedor Inversify (`src/config/container.ts`), `types.ts` con todos los identificadores, `swagger.ts` con esquemas reutilizables.
 
-Esto crea una **condición de carrera**: los adaptadores intentan acceder a la instancia de Firestore (`getFirestore()`) en sus constructores **antes** de que la conexión a Firebase se haya completado, provocando el error: `The default Firebase app does not exist` o `Cannot read properties of undefined (reading 'collection')`.
+### 6. Modulos principales y endpoints
+#### 6.1 Autenticacion (`/api/auth`)
+- POST `/login` (Firebase ID token -> JWT GestorSIP)
+- POST `/login/superadmin`
+- POST `/select-compania`
+- POST `/test-token`
+- GET `/info`
 
-**LA SOLUCIÓN OBLIGATORIA:**
+#### 6.2 Companias (`/api/companias`)
+- POST crear (superadmin + email verificado)
+- PUT `/:id`
+- PATCH `/:id/activar`
+- PATCH `/:id/desactivar`
 
-Todos los adaptadores de la capa de infraestructura que interactúan con Firebase **DEBEN** utilizar un patrón de inicialización "perezosa" (lazy initialization). **NUNCA** se debe acceder a `getFirestore()` o `getAuth()` en el constructor de una clase inyectable.
+#### 6.3 Usuarios de compania (`/api/usuarios-companias`)
+- POST crear usuario (crea Firebase Auth + documento Firestore)
+- PATCH `/:id/habilitar`
+- PATCH `/:id/inhabilitar`
+Roles aceptados: admin | supervisor | superadmin.
 
-**Ejemplo de Implementación CORRECTA:**
+#### 6.4 Leads (`/api/leads`)
+- GET lista (compania del token)
+- GET `/:id`
+- POST create (agent/supervisor)
+- PUT `/:id`
+- DELETE `/:id`
+Respuestas siempre via `handleSuccess`.
 
-```typescript
-import { injectable } from 'inversify';
-import { getFirestore, CollectionReference } from 'firebase-admin/firestore';
-// ... otros imports
+#### 6.5 Gestiones (`/api/gestiones`)
+- GET lista (cualquier rol autenticado)
+- GET `/:id`
+- POST crear (agent/supervisor). Debe asociarse a `leadId` **o** `enteId`, nunca ambos.
+- PUT `/:id`
+- DELETE `/:id`
+`GestionService` valida reglas (lead XOR ente, agente del token, prioridad, fechas).
 
-@injectable()
-export class MiAdaptadorDeFirebase implements IMiRepositorio {
+#### 6.6 Otros modulos existentes
+- Entes (`/api/entes`)
+- Oficinas (`/api/companias/:companiaId/oficinas`)
+- Aseguradoras (`/api/aseguradoras`)
+- Configurations (`/api/configurations`)
 
-    // ¡CORRECTO! Se usa un getter.
-    // getFirestore() solo se llama cuando se accede a `this.collection`,
-    // momento en el cual la app ya se ha inicializado.
-    private get collection(): CollectionReference {
-        return getFirestore().collection('mi-coleccion');
-    }
+### 7. Entidades y reglas clave
+**Lead**
+```
+id, nombre, correo, telefono, companiaCorretajeId, agenteId?, estado (nuevo/contactado/calificado/perdido/ganado), origen,
+fechaCreacion, fechaActualizacion
+```
+- Estado default: `nuevo`
+- Solo compania due�a puede leer/modificar/eliminar
 
-    // ¡CORRECTO! El constructor está vacío o no interactúa con Firebase.
-    constructor() {}
+**Gestion**
+```
+id, companiaCorretajeId, agenteId, oficinaId?, polizaId?, leadId? xor enteId?,
+tipo (nueva/renovacion), estado (borrador/en_gestion/en_tramite/gestionado_exito/desistido),
+prioridad (baja/media/alta), notas?, fechaCreacion, fechaActualizacion, fechaVencimiento?, activo
+```
+- Regla XOR: se exige leadId o enteId. Si un agente crea desde token, agenteId se fuerza al UID del token.
+- Solo agent propietario o supervisor puede modificar/borrar.
 
-    async miMetodo() {
-        // Ahora es seguro usar la colección.
-        const snapshot = await this.collection.get();
-        // ...
-    }
-}
+**CompaniaCorretaje**
+- RIF unico, campos administrativos (monedas, modulos, creada/modificado).
+- Uso de `setActive(id, boolean)` para activar/desactivar.
+
+**UsuarioCompania**
+- Documento principal: `id = uid` Firebase, `userId`, `email`, `companiaCorretajeId`, `rol`, `activo`, timestamps, `enteId`, `oficinaId`.
+- `UsuarioCompaniaService` crea usuario en Firebase Auth (password), luego persistencia en Firestore.
+- `setActive` sincroniza `disabled` en Firebase Auth.
+
+### 8. Respuesta estandarizada
+`handleSuccess(res, data, status?)` -> `{ success: true, status, data }`
+`handleError` se usa globalmente en `errorHandler`.
+Todos los controladores deben usar este formato (revisar leads, gestiones, companias, usuarios).
+
+### 9. Swagger / Documentacion
+- Definiciones centralizadas en `src/config/swagger.ts`. Incluye esquemas:
+  - `CompaniaCorretaje`, `CreateCompaniaRequest`, `UpdateCompaniaRequest`
+  - `Lead`, `CreateLeadRequest`, `UpdateLeadRequest`
+  - `Gestion`, `CreateGestionRequest`, `UpdateGestionRequest`
+  - `UsuarioCompania`, `SuccessResponse`, etc.
+- Nuevos endpoints deben agregar JSDoc Swagger en la ruta correspondiente y, si es necesario, nuevos esquemas.
+
+### 10. Plantilla para agregar un nuevo API
+```
+1. Dominio
+   - Crear entidad o DTO si hace falta (src/domain).
+   - Definir puerto en src/domain/ports (interface con metodos CRUD o casos de uso).
+
+2. Persistencia
+   - Crear adapter Firestore en src/infrastructure/persistence (usa getFirestore, docToX helper, etc.).
+
+3. Aplicacion
+   - Crear servicio en src/application (inyeccion del puerto, reglas de negocio, validaciones).
+
+4. Infraestructura HTTP
+   - Crear controlador (usa AuthenticatedRequest si requiere JWT, disparar ApiError para validaciones, retornar handleSuccess).
+   - Actualizar contenedor Inversify (src/config/types.ts + container.ts).
+
+5. Rutas
+   - Crear archivo en src/routes, aplicar authMiddleware y roles necesarios.
+   - Documentar con swagger JSDoc.
+
+6. Configuracion
+   - Actualizar swagger.ts con nuevos esquemas/respuestas si es necesario.
+   - Montar la ruta en src/index.ts.
+
+7. Inicializacion / Seed
+   - Revisar seed.js si se necesitan datos de muestra o relaciones.
+
+8. Pruebas manuales o scripts (opcional)
+   - Crear script en tests/ si aplica.
 ```
 
-**Ejemplo de Implementación INCORRECTA (A EVITAR):**
+### 11. Notas y pendientes conocidos
+- `npm run build` aun falla por adapters antiguos (usuarios, entes). Deben refactorizarse para alinear interfaces (por ejemplo docToEnte debe manejar union PersonaNatural/PersonaJuridica, repository save/update debe cumplir contracto). Revisar mensaje de TypeScript antes de promover cambios.
+- Mantener archivos ASCII (sin acentos), siguiendo convenciones actuales.
+- Asegurar que `firebase-credentials.json` exista en raiz para desarrollo local; en produccion se puede usar variable `FIREBASE_SERVICE_ACCOUNT`.
 
-```typescript
-@injectable()
-export class MiAdaptadorDeFirebaseErroneo {
-    private collection: CollectionReference;
+### 12. Check-list rapido antes de subir cambios
+- [ ] Rutas nuevas con swagger y handleSuccess.
+- [ ] Middlewares correctos (rol, compania, superadmin).
+- [ ] Actualizacion de TYPES y container.
+- [ ] Tests manuales para flujos sensibles (auth, lead, gestion, compania).
+- [ ] `npm run build` sin errores de compilacion TypeScript.
 
-    // ¡INCORRECTO! Esto causa el error porque getFirestore()
-    // se llama antes de que initializeApp() termine.
-    constructor() {
-        this.collection = getFirestore().collection('mi-coleccion');
-    }
-}
-```
-
-## 2. Arquitectura General del Proyecto
-
-El proyecto sigue una **Arquitectura Hexagonal (Puertos y Adaptadores)**:
-
-- **`src/domain`**: Contiene la lógica de negocio pura, las entidades (ej: `Ente`, `Poliza`) y los "puertos" (interfaces de repositorios, ej: `EnteRepository`). No debe tener dependencias de frameworks o bases de datos.
-- **`src/application`**: Contiene los "casos de uso" o servicios que orquestan la lógica de dominio.
-- **`src/infrastructure`**: Contiene los "adaptadores". Aquí es donde se implementan los puertos.
-    - `persistence`: Implementaciones de los repositorios (ej: `FirebaseEnteRepositoryAdapter`).
-    - `http`: Controladores de Express que exponen la API.
-
-## 3. Reglas de Negocio Clave
-
-Extraídas de `funcionamiento.txt`:
-
-- **Auditoría Obligatoria**: Toda acción crítica (crear, eliminar, reasignar) debe registrarse en la colección `auditoria`. Campos mínimos: `usuario`, `accion`, `fecha`, `detalle`.
-- **Super Admin Inmutable**: El usuario Super Admin (`SUPERADMIN_EMAIL` en las variables de entorno) no puede ser modificado ni eliminado a través de la API.
-- **Prohibida la Autogestión**: Un agente no puede tramitar pólizas donde él mismo sea tomador, asegurado o beneficiario.
-- **Trazabilidad de Gestiones**: Siempre se debe crear un registro en la colección `gestiones` para cada nueva póliza o renovación.
-
-## 4. Estándares de Código y Seguridad
-
-- **Manejo de Errores**: Utilizar la clase `ApiError` para generar errores controlados en la API.
-- **Rutas Asíncronas**: Envolver los manejadores de ruta de Express con la utilidad `asyncHandler` para capturar errores en promesas.
-- **Autenticación**: Todas las rutas de la API deben estar protegidas. El `idToken` de Firebase se envía en el header `Authorization: Bearer <token>`.
-- **Autorización**: Utilizar middlewares (`authMiddleware`, `superAdminMiddleware`, etc.) para verificar roles y permisos después de la autenticación.
+Con este contexto, Gemini debe poder navegar la base de codigo, entender las restricciones y expandir la API sin romper contratos existentes.

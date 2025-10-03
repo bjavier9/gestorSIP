@@ -1,130 +1,203 @@
-# GestorSIP - API de Gestión de Seguros
+# GestorSIP Backend
 
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white) ![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white) ![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
-
-Bienvenido al backend de **GestorSIP**, una plataforma robusta para la administración de pólizas de seguros, clientes (entes) y contenido relacionado. Este sistema está construido siguiendo las mejores prácticas de la industria, con un enfoque en la escalabilidad, mantenibilidad y seguridad.
+GestorSIP is the backend for an insurance brokerage platform. It exposes a REST API built with Node.js, Express, and TypeScript following a hexagonal architecture. The system integrates with Firebase Admin to handle authentication and Firestore persistence, enforcing strict access rules based on user roles.
 
 ---
 
-## Tabla de Contenidos
-
-1.  [Características Principales](#características-principales)
-2.  [Guía de Inicio Rápido](#guía-de-inicio-rápido)
-3.  [Variables de Entorno](#variables-de-entorno)
-4.  [Flujo de Autenticación](#flujo-de-autenticación)
-5.  [Estructura del Proyecto (Arquitectura Hexagonal)](#estructura-del-proyecto-arquitectura-hexagonal)
-6.  [Scripts Disponibles](#scripts-disponibles)
-7.  [Documentación y Guías](#documentación-y-guías)
+## Key Features
+- **Hexagonal Architecture** (Ports and Adapters) for clear separation between domain logic and infrastructure.
+- **TypeScript + InversifyJS** for type-safe development and dependency injection.
+- **Firebase Admin SDK** for authentication (email/password) and Firestore access.
+- **Role-based Access Control** baked into middleware (`superadmin`, `admin`, `supervisor`, `agent`, `viewer`).
+- **Consistent API Responses** using `handleSuccess`/`handleError` wrappers.
+- **OpenAPI/Swagger Docs** automatically generated from route annotations (`/api-docs`).
+- **Comprehensive Domain Support** for companies, offices, user-company associations, leads, gestiones, entes, aseguradoras, configurations, etc.
 
 ---
 
-## Características Principales
+## Tech Stack
+| Layer        | Tooling |
+|--------------|---------|
+| Language     | TypeScript (strict) |
+| Runtime      | Node.js 18+ |
+| Framework    | Express.js |
+| DI Container | InversifyJS |
+| Database     | Cloud Firestore (Firebase Admin) |
+| Auth         | Firebase Authentication (email/password, custom JWT) |
+| Docs         | Swagger UI + swagger-jsdoc |
+| Logging      | Winston |
 
--   **Arquitectura Limpia**: El proyecto implementa la **Arquitectura Hexagonal (Puertos y Adaptadores)**, garantizando una separación clara entre la lógica de negocio y las tecnologías externas.
--   **TypeScript y Node.js**: Código fuertemente tipado para reducir errores en tiempo de ejecución y mejorar la mantenibilidad.
--   **Inyección de Dependencias**: Uso de **InversifyJS** para desacoplar los componentes y facilitar las pruebas.
--   **Autenticación Segura con Firebase**: Soporte para múltiples métodos de autenticación (Email/Contraseña, Email Link) gestionados por Firebase Authentication.
--   **Base de Datos Firestore**: Persistencia de datos utilizando Cloud Firestore, una base de datos NoSQL flexible y escalable.
--   **Documentación de API Automatizada**: Endpoint `/api-docs` con **Swagger/OpenAPI** para explorar y probar la API de forma interactiva.
--   **Seguridad por Defecto**: Middleware `helmet` para proteger contra vulnerabilidades web comunes y `authMiddleware` para proteger rutas.
+---
 
-## Guía de Inicio Rápido
-
-Sigue estos pasos para tener el entorno de desarrollo funcionando localmente.
-
-### 1. Prerrequisitos
-
--   Node.js (se recomienda v18 o superior)
--   npm (o yarn)
-
-### 2. Clonar el Repositorio
-
-```bash
-git clone <URL_DEL_REPOSITORIO>
-cd gestor-sip-backend # O el nombre del directorio
-```
-
-### 3. Instalar Dependencias
-
-```bash
-npm install
-```
-
-### 4. Configurar Credenciales de Firebase
-
-La aplicación necesita credenciales para comunicarse de forma segura con los servicios de Firebase. Tienes dos métodos para configurarlas:
-
-#### Método 1: Archivo de Credenciales (Recomendado para Desarrollo)
-
-1.  **Obtén tu archivo de credenciales:** Ve a la [Consola de Firebase](https://console.firebase.google.com/), selecciona tu proyecto, haz clic en el ícono de engranaje (Configuración del proyecto) y ve a la pestaña "Cuentas de servicio". Haz clic en "Generar nueva clave privada" y guarda el archivo JSON que se descarga.
-2.  **Guarda el archivo:** Renombra el archivo a `firebase-credentials.json` y colócalo en la **raíz de tu proyecto**.
-3.  **Importante:** El archivo `.gitignore` ya está configurado para ignorar `firebase-credentials.json`, por lo que no se subirá a tu repositorio.
-
-La aplicación detectará y usará este archivo automáticamente.
-
-#### Método 2: Variable de Entorno (Recomendado para Producción)
-
-Como alternativa, puedes configurar las credenciales a través de una variable de entorno. Esto es ideal para entornos de despliegue como Docker, Vercel o Heroku.
-
-1.  Abre el archivo JSON de credenciales que descargaste.
-2.  Copia todo el contenido del archivo.
-3.  Crea una variable de entorno llamada `FIREBASE_SERVICE_ACCOUNT` y pega el contenido JSON como su valor. Asegúrate de que el JSON esté en una sola línea y correctamente escapado si es necesario.
-
-### 5. Configurar Otras Variables de Entorno
-
-Crea un archivo llamado `.env` en la raíz del proyecto. Aquí puedes configurar otras variables que la aplicación necesita.
-
-```bash
-# Puedes copiar la plantilla si existe
-cp .env.example .env
-```
-
-Abre el archivo `.env` y complétalo. Consulta la sección [Variables de Entorno](#variables-de-entorno) para más detalles.
-
-### 6. Iniciar el Servidor de Desarrollo
-
-```bash
-npm run dev
-```
-
-El servidor se iniciará y escuchará en el puerto que hayas definido (por defecto `http://localhost:3000`). Gracias a `ts-node-dev`, se reiniciará automáticamente cada vez que guardes un cambio.
-
-## Variables de Entorno
-
-| Variable                  | Descripción                                                                                                 |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `PORT`                    | El puerto en el que correrá el servidor (ej: `3000`).                                                         |
-| `JWT_SECRET`              | Una cadena de texto larga y secreta para firmar los tokens JWT de la aplicación.                             |
-| `FIREBASE_SERVICE_ACCOUNT`| (Opcional si usas el archivo) El **objeto JSON completo** de tu cuenta de servicio de Firebase en una sola línea. |
-| `GEMINI_API_KEY`          | (Opcional) Tu clave de API para usar las funcionalidades de IA Generativa de Google Gemini.                |
-
-## Flujo de Autenticación
-
-La autenticación es un proceso de dos fases que desacopla la validación de credenciales de la autorización en nuestra API.
-
-1.  **Fase 1 (Cliente ↔️ Firebase):** El cliente (front-end) usa el SDK de Firebase para autenticar al usuario y recibe un `idToken`.
-2.  **Fase 2 (Cliente ↔️ Nuestra API):** El cliente envía ese `idToken` a nuestro endpoint `/api/auth/login`. Nuestro servidor verifica el token y emite un JWT propio, que se usará para las siguientes peticiones.
-
-## Estructura del Proyecto (Arquitectura Hexagonal)
-
+## Project Layout
 ```
 src/
-├── application/    # Lógica de orquestación (Servicios/Casos de Uso).
-├── domain/         # El corazón del negocio (entidades, puertos/interfaces).
-├── infrastructure/ # Implementaciones concretas (controladores, repositorios).
-├── routes/         # Definición de las rutas de la API.
-├── middleware/     # Middlewares de Express.
-├── config/         # Configuración global (Firebase, Inversify, etc.).
-└── index.ts        # Punto de entrada de la aplicación.
+  application/        # Use cases / services (business orchestration)
+  config/             # Inversify container, types, firebase, swagger
+  domain/             # Entities, value objects, ports (interfaces)
+  infrastructure/
+    http/             # Express controllers (adapters)
+    persistence/      # Firestore adapters implementing ports
+  middleware/         # JWT auth, role checks, error handling
+  routes/             # Express routers with swagger annotations
+  services/           # Misc shared services (e.g. content service)
+  utils/              # ApiError, response handler, helpers
+index.ts              # App bootstrap (initializes Firebase, mounts routes)
 ```
 
-## Scripts Disponibles
+---
 
--   `npm run dev`: Inicia el servidor en modo desarrollo con recarga automática.
--   `npm start`: Compila el código a JavaScript y lo inicia en modo producción.
--   `npm run build`: Solo compila el código TypeScript a la carpeta `dist/`.
+## Domain Highlights
+### Roles
+- **superadmin**: manages brokerage companies, requires email configured in `SUPERADMIN_EMAIL`.
+- **admin / supervisor**: manage internal resources (users, leads, gestiones).
+- **agent**: handles assigned leads/gestiones.
+- **viewer**: read-only endpoints.
 
-## Documentación y Guías
+### Entities
+- **CompaniaCorretaje**: brokerage with offices, currencies, modules. Only superadmin can create/update/activate/deactivate.
+- **UsuarioCompania**: association of a Firebase Auth user with a company. Stored with `id = uid`.
+- **Lead**: prospect linked to a company (and optionally agent). CRUD restricted to agent/supervisor.
+- **Gestion**: lifecycle of a policy action (new/renewal). Must be linked to either a lead or an ente (exclusive). Only agent owner or supervisor can modify.
+- **Ente**: approved client (natural or legal person).
 
--   **Documentación de la API (Swagger):** Accede a `http://localhost:3000/api-docs` cuando el servidor esté corriendo.
--   **Guías Internas (`/wiki`):** La carpeta `wiki` contiene guías detalladas sobre la arquitectura y flujos de trabajo.
+---
+
+## Response Convention
+All controllers must respond through `handleSuccess(res, data, status)` and `handleError`, yielding:
+```
+{
+  "success": true,
+  "status": 200,
+  "data": { ... }
+}
+```
+Errors use `ApiError` for consistent keys and HTTP codes.
+
+---
+
+## Environment Variables
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `PORT` | Optional | HTTP port (default `3000`). |
+| `JWT_SECRET` | Required | Secret used to sign application JWTs. |
+| `JWT_EXPIRES_IN` | Optional | JWT expiration (e.g. `24h`). |
+| `FIREBASE_PROJECT_ID` | Required | Firebase project identifier. |
+| `SUPERADMIN_EMAIL` | Required | Email allowed to act as superadmin. |
+| `SUPERADMIN_PASSWORD` | Required | Password for superadmin login endpoint. |
+| `TEST_SECRET` | Optional | Secret used by `/api/auth/test-token`. |
+| `FIREBASE_SERVICE_ACCOUNT` | Optional | JSON (single line) with service account credentials (use in deployments). |
+
+> Development expects a `firebase-credentials.json` file at project root (ignored by git). Production can set `FIREBASE_SERVICE_ACCOUNT` instead.
+
+---
+
+## Getting Started
+1. **Install prerequisites**
+   - Node.js 18+
+   - npm 9+
+
+2. **Clone and install**
+   ```bash
+   git clone <repo>
+   cd gestorSIP
+   npm install
+   ```
+
+3. **Configure Firebase credentials**
+   - Download service account JSON from Firebase Console.
+   - Save as `firebase-credentials.json` in the project root.
+
+4. **Create `.env`** (example)
+   ```env
+   PORT=3000
+   JWT_SECRET=please_set_a_secure_secret
+   SUPERADMIN_EMAIL=superadmin@gestorinsurance.com
+   SUPERADMIN_PASSWORD=SuperSecretPassword123!
+   TEST_SECRET=super_dev_secret
+   ```
+
+5. **Seed data (optional)**
+   - Provide `temp-firebase-credentials.json` (service account) for the seeding script.
+   - Run `node seed.js` to populate Firestore.
+
+6. **Run in development**
+   ```bash
+   npm run dev
+   # server: http://localhost:3000
+   # swagger: http://localhost:3000/api-docs
+   ```
+
+7. **Build for production**
+   ```bash
+   npm run build
+   npm start
+   ```
+
+> If you see `Firestore no ha sido inicializado`, verify `firebase-credentials.json` exists or service account variables are set before running the server.
+
+---
+
+## API Summary
+| Area | Base Path | Roles |
+|------|-----------|-------|
+| Auth | `/api/auth` | varies (login open, others require JWT) |
+| Companias | `/api/companias` | superadmin (email must match `SUPERADMIN_EMAIL`) |
+| Oficinas | `/api/companias/:companiaId/oficinas` | supervisor/admin/agent depending on action |
+| Usuarios-Companias | `/api/usuarios-companias` | admin/supervisor/superadmin |
+| Leads | `/api/leads` | agent & supervisor (create/update/delete), all company roles for read |
+| Gestiones | `/api/gestiones` | agent/supervisor for mutations, any company user for read |
+| Entes | `/api/entes` | authenticated company users |
+| Aseguradoras | `/api/aseguradoras` | authenticated |
+| Configurations | `/api/configurations` | authenticated |
+
+Swagger has detailed schemas: `Lead`, `Gestion`, `CompaniaCorretaje`, `UsuarioCompania`, etc.
+
+---
+
+## Development Guidelines
+- **Use ASCII** files to avoid encoding issues.
+- **Document routes** with Swagger JSDoc comments in `src/routes/*`.
+- **All controllers** must use `handleSuccess`/`handleError` wrappers.
+- **Middleware**:
+  - `authMiddleware` verifies JWT and populates `req.user`.
+  - `superAdminMiddleware` enforces role/email checks.
+  - `adminSupervisorOrSuperadminMiddleware` handles user-compania actions.
+  - `agentSupervisorMiddleware` handles leads/gestiones.
+- **Dependency Injection**: update `src/config/types.ts` and `src/config/container.ts` when adding services/controllers/adapters.
+- **Testing**: TypeScript compilation (`npm run build`) is the primary check. Additional E2E scripts live under `tests/` (e.g. `tests/companiaCorretaje.test.js`).
+
+---
+
+## Common Issues
+| Symptom | Fix |
+|---------|-----|
+| `Firestore no ha sido inicializado` | Ensure Firebase credentials are loaded before starting the app. |
+| `Unauthorized` on superadmin routes | Confirm email in JWT equals `SUPERADMIN_EMAIL`. |
+| TypeScript build errors in adapters | Align repository interfaces with adapter implementations (`findById`, `update`, etc.). |
+| Swagger missing new endpoint | Add JSDoc in the route file and regenerate by restarting the dev server. |
+
+---
+
+## Adding a New API
+1. Define domain entities and ports (`src/domain`).
+2. Implement Firestore adapter in `src/infrastructure/persistence`.
+3. Create service with business rules in `src/application`.
+4. Build controller in `src/infrastructure/http` and wire responses with `handleSuccess`.
+5. Register types+bindings in `src/config/types.ts` and `src/config/container.ts`.
+6. Add route under `src/routes`, secure with proper middleware, and document with Swagger.
+7. Mount route in `src/index.ts`.
+8. Update documentation (README, CONTEXTO_GEMINI.md, wiki if needed).
+
+---
+
+## Additional Resources
+- `CONTEXTO_GEMINI.md`: condensed architectural directives for LLM-based tooling.
+- `/wiki/*`: internal playbooks and flow descriptions.
+- `seed.js`: sample Firestore dataset (companias, oficinas, leads, gestiones, usuarios, etc.).
+
+---
+
+## License / Contributing
+This repository is private. Follow the existing coding standards, pass TypeScript checks before pushing, and document any new endpoints. For larger changes, update the wiki with architecture decisions.
+
