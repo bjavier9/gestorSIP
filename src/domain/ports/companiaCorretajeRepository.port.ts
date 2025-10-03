@@ -1,7 +1,14 @@
+
 import { CompaniaCorretaje } from '../companiaCorretaje';
 
 export interface CompaniaCorretajeRepository {
-  create(compania: CompaniaCorretaje): Promise<CompaniaCorretaje>;
+  create(compania: Partial<CompaniaCorretaje>): Promise<CompaniaCorretaje>;
   findByRif(rif: string): Promise<CompaniaCorretaje | null>;
-  // Agrega otros métodos que necesites, como findById, findAll, etc.
+
+  /**
+   * Finds the first available brokerage company.
+   * Useful for initial setup or default assignments.
+   * @returns A promise that resolves to the first company found, or null.
+   */
+  findFirst(): Promise<CompaniaCorretaje | null>;
 }

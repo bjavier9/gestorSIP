@@ -7,6 +7,10 @@ project_architecture:
   database: "Cloud Firestore"
   authentication: "Firebase Authentication with custom JWTs"
 
+critical_directives:
+  - directive_id: "FIREBASE_CONFIG_LOCK"
+    description: "CRITICAL: Do NOT modify the file `src/config/firebase.ts`. It contains the definitive, working Firebase initialization logic that loads credentials directly from `firebase-credentials.json`. Any changes could break the connection to the database. Do not propose using environment variables or other methods for this file."
+
 key_directories:
   - path: "src/domain"
     description: "Core business logic, entities, and repository interfaces (ports)."

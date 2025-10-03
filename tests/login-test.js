@@ -2,7 +2,7 @@ const axios = require('axios');
 
 // Your Firebase Web API Key (it is safe to have this in a test script)
 const FIREBASE_API_KEY = 'AIzaSyD6zReyecIiMKqNVbUe7d6bGKsO2Vlum3E';
-const API_BASE_URL = 'http://localhost:3001';
+const API_BASE_URL = 'http://localhost:3000';
 
 // This is the endpoint for Firebase's REST API for email/password sign-in
 const FIREBASE_AUTH_URL = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`;
@@ -39,7 +39,7 @@ async function testAppLogin() {
   const email = 'admin@seguroplus.com';
   const password = 'password123';
 
-  console.log(`--- Running Test: /auth/login ---`);
+  console.log(`--- Running Test: /api/auth/login ---`);
   console.log(`Attempting to get Firebase ID token for user: ${email}`);
   const idToken = await getFirebaseIdToken(email, password);
 
@@ -51,7 +51,7 @@ async function testAppLogin() {
   console.log('Successfully got ID token. Now logging into our app...');
 
   try {
-    const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+    const response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
       idToken: idToken,
     });
 
@@ -60,7 +60,7 @@ async function testAppLogin() {
     if (response.status === 200 && data.token && data.companias) {
       console.log('\x1b[32m%s\x1b[0m', 'App Login successful!');
       console.log('Received JWT Token and company list.');
-      console.log('\x1b[36m%s\x1b[0m', 'JWT Token:', data.token); // Printing the JWT Token
+      console.log('\x1b[36m%s\x1b[0m', 'JWT Token:', data.token);
       console.log('Needs Selection:', data.needsSelection);
       console.log('Companies:', JSON.stringify(data.companias, null, 2));
       return data.token;

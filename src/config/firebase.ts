@@ -1,5 +1,5 @@
 import admin from 'firebase-admin';
-import  logger  from './logger';
+import logger from './logger';
 
 let db: admin.firestore.Firestore;
 
@@ -9,8 +9,7 @@ export const initializeFirebase = () => {
 
     if (admin.apps.length === 0) {
       admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        projectId: 'gestor-insurance-project'
+        credential: admin.credential.cert(serviceAccount)
       });
     }
 

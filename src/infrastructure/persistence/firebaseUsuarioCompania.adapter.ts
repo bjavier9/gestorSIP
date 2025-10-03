@@ -1,56 +1,69 @@
 
-// src/infrastructure/persistence/firebaseUsuarioCompania.adapter.ts
-
 import { injectable } from 'inversify';
-import { getFirestore, Firestore, CollectionReference, QuerySnapshot } from 'firebase-admin/firestore';
+import { CollectionReference, Timestamp } from 'firebase-admin/firestore';
 import { UsuarioCompaniaRepository } from '../../domain/ports/usuarioCompaniaRepository.port';
 import { UsuarioCompania } from '../../domain/usuarioCompania';
-import { ApiError }   from '../../utils/ApiError';
+import { ApiError } from '../../utils/ApiError';
+import { db } from '../../config/firebase';
 
 @injectable()
 export class FirebaseUsuarioCompaniaAdapter implements UsuarioCompaniaRepository {
-  private readonly db: Firestore;
   private readonly collection: CollectionReference;
 
   constructor() {
-    this.db = getFirestore();
-    this.collection = this.db.collection('usuarios_companias');
+    this.collection = db.collection('usuarios_companias');
   }
 
-  private docToUsuarioCompania(doc: FirebaseFirestore.QueryDocumentSnapshot): UsuarioCompania {
+  private docToUsuarioCompania(doc: FirebaseFirestore.DocumentSnapshot): UsuarioCompania {
     if (!doc.exists) {
       throw new ApiError('NOT_FOUND', 'Document not found.', 404);
     }
-    const data = doc.data();
+    const data = doc.data()!;
+
+    // Securely convert timestamp to Date
+    const fechaCreacion = data.fechaCreacion instanceof Timestamp 
+      ? data.fechaCreacion.toDate() 
+      : new Date(); // Fallback to current date
+
     return {
       id: doc.id,
-      enteId: data.enteId,
-      companiaCorretajeId: data.companiaCorretajeId, // Reverted to the correct field name
-      oficinaId: data.oficinaId,
+      userId: data.userId,
+      email: data.email,
+      companiaCorretajeId: data.companiaCorretajeId,
       rol: data.rol,
       activo: data.activo,
+      fechaCreacion: fechaCreacion,
+      ...(data.enteId && { enteId: data.enteId }),
+      ...(data.oficinaId && { oficinaId: data.oficinaId }),
     };
   }
 
+  async create(data: Partial<UsuarioCompania>): Promise<UsuarioCompania> {
+    const docRef = this.collection.doc();
+    const newAssociation = {
+      ...data,
+      activo: data.activo !== undefined ? data.activo : true,
+      fechaCreacion: new Date(), // Set creation date on new document
+    };
+    await docRef.set(newAssociation);
+    const newDoc = await docRef.get();
+    return this.docToUsuarioCompania(newDoc);
+  }
+
   async findByUserId(userId: string): Promise<UsuarioCompania[]> {
-    // In Firestore, the document ID is the user's UID for this collection
-    const doc = await this.collection.doc(userId).get();
-    if (!doc.exists) {
-        // To support users in multiple companies, we query by a `userId` field.
-        // This assumes the schema might have a dedicated userId field if the doc ID isn't the UID.
-        const snapshot = await this.collection.where('id', '==', userId).get();
-        if (snapshot.empty) {
-            return [];
-        }
-        return snapshot.docs.map(d => this.docToUsuarioCompania(d));
+    const snapshot = await this.collection.where('userId', '==', userId).get();
+    
+    if (snapshot.empty) {
+      return [];
     }
-    return [this.docToUsuarioCompania(doc as FirebaseFirestore.QueryDocumentSnapshot)];
+    
+    return snapshot.docs.map(doc => this.docToUsuarioCompania(doc));
   }
 
   async findByUserAndCompania(userId: string, companiaId: string): Promise<UsuarioCompania | null> {
     const snapshot = await this.collection
-      .where('id', '==', userId)
-      .where('companiaCorretajeId', '==', companiaId) // Reverted to the correct field name
+      .where('userId', '==', userId)
+      .where('companiaCorretajeId', '==', companiaId)
       .limit(1)
       .get();
 

@@ -4,7 +4,7 @@ const API_BASE_URL = 'http://localhost:3000';
 
 async function testAuthInfo() {
   try {
-    const response = await axios.get(`${API_BASE_URL}/auth/info`);
+    const response = await axios.get(`${API_BASE_URL}/api/auth/info`);
     if (response.status === 200 && response.data.data.projectId) {
       console.log('Successfully retrieved auth info:', response.data.data.projectId);
       return true;
