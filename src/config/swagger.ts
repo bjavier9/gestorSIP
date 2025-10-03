@@ -206,6 +206,43 @@ const options: swaggerJsdoc.Options = {
                         activo: { type: 'boolean' }
                     }
                 },
+                Lead: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string' },
+                        nombre: { type: 'string' },
+                        correo: { type: 'string', format: 'email' },
+                        telefono: { type: 'string' },
+                        companiaCorretajeId: { type: 'string' },
+                        agenteId: { type: 'string', nullable: true },
+                        fechaCreacion: { type: 'string', format: 'date-time' },
+                        fechaActualizacion: { type: 'string', format: 'date-time' },
+                        estado: { type: 'string', enum: ['nuevo','contactado','calificado','perdido','ganado'] },
+                        origen: { type: 'string' },
+                    }
+                },
+                CreateLeadRequest: {
+                    type: 'object',
+                    required: ['nombre','correo','telefono','origen'],
+                    properties: {
+                        nombre: { type: 'string' },
+                        correo: { type: 'string', format: 'email' },
+                        telefono: { type: 'string' },
+                        origen: { type: 'string' },
+                        estado: { type: 'string', enum: ['nuevo','contactado','calificado','perdido','ganado'], nullable: true }
+                    }
+                },
+                UpdateLeadRequest: {
+                    type: 'object',
+                    properties: {
+                        nombre: { type: 'string' },
+                        correo: { type: 'string', format: 'email' },
+                        telefono: { type: 'string' },
+                        origen: { type: 'string' },
+                        estado: { type: 'string', enum: ['nuevo','contactado','calificado','perdido','ganado'] },
+                        agenteId: { type: 'string' }
+                    }
+                },
             },
         },
     },

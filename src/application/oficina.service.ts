@@ -31,7 +31,8 @@ export class OficinaService {
   }
 
   async updateOficina(companiaId: string, oficinaId: string, updates: Partial<Omit<Oficina, 'id' | 'companiaCorretajeId' | 'fechaCreacion'>>): Promise<Oficina> {
-    const oficina = await this.oficinaRepository.update(companiaId, oficinaId, updates);
+    const payload = { ...updates, companiaCorretajeId: companiaId } as Partial<Oficina>;
+    const oficina = await this.oficinaRepository.update(oficinaId, payload);
     if (!oficina) {
       throw new ApiError('NOT_FOUND', 'Oficina no encontrada para actualizar.', 404);
     }

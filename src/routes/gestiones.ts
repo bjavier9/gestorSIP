@@ -2,26 +2,24 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import container from '../config/container';
 import { TYPES } from '../config/types';
-import { LeadController } from '../infrastructure/http/lead.controller';
+import { GestionController } from '../infrastructure/http/gestion.controller';
 import { agentSupervisorMiddleware, authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
-
-// Lazy-load the controller inside the route handler to prevent circular dependency issues at startup.
-const getController = () => container.get<LeadController>(TYPES.LeadController);
+const getController = () => container.get<GestionController>(TYPES.GestionController);
 
 /**
  * @swagger
- * /api/leads:
+ * /api/gestiones:
  *   get:
- *     tags: [Leads]
- *     summary: Listar leads de la compania
- *     description: Retorna los leads asociados a la compania del token JWT.
+ *     tags: [Gestiones]
+ *     summary: Listar gestiones de la compania
+ *     description: Devuelve todas las gestiones asociadas a la compania del usuario autenticado.
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Lista de leads.
+ *         description: Lista de gestiones.
  *         content:
  *           application/json:
  *             schema:
@@ -32,18 +30,18 @@ const getController = () => container.get<LeadController>(TYPES.LeadController);
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Lead'
+ *                     $ref: '#/components/schemas/Gestion'
  */
 router.get('/', authMiddleware, asyncHandler((req, res, next) => {
-  getController().getAll(req, res, next);
+  getController().list(req, res, next);
 }));
 
 /**
  * @swagger
- * /api/leads/{id}:
+ * /api/gestiones/{id}:
  *   get:
- *     tags: [Leads]
- *     summary: Obtener lead por ID
+ *     tags: [Gestiones]
+ *     summary: Obtener gestion por ID
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -53,7 +51,7 @@ router.get('/', authMiddleware, asyncHandler((req, res, next) => {
  *         schema: { type: string }
  *     responses:
  *       200:
- *         description: Lead encontrado.
+ *         description: Gestion encontrada.
  *         content:
  *           application/json:
  *             schema:
@@ -62,11 +60,11 @@ router.get('/', authMiddleware, asyncHandler((req, res, next) => {
  *                 success: { type: boolean, example: true }
  *                 status: { type: integer, example: 200 }
  *                 data:
- *                   $ref: '#/components/schemas/Lead'
+ *                   $ref: '#/components/schemas/Gestion'
  *       403:
- *         description: Prohibido.
+ *         description: Acceso denegado.
  *       404:
- *         description: Lead no encontrado.
+ *         description: Gestion no encontrada.
  */
 router.get('/:id', authMiddleware, asyncHandler((req, res, next) => {
   getController().getById(req, res, next);
@@ -74,11 +72,10 @@ router.get('/:id', authMiddleware, asyncHandler((req, res, next) => {
 
 /**
  * @swagger
- * /api/leads:
+ * /api/gestiones:
  *   post:
- *     tags: [Leads]
- *     summary: Crear lead
- *     description: Crea un lead dentro de la compania del usuario (se infiere del token).
+ *     tags: [Gestiones]
+ *     summary: Crear una nueva gestion
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -86,17 +83,19 @@ router.get('/:id', authMiddleware, asyncHandler((req, res, next) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CreateLeadRequest'
+ *             $ref: '#/components/schemas/CreateGestionRequest'
  *           examples:
  *             default:
  *               value:
- *                 nombre: "Juan Perez"
- *                 correo: "juan@example.com"
- *                 telefono: "+58-412-5556677"
- *                 origen: "web"
+ *                 tipo: "nueva"
+ *                 estado: "en_gestion"
+ *                 leadId: "lead_001"
+ *                 prioridad: "alta"
+ *                 notas: "Cliente solicito cotizacion con cobertura extendida"
+ *                 fechaVencimiento: "2025-12-31T00:00:00.000Z"
  *     responses:
  *       201:
- *         description: Lead creado.
+ *         description: Gestion creada.
  *         content:
  *           application/json:
  *             schema:
@@ -105,9 +104,11 @@ router.get('/:id', authMiddleware, asyncHandler((req, res, next) => {
  *                 success: { type: boolean, example: true }
  *                 status: { type: integer, example: 201 }
  *                 data:
- *                   $ref: '#/components/schemas/Lead'
- *       400: { description: Solicitud invalida }
- *       401: { description: No autorizado }
+ *                   $ref: '#/components/schemas/Gestion'
+ *       400:
+ *         description: Solicitud invalida.
+ *       403:
+ *         description: Rol no autorizado.
  */
 router.post('/', authMiddleware, agentSupervisorMiddleware, asyncHandler((req, res, next) => {
   getController().create(req, res, next);
@@ -115,10 +116,10 @@ router.post('/', authMiddleware, agentSupervisorMiddleware, asyncHandler((req, r
 
 /**
  * @swagger
- * /api/leads/{id}:
+ * /api/gestiones/{id}:
  *   put:
- *     tags: [Leads]
- *     summary: Actualizar lead
+ *     tags: [Gestiones]
+ *     summary: Actualizar una gestion
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -131,10 +132,10 @@ router.post('/', authMiddleware, agentSupervisorMiddleware, asyncHandler((req, r
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/UpdateLeadRequest'
+ *             $ref: '#/components/schemas/UpdateGestionRequest'
  *     responses:
  *       200:
- *         description: Lead actualizado.
+ *         description: Gestion actualizada.
  *         content:
  *           application/json:
  *             schema:
@@ -143,9 +144,11 @@ router.post('/', authMiddleware, agentSupervisorMiddleware, asyncHandler((req, r
  *                 success: { type: boolean, example: true }
  *                 status: { type: integer, example: 200 }
  *                 data:
- *                   $ref: '#/components/schemas/Lead'
- *       403: { description: Prohibido }
- *       404: { description: No encontrado }
+ *                   $ref: '#/components/schemas/Gestion'
+ *       403:
+ *         description: Rol no autorizado o compania incorrecta.
+ *       404:
+ *         description: Gestion no encontrada.
  */
 router.put('/:id', authMiddleware, agentSupervisorMiddleware, asyncHandler((req, res, next) => {
   getController().update(req, res, next);
@@ -153,10 +156,10 @@ router.put('/:id', authMiddleware, agentSupervisorMiddleware, asyncHandler((req,
 
 /**
  * @swagger
- * /api/leads/{id}:
+ * /api/gestiones/{id}:
  *   delete:
- *     tags: [Leads]
- *     summary: Eliminar lead
+ *     tags: [Gestiones]
+ *     summary: Eliminar una gestion
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -166,7 +169,7 @@ router.put('/:id', authMiddleware, agentSupervisorMiddleware, asyncHandler((req,
  *         schema: { type: string }
  *     responses:
  *       200:
- *         description: Lead eliminado.
+ *         description: Gestion eliminada.
  *         content:
  *           application/json:
  *             schema:
@@ -177,9 +180,11 @@ router.put('/:id', authMiddleware, agentSupervisorMiddleware, asyncHandler((req,
  *                 data:
  *                   type: object
  *                   properties:
- *                     message: { type: string, example: 'Lead eliminado' }
- *       403: { description: Prohibido }
- *       404: { description: No encontrado }
+ *                     message: { type: string, example: 'Gestion eliminada' }
+ *       403:
+ *         description: Rol no autorizado o compania incorrecta.
+ *       404:
+ *         description: Gestion no encontrada.
  */
 router.delete('/:id', authMiddleware, agentSupervisorMiddleware, asyncHandler((req, res, next) => {
   getController().delete(req, res, next);

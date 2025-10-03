@@ -6,39 +6,39 @@ import { ApiError } from '../utils/ApiError';
 
 @injectable()
 export class LeadService {
-    constructor(
-        @inject(TYPES.LeadRepository) private leadRepository: LeadRepository
-    ) {}
+  constructor(
+    @inject(TYPES.LeadRepository) private leadRepository: LeadRepository,
+  ) {}
 
-    async createLead(leadData: Omit<Lead, 'id' | 'fechaCreacion' | 'fechaActualizacion'>): Promise<Lead> {
-        return this.leadRepository.create(leadData);
-    }
+  async createLead(leadData: Omit<Lead, 'id' | 'fechaCreacion' | 'fechaActualizacion'>): Promise<Lead> {
+    return this.leadRepository.create({ ...leadData, estado: leadData.estado ?? 'nuevo' });
+  }
 
-    async getLeadsByCompania(companiaId: string): Promise<Lead[]> {
-        return this.leadRepository.findAllByCompania(companiaId);
-    }
+  async getLeadsByCompania(companiaId: string): Promise<Lead[]> {
+    return this.leadRepository.findAllByCompania(companiaId);
+  }
 
-    async getLeadById(id: string): Promise<Lead | null> {
-        const lead = await this.leadRepository.findById(id);
-        if (!lead) {
-            throw new ApiError('NOT_FOUND', 'Lead not found.', 404);
-        }
-        return lead;
+  async getLeadById(id: string): Promise<Lead> {
+    const lead = await this.leadRepository.findById(id);
+    if (!lead) {
+      throw new ApiError('NOT_FOUND', 'Lead not found.', 404);
     }
+    return lead;
+  }
 
-    async updateLead(id: string, updates: Partial<Lead>): Promise<Lead | null> {
-        const existingLead = await this.leadRepository.findById(id);
-        if (!existingLead) {
-            throw new ApiError('NOT_FOUND', 'Lead not found.', 404);
-        }
-        return this.leadRepository.update(id, updates);
+  async updateLead(id: string, updates: Partial<Lead>): Promise<Lead> {
+    const existingLead = await this.leadRepository.findById(id);
+    if (!existingLead) {
+      throw new ApiError('NOT_FOUND', 'Lead not found.', 404);
     }
+    return this.leadRepository.update(id, updates);
+  }
 
-    async deleteLead(id: string): Promise<void> {
-        const existingLead = await this.leadRepository.findById(id);
-        if (!existingLead) {
-            throw new ApiError('NOT_FOUND', 'Lead not found.', 404);
-        }
-        return this.leadRepository.delete(id);
+  async deleteLead(id: string): Promise<void> {
+    const existingLead = await this.leadRepository.findById(id);
+    if (!existingLead) {
+      throw new ApiError('NOT_FOUND', 'Lead not found.', 404);
     }
+    await this.leadRepository.delete(id);
+  }
 }

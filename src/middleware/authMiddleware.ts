@@ -5,7 +5,7 @@ import asyncHandler from 'express-async-handler';
 import { ApiError } from '../utils/ApiError';
 
 // Extiende el tipo de Request de Express para incluir una propiedad de usuario
-interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest extends Request {
     user?: any;
 }
 
@@ -64,7 +64,7 @@ export const adminSupervisorOrSuperadminMiddleware = asyncHandler(async (req: Au
 
 export const agentSupervisorMiddleware = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const role = req.user && req.user.user ? req.user.user.role : undefined;
-    const allowed = ['agente', 'supervisor'];
+    const allowed = ['agent', 'supervisor'];
     if (typeof role === 'string' && allowed.includes(role.toLowerCase())) {
         return next();
     }
