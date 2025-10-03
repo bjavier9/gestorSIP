@@ -1,70 +1,70 @@
-# GestorSIP Backend
+﻿# GestorSIP Backend
 
-GestorSIP is the backend for an insurance brokerage platform. It exposes a REST API built with Node.js, Express, and TypeScript following a hexagonal architecture. The system integrates with Firebase Admin to handle authentication and Firestore persistence, enforcing strict access rules based on user roles.
-
----
-
-## Key Features
-- **Hexagonal Architecture** (Ports and Adapters) for clear separation between domain logic and infrastructure.
-- **TypeScript + InversifyJS** for type-safe development and dependency injection.
-- **Firebase Admin SDK** for authentication (email/password) and Firestore access.
-- **Role-based Access Control** baked into middleware (`superadmin`, `admin`, `supervisor`, `agent`, `viewer`).
-- **Consistent API Responses** using `handleSuccess`/`handleError` wrappers.
-- **OpenAPI/Swagger Docs** automatically generated from route annotations (`/api-docs`).
-- **Comprehensive Domain Support** for companies, offices, user-company associations, leads, gestiones, entes, aseguradoras, configurations, etc.
+GestorSIP es el backend de una plataforma de corretaje de seguros. Expone una API REST construida con Node.js, Express y TypeScript siguiendo una arquitectura hexagonal. El sistema se integra con Firebase Admin para manejar autenticacion y persistencia en Firestore, aplicando reglas de acceso por rol.
 
 ---
 
-## Tech Stack
-| Layer        | Tooling |
-|--------------|---------|
-| Language     | TypeScript (strict) |
-| Runtime      | Node.js 18+ |
-| Framework    | Express.js |
-| DI Container | InversifyJS |
-| Database     | Cloud Firestore (Firebase Admin) |
-| Auth         | Firebase Authentication (email/password, custom JWT) |
-| Docs         | Swagger UI + swagger-jsdoc |
-| Logging      | Winston |
+## Caracteristicas Clave
+- Arquitectura **Hexagonal (Puertos y Adaptadores)** para separar logica de dominio e infraestructura.
+- **TypeScript + InversifyJS** para tipado estricto e inyeccion de dependencias.
+- **Firebase Admin SDK** para autenticacion y acceso a Firestore.
+- **Control de accesos por rol** implementado en middleware (`superadmin`, `admin`, `supervisor`, `agent`, `viewer`).
+- **Respuestas consistentes** mediante los helpers `handleSuccess` y `handleError`.
+- **Documentacion OpenAPI/Swagger** generada automaticamente (`/api-docs`).
+- **Cobertura de dominio amplia** para companias, oficinas, usuarios-compania, leads, gestiones, entes, aseguradoras, configuraciones, entre otros.
 
 ---
 
-## Project Layout
+## Stack Tecnico
+| Capa          | Herramientas |
+|---------------|--------------|
+| Lenguaje      | TypeScript (strict) |
+| Runtime       | Node.js 18+ |
+| Framework     | Express.js |
+| Contenedor DI | InversifyJS |
+| Base de datos | Cloud Firestore (Firebase Admin) |
+| Autenticacion | Firebase Authentication (email/password, custom JWT) |
+| Documentacion | Swagger UI + swagger-jsdoc |
+| Logging       | Winston |
+
+---
+
+## Estructura del Proyecto
 ```
 src/
-  application/        # Use cases / services (business orchestration)
-  config/             # Inversify container, types, firebase, swagger
-  domain/             # Entities, value objects, ports (interfaces)
+  application/        # Casos de uso / servicios
+  config/             # Container de Inversify, tipos, firebase, swagger
+  domain/             # Entidades, value objects, puertos
   infrastructure/
-    http/             # Express controllers (adapters)
-    persistence/      # Firestore adapters implementing ports
-  middleware/         # JWT auth, role checks, error handling
-  routes/             # Express routers with swagger annotations
-  services/           # Misc shared services (e.g. content service)
+    http/             # Controladores Express (adaptadores)
+    persistence/      # Adaptadores Firestore
+  middleware/         # JWT, roles, errores
+  routes/             # Routers Express con anotaciones Swagger
+  services/           # Servicios compartidos
   utils/              # ApiError, response handler, helpers
-index.ts              # App bootstrap (initializes Firebase, mounts routes)
+index.ts              # Bootstrap de la app
 ```
 
 ---
 
-## Domain Highlights
+## Aspectos del Dominio
 ### Roles
-- **superadmin**: manages brokerage companies, requires email configured in `SUPERADMIN_EMAIL`.
-- **admin / supervisor**: manage internal resources (users, leads, gestiones).
-- **agent**: handles assigned leads/gestiones.
-- **viewer**: read-only endpoints.
+- **superadmin**: gestiona companias de corretaje, requiere correo configurado en `SUPERADMIN_EMAIL`.
+- **admin / supervisor**: administran recursos internos (usuarios, leads, gestiones).
+- **agent**: maneja leads/gestiones asignadas.
+- **viewer**: acceso de solo lectura.
 
-### Entities
-- **CompaniaCorretaje**: brokerage with offices, currencies, modules. Only superadmin can create/update/activate/deactivate.
-- **UsuarioCompania**: association of a Firebase Auth user with a company. Stored with `id = uid`.
-- **Lead**: prospect linked to a company (and optionally agent). CRUD restricted to agent/supervisor.
-- **Gestion**: lifecycle of a policy action (new/renewal). Must be linked to either a lead or an ente (exclusive). Only agent owner or supervisor can modify.
-- **Ente**: approved client (natural or legal person).
+### Entidades
+- **CompaniaCorretaje**: corretaje con oficinas, monedas y modulos. Solo superadmin puede crear, actualizar, activar o desactivar.
+- **UsuarioCompania**: asociacion de un usuario Firebase con una compania. El documento usa `id = uid`.
+- **Lead**: prospecto vinculado a una compania (y opcionalmente a un agente). CRUD restringido a agent/supervisor.
+- **Gestion**: ciclo de trabajo sobre una poliza (nueva o renovacion). Debe vincularse a un lead o ente. Solo el agente propietario o un supervisor puede modificar.
+- **Ente**: cliente aprobado (persona natural o juridica).
 
 ---
 
-## Response Convention
-All controllers must respond through `handleSuccess(res, data, status)` and `handleError`, yielding:
+## Convencion de Respuestas
+Todos los controladores deben responder con `handleSuccess(res, data, status)` y `handleError`, obteniendo estructuras como:
 ```
 {
   "success": true,
@@ -72,132 +72,126 @@ All controllers must respond through `handleSuccess(res, data, status)` and `han
   "data": { ... }
 }
 ```
-Errors use `ApiError` for consistent keys and HTTP codes.
+Los errores usan `ApiError` para mantener codigos y mensajes consistentes.
 
 ---
 
-## Environment Variables
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `PORT` | Optional | HTTP port (default `3000`). |
-| `JWT_SECRET` | Required | Secret used to sign application JWTs. |
-| `JWT_EXPIRES_IN` | Optional | JWT expiration (e.g. `24h`). |
-| `FIREBASE_PROJECT_ID` | Required | Firebase project identifier. |
-| `SUPERADMIN_EMAIL` | Required | Email allowed to act as superadmin. |
-| `SUPERADMIN_PASSWORD` | Required | Password for superadmin login endpoint. |
-| `TEST_SECRET` | Optional | Secret used by `/api/auth/test-token`. |
-| `FIREBASE_SERVICE_ACCOUNT` | Optional | JSON (single line) with service account credentials (use in deployments). |
+## Variables de Entorno
+| Variable | Obligatoria | Descripcion |
+|----------|-------------|-------------|
+| `PORT` | Opcional | Puerto HTTP (por defecto `3000`). |
+| `JWT_SECRET` | Obligatoria | Clave para firmar los JWT de la aplicacion. |
+| `JWT_EXPIRES_IN` | Opcional | Validez del JWT (ej. `24h`). |
+| `FIREBASE_PROJECT_ID` | Obligatoria | Identificador del proyecto Firebase. |
+| `SUPERADMIN_EMAIL` | Obligatoria | Correo autorizado como superadmin. |
+| `SUPERADMIN_PASSWORD` | Obligatoria | Clave para el endpoint de login superadmin. |
+| `TEST_SECRET` | Opcional | Secreto usado por `/api/auth/test-token`. |
+| `FIREBASE_SERVICE_ACCOUNT` | Opcional | JSON (una sola linea) con credenciales de servicio (para despliegues). |
 
-> Development expects a `firebase-credentials.json` file at project root (ignored by git). Production can set `FIREBASE_SERVICE_ACCOUNT` instead.
+> En desarrollo se espera el archivo `firebase-credentials.json` en la raiz (ignorando por git). En produccion puede usarse `FIREBASE_SERVICE_ACCOUNT`.
 
 ---
 
-## Getting Started
-1. **Install prerequisites**
+## Puesta en Marcha
+1. **Instalar requisitos**
    - Node.js 18+
    - npm 9+
 
-2. **Clone and install**
+2. **Clonar e instalar**
    ```bash
    git clone <repo>
    cd gestorSIP
    npm install
    ```
 
-3. **Configure Firebase credentials**
-   - Download service account JSON from Firebase Console.
-   - Save as `firebase-credentials.json` in the project root.
+3. **Configurar Firebase**
+   - Descarga las credenciales de servicio desde Firebase Console.
+   - Guarda el JSON como `firebase-credentials.json` en la raiz del proyecto.
 
-4. **Create `.env`** (example)
+4. **Crear `.env`** (ejemplo)
    ```env
    PORT=3000
-   JWT_SECRET=please_set_a_secure_secret
+   JWT_SECRET=define_un_secreto_seguro
    SUPERADMIN_EMAIL=superadmin@gestorinsurance.com
    SUPERADMIN_PASSWORD=SuperSecretPassword123!
    TEST_SECRET=super_dev_secret
    ```
 
-5. **Seed data (optional)**
-   - Provide `temp-firebase-credentials.json` (service account) for the seeding script.
-   - Run `node seed.js` to populate Firestore.
+5. **Sembrar datos (opcional)**
+   - Provee `temp-firebase-credentials.json` para el script de seed.
+   - Ejecuta `node seed.js` para poblar Firestore.
 
-6. **Run in development**
+6. **Ejecucion en desarrollo**
    ```bash
    npm run dev
-   # server: http://localhost:3000
+   # servidor: http://localhost:3000
    # swagger: http://localhost:3000/api-docs
    ```
 
-7. **Build for production**
+7. **Construccion para produccion**
    ```bash
    npm run build
    npm start
    ```
 
-> If you see `Firestore no ha sido inicializado`, verify `firebase-credentials.json` exists or service account variables are set before running the server.
+> Si ves `Firestore no ha sido inicializado`, revisa que el archivo `firebase-credentials.json` exista o que las variables de servicio esten definidas.
 
 ---
 
-## API Summary
-| Area | Base Path | Roles |
+## Resumen de API
+| Area | Ruta base | Roles |
 |------|-----------|-------|
-| Auth | `/api/auth` | varies (login open, others require JWT) |
-| Companias | `/api/companias` | superadmin (email must match `SUPERADMIN_EMAIL`) |
-| Oficinas | `/api/companias/:companiaId/oficinas` | supervisor/admin/agent depending on action |
-| Usuarios-Companias | `/api/usuarios-companias` | admin/supervisor/superadmin |
-| Leads | `/api/leads` | agent & supervisor (create/update/delete), all company roles for read |
-| Gestiones | `/api/gestiones` | agent/supervisor for mutations, any company user for read |
-| Entes | `/api/entes` | authenticated company users |
-| Aseguradoras | `/api/aseguradoras` | authenticated |
-| Configurations | `/api/configurations` | authenticated |
+| Auth | `/api/auth` | depende del endpoint (login abierto, resto con JWT) |
+| Companias | `/api/companias` | solo superadmin |
+| Oficinas | `/api/companias/:companiaId/oficinas` | admin o supervisor segun accion |
+| Usuarios-Companias | `/api/usuarios-companias` | admin, supervisor o superadmin |
+| Leads | `/api/leads` | agent y supervisor para mutaciones; todos los roles de la compania para lectura |
+| Gestiones | `/api/gestiones` | agent/supervisor para mutaciones; cualquier usuario de la compania para lectura |
+| Entes | `/api/entes` | usuarios autenticados de la compania |
+| Aseguradoras | `/api/aseguradoras` | usuarios autenticados |
+| Configurations | `/api/configurations` | autenticados (mutaciones solo superadmin) |
 
-Swagger has detailed schemas: `Lead`, `Gestion`, `CompaniaCorretaje`, `UsuarioCompania`, etc.
-
----
-
-## Development Guidelines
-- **Use ASCII** files to avoid encoding issues.
-- **Document routes** with Swagger JSDoc comments in `src/routes/*`.
-- **All controllers** must use `handleSuccess`/`handleError` wrappers.
-- **Middleware**:
-  - `authMiddleware` verifies JWT and populates `req.user`.
-  - `superAdminMiddleware` enforces role/email checks.
-  - `adminSupervisorOrSuperadminMiddleware` handles user-compania actions.
-  - `agentSupervisorMiddleware` handles leads/gestiones.
-- **Dependency Injection**: update `src/config/types.ts` and `src/config/container.ts` when adding services/controllers/adapters.
-- **Testing**: TypeScript compilation (`npm run build`) is the primary check. Additional E2E scripts live under `tests/` (e.g. `tests/companiaCorretaje.test.js`).
+Swagger contiene esquemas detallados (`Lead`, `Gestion`, `CompaniaCorretaje`, `UsuarioCompania`, etc.).
 
 ---
 
-## Common Issues
-| Symptom | Fix |
-|---------|-----|
-| `Firestore no ha sido inicializado` | Ensure Firebase credentials are loaded before starting the app. |
-| `Unauthorized` on superadmin routes | Confirm email in JWT equals `SUPERADMIN_EMAIL`. |
-| TypeScript build errors in adapters | Align repository interfaces with adapter implementations (`findById`, `update`, etc.). |
-| Swagger missing new endpoint | Add JSDoc in the route file and regenerate by restarting the dev server. |
+## Guia de Desarrollo
+- Utiliza archivos ASCII para evitar problemas de encoding.
+- Documenta las rutas con Swagger JSDoc en `src/routes/*`.
+- Los controladores deben responder con `handleSuccess`/`handleError`.
+- Middleware relevantes:
+  - `authMiddleware`: valida JWT y adjunta `req.user`.
+  - `superAdminMiddleware`: verifica correo/rol de superadmin.
+  - `adminSupervisorOrSuperadminMiddleware`: controla acciones de usuarios-compania.
+  - `agentSupervisorMiddleware`: protege leads y gestiones.
+- Actualiza `src/config/types.ts` y `src/config/container.ts` cuando agregues servicios/controladores/adaptadores.
+- Compila con TypeScript (`npm run build`) como verificacion principal. Los scripts E2E viven en `tests/`.
 
 ---
 
-## Adding a New API
-1. Define domain entities and ports (`src/domain`).
-2. Implement Firestore adapter in `src/infrastructure/persistence`.
-3. Create service with business rules in `src/application`.
-4. Build controller in `src/infrastructure/http` and wire responses with `handleSuccess`.
-5. Register types+bindings in `src/config/types.ts` and `src/config/container.ts`.
-6. Add route under `src/routes`, secure with proper middleware, and document with Swagger.
-7. Mount route in `src/index.ts`.
-8. Update documentation (README, CONTEXTO_GEMINI.md, wiki if needed).
+## Problemas Frecuentes
+| Sintoma | Solucion |
+|---------|----------|
+| `Firestore no ha sido inicializado` | Verifica credenciales de Firebase antes de iniciar el servidor. |
+| `Unauthorized` en rutas de superadmin | Confirma que el correo del JWT coincide con `SUPERADMIN_EMAIL`. |
+| Errores de TypeScript en adaptadores | Alinea interfaces de repositorio con las implementaciones (`findById`, `update`, etc.). |
+| Swagger no muestra un endpoint nuevo | Asegurate de agregar JSDoc en la ruta y reinicia el servidor. |
 
 ---
 
-## Additional Resources
-- `CONTEXTO_GEMINI.md`: condensed architectural directives for LLM-based tooling.
-- `/wiki/*`: internal playbooks and flow descriptions.
-- `seed.js`: sample Firestore dataset (companias, oficinas, leads, gestiones, usuarios, etc.).
+## Como agregar una nueva API
+1. Define entidades y puertos (`src/domain`).
+2. Implementa el adaptador Firestore en `src/infrastructure/persistence`.
+3. Crea el servicio con reglas de negocio en `src/application`.
+4. Construye el controlador en `src/infrastructure/http` usando `handleSuccess`.
+5. Registra tipos y bindings en `src/config/types.ts` y `src/config/container.ts`.
+6. Agrega la ruta en `src/routes`, protege con middleware y documenta con Swagger.
+7. Monta la ruta en `src/index.ts`.
+8. Actualiza documentacion (README, wiki) y scripts de prueba si aplica.
 
 ---
 
-## License / Contributing
-This repository is private. Follow the existing coding standards, pass TypeScript checks before pushing, and document any new endpoints. For larger changes, update the wiki with architecture decisions.
-
+## Recursos Adicionales
+- `CONTEXTO_GEMINI.md`: directrices arquitectonicas resumidas.
+- `/wiki/*`: manuales internos y flujos.
+- `seed.js`: dataset de ejemplo (companias, oficinas, leads, gestiones, usuarios, etc.).
