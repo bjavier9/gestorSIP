@@ -25,14 +25,17 @@ const getController = () => container.get<LeadController>(TYPES.LeadController);
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 status: { type: integer, example: 200 }
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Lead'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/Lead'
  */
 router.get('/', authMiddleware, asyncHandler((req, res, next) => {
   getController().getAll(req, res, next);
@@ -57,16 +60,27 @@ router.get('/', authMiddleware, asyncHandler((req, res, next) => {
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 status: { type: integer, example: 200 }
- *                 data:
- *                   $ref: '#/components/schemas/Lead'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           $ref: '#/components/schemas/Lead'
  *       403:
  *         description: Prohibido.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Lead no encontrado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get('/:id', authMiddleware, asyncHandler((req, res, next) => {
   getController().getById(req, res, next);
@@ -100,14 +114,27 @@ router.get('/:id', authMiddleware, asyncHandler((req, res, next) => {
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 status: { type: integer, example: 201 }
- *                 data:
- *                   $ref: '#/components/schemas/Lead'
- *       400: { description: Solicitud invalida }
- *       401: { description: No autorizado }
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           $ref: '#/components/schemas/Lead'
+ *       400:
+ *         description: Solicitud invalida.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: No autorizado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post('/', authMiddleware, agentSupervisorMiddleware, asyncHandler((req, res, next) => {
   getController().create(req, res, next);
@@ -138,14 +165,27 @@ router.post('/', authMiddleware, agentSupervisorMiddleware, asyncHandler((req, r
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 status: { type: integer, example: 200 }
- *                 data:
- *                   $ref: '#/components/schemas/Lead'
- *       403: { description: Prohibido }
- *       404: { description: No encontrado }
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           $ref: '#/components/schemas/Lead'
+ *       403:
+ *         description: Prohibido.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Lead no encontrado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.put('/:id', authMiddleware, agentSupervisorMiddleware, asyncHandler((req, res, next) => {
   getController().update(req, res, next);
@@ -170,16 +210,29 @@ router.put('/:id', authMiddleware, agentSupervisorMiddleware, asyncHandler((req,
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 status: { type: integer, example: 200 }
- *                 data:
- *                   type: object
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
  *                   properties:
- *                     message: { type: string, example: 'Lead eliminado' }
- *       403: { description: Prohibido }
- *       404: { description: No encontrado }
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           type: object
+ *                           properties:
+ *                             message: { type: string, example: "Lead eliminado" }
+ *       403:
+ *         description: Prohibido.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Lead no encontrado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.delete('/:id', authMiddleware, agentSupervisorMiddleware, asyncHandler((req, res, next) => {
   getController().delete(req, res, next);

@@ -49,11 +49,28 @@ router.use(authMiddleware);
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SuccessResponse'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           type: object
+ *                           additionalProperties: true
  *       400:
  *         description: Bad Request (e.g., missing fields, invalid language code).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: Unauthorized.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post('/refine-prompt', asyncHandler(async (req, res, next) => {
   const { prompt, languageCode, additionalInstructions } = req.body;
@@ -75,7 +92,9 @@ router.post('/refine-prompt', asyncHandler(async (req, res, next) => {
   });
 
   // 3. Send the successful response
-  handleSuccess(res, refinedData);
+  handleSuccess(req, res, refinedData);
 }));
 
 export default router;
+
+

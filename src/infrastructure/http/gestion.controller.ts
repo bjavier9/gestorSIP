@@ -28,7 +28,7 @@ export class GestionController {
     try {
       const user = this.getUserContext(req);
       const gestiones = await this.gestionService.getGestionesByCompania(user.companiaCorretajeId);
-      handleSuccess(res, gestiones);
+      handleSuccess(req, res, gestiones);
     } catch (error) {
       next(error);
     }
@@ -41,7 +41,7 @@ export class GestionController {
       if (gestion.companiaCorretajeId !== user.companiaCorretajeId) {
         throw new ApiError('FORBIDDEN', 'No tienes permiso para ver esta gestion.', 403);
       }
-      handleSuccess(res, gestion);
+      handleSuccess(req, res, gestion);
     } catch (error) {
       next(error);
     }
@@ -101,7 +101,7 @@ export class GestionController {
         activo,
       });
 
-      handleSuccess(res, nuevaGestion, 201);
+      handleSuccess(req, res, nuevaGestion, 201);
     } catch (error) {
       next(error);
     }
@@ -142,7 +142,7 @@ export class GestionController {
       }
 
       const updated = await this.gestionService.updateGestion(req.params.id, updates);
-      handleSuccess(res, updated);
+      handleSuccess(req, res, updated);
     } catch (error) {
       next(error);
     }
@@ -162,7 +162,7 @@ export class GestionController {
       }
 
       await this.gestionService.deleteGestion(req.params.id);
-      handleSuccess(res, { message: 'Gestion eliminada' });
+      handleSuccess(req, res, { message: 'Gestion eliminada' });
     } catch (error) {
       next(error);
     }

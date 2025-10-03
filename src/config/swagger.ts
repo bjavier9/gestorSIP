@@ -27,23 +27,69 @@ const options: swaggerJsdoc.Options = {
                 },
             },
             schemas: {
-                // Generic Error
+                // Generic Response Building Blocks
+                ResponseHeader: {
+                    type: 'object',
+                    properties: {
+                        timestamp: { type: 'string', format: 'date-time', example: '2024-01-31T15:04:05.000Z' },
+                        token: { type: 'string', nullable: true, description: 'JWT token echoed when available.' },
+                    },
+                    required: ['timestamp'],
+                },
+                SuccessStatus: {
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean', enum: [true] },
+                        code: { type: 'integer', example: 200 },
+                    },
+                    required: ['success', 'code'],
+                },
+                ErrorStatus: {
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean', enum: [false] },
+                        code: { type: 'integer', example: 400 },
+                    },
+                    required: ['success', 'code'],
+                },
+                SuccessResponse: {
+                    type: 'object',
+                    properties: {
+                        header: { $ref: '#/components/schemas/ResponseHeader' },
+                        body: {
+                            type: 'object',
+                            properties: {
+                                data: { description: 'Payload data.', nullable: true },
+                                message: { type: 'string', nullable: true },
+                            },
+                        },
+                        status: { $ref: '#/components/schemas/SuccessStatus' },
+                    },
+                    required: ['header', 'body', 'status'],
+                },
                 ErrorResponse: {
                     type: 'object',
                     properties: {
-                        success: { type: 'boolean', example: false },
-                        status: { type: 'integer' },
-                        error: {
+                        header: { $ref: '#/components/schemas/ResponseHeader' },
+                        body: {
                             type: 'object',
                             properties: {
-                                code: { type: 'string' },
-                                message: { type: 'string' },
+                                error: {
+                                    type: 'object',
+                                    properties: {
+                                        key: { type: 'string' },
+                                        message: { type: 'string' },
+                                    },
+                                    required: ['key', 'message'],
+                                },
                             },
+                            required: ['error'],
                         },
+                        status: { $ref: '#/components/schemas/ErrorStatus' },
                     },
+                    required: ['header', 'body', 'status'],
                 },
-
-                // --- Auth Schemas ---
+// --- Auth Schemas ---
                 LoginRequest: {
                     type: 'object',
                     required: ['idToken'],
@@ -183,14 +229,6 @@ const options: swaggerJsdoc.Options = {
                     },
                     required: ['nombre','rif']
                 },
-                SuccessResponse: {
-                    type: 'object',
-                    properties: {
-                        success: { type: 'boolean', example: true },
-                        status: { type: 'integer' },
-                        data: { type: 'object' }, 
-                    }
-                },
                 UpdateCompaniaRequest: {
                     type: 'object',
                     description: 'Payload to update a brokerage company (all fields optional)',
@@ -232,20 +270,128 @@ const options: swaggerJsdoc.Options = {
                         estado: { type: 'string', enum: ['nuevo','contactado','calificado','perdido','ganado'], nullable: true }
                     }
                 },
-                UpdateLeadRequest: {
+                UpdateLeadRequest: {\r\n                    type: 'object',\r\n                    properties: {\r\n                        nombre: { type: 'string' },\r\n                        correo: { type: 'string', format: 'email' },\r\n                        telefono: { type: 'string' },\r\n                        origen: { type: 'string' },\r\n                        estado: { type: 'string', enum: ['nuevo','contactado','calificado','perdido','ganado'] },\r\n                        agenteId: { type: 'string' }\r\n                    }\r\n                },\r\n                Oficina: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string' },
+                        companiaCorretajeId: { type: 'string' },
+                        nombre: { type: 'string' },
+                        direccion: { type: 'string' },
+                        telefono: { type: 'string' },
+                        moneda: { type: 'string' },
+                        activo: { type: 'boolean' },
+                        fechaCreacion: { type: 'string', format: 'date-time' },
+                        fechaActualizacion: { type: 'string', format: 'date-time' },
+                    },
+                    required: ['id','companiaCorretajeId','nombre','direccion','telefono','moneda','activo','fechaCreacion','fechaActualizacion'],
+                },
+                CreateOficinaRequest: {
+                    type: 'object',
+                    required: ['nombre','direccion','telefono','moneda','activo'],
+                    properties: {
+                        nombre: { type: 'string' },
+                        direccion: { type: 'string' },
+                        telefono: { type: 'string' },
+                        moneda: { type: 'string' },
+                        activo: { type: 'boolean' },
+                    },
+                },
+                UpdateOficinaRequest: {
                     type: 'object',
                     properties: {
                         nombre: { type: 'string' },
-                        correo: { type: 'string', format: 'email' },
+                        direccion: { type: 'string' },
                         telefono: { type: 'string' },
-                        origen: { type: 'string' },
-                        estado: { type: 'string', enum: ['nuevo','contactado','calificado','perdido','ganado'] },
-                        agenteId: { type: 'string' }
-                    }
+                        moneda: { type: 'string' },
+                        activo: { type: 'boolean' },
+                    },
                 },
-            },
-        },
-    },
+                Aseguradora: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string' },
+                        nombre: { type: 'string' },
+                        codigo: { type: 'string' },
+                        direccion: { type: 'string' },
+                        telefono: { type: 'string' },
+                        correo: { type: 'string', format: 'email' },
+                        rating: { type: 'number' },
+                        activo: { type: 'boolean' },
+                        fechaCreacion: { type: 'string', format: 'date-time' },
+                        fechaActualizacion: { type: 'string', format: 'date-time' },
+                    },
+                    required: ['id','nombre','codigo','direccion','telefono','correo','rating','activo','fechaCreacion','fechaActualizacion'],
+                },
+                CreateAseguradoraRequest: {
+                    type: 'object',
+                    required: ['nombre','codigo','direccion','telefono','correo','rating','activo'],
+                    properties: {
+                        nombre: { type: 'string' },
+                        codigo: { type: 'string' },
+                        direccion: { type: 'string' },
+                        telefono: { type: 'string' },
+                        correo: { type: 'string', format: 'email' },
+                        rating: { type: 'number' },
+                        activo: { type: 'boolean' },
+                    },
+                },
+                UpdateAseguradoraRequest: {
+                    type: 'object',
+                    properties: {
+                        nombre: { type: 'string' },
+                        codigo: { type: 'string' },
+                        direccion: { type: 'string' },
+                        telefono: { type: 'string' },
+                        correo: { type: 'string', format: 'email' },
+                        rating: { type: 'number' },
+                        activo: { type: 'boolean' },
+                    },
+                },
+                ConfigurationItem: {
+                    type: 'object',
+                    properties: {
+                        activo: { type: 'boolean' },
+                    },
+                    additionalProperties: true,
+                },
+                Configuration: {
+                    type: 'object',
+                    required: ['id','name','description','items'],
+                    properties: {
+                        id: { type: 'string' },
+                        name: { type: 'string' },
+                        description: { type: 'string' },
+                        items: {
+                            type: 'array',
+                            items: { $ref: '#/components/schemas/ConfigurationItem' },
+                        },
+                    },
+                },
+                ConfigurationCreateRequest: {
+                    type: 'object',
+                    required: ['id','name','description','items'],
+                    properties: {
+                        id: { type: 'string' },
+                        name: { type: 'string' },
+                        description: { type: 'string' },
+                        items: {
+                            type: 'array',
+                            items: { $ref: '#/components/schemas/ConfigurationItem' },
+                        },
+                    },
+                },
+                ConfigurationUpdateRequest: {
+                    type: 'object',
+                    properties: {
+                        name: { type: 'string' },
+                        description: { type: 'string' },
+                        items: {
+                            type: 'array',
+                            items: { $ref: '#/components/schemas/ConfigurationItem' },
+                        },
+                    },
+                },
+
     // IMPORTANT: Path to the files containing OpenAPI annotations
     apis: ['./src/routes/*.ts'],
 };
@@ -253,3 +399,8 @@ const options: swaggerJsdoc.Options = {
 const swaggerSpec = swaggerJsdoc(options);
 
 export default swaggerSpec;
+
+
+
+
+

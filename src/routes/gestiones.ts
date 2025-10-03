@@ -23,14 +23,17 @@ const getController = () => container.get<GestionController>(TYPES.GestionContro
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 status: { type: integer, example: 200 }
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Gestion'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/Gestion'
  */
 router.get('/', authMiddleware, asyncHandler((req, res, next) => {
   getController().list(req, res, next);
@@ -55,16 +58,27 @@ router.get('/', authMiddleware, asyncHandler((req, res, next) => {
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 status: { type: integer, example: 200 }
- *                 data:
- *                   $ref: '#/components/schemas/Gestion'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           $ref: '#/components/schemas/Gestion'
  *       403:
  *         description: Acceso denegado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Gestion no encontrada.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get('/:id', authMiddleware, asyncHandler((req, res, next) => {
   getController().getById(req, res, next);
@@ -99,16 +113,27 @@ router.get('/:id', authMiddleware, asyncHandler((req, res, next) => {
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 status: { type: integer, example: 201 }
- *                 data:
- *                   $ref: '#/components/schemas/Gestion'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           $ref: '#/components/schemas/Gestion'
  *       400:
  *         description: Solicitud invalida.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
  *         description: Rol no autorizado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post('/', authMiddleware, agentSupervisorMiddleware, asyncHandler((req, res, next) => {
   getController().create(req, res, next);
@@ -139,16 +164,27 @@ router.post('/', authMiddleware, agentSupervisorMiddleware, asyncHandler((req, r
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 status: { type: integer, example: 200 }
- *                 data:
- *                   $ref: '#/components/schemas/Gestion'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           $ref: '#/components/schemas/Gestion'
  *       403:
  *         description: Rol no autorizado o compania incorrecta.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Gestion no encontrada.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.put('/:id', authMiddleware, agentSupervisorMiddleware, asyncHandler((req, res, next) => {
   getController().update(req, res, next);
@@ -173,18 +209,29 @@ router.put('/:id', authMiddleware, agentSupervisorMiddleware, asyncHandler((req,
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 status: { type: integer, example: 200 }
- *                 data:
- *                   type: object
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
  *                   properties:
- *                     message: { type: string, example: 'Gestion eliminada' }
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           type: object
+ *                           properties:
+ *                             message: { type: string, example: "Gestion eliminada" }
  *       403:
  *         description: Rol no autorizado o compania incorrecta.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Gestion no encontrada.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.delete('/:id', authMiddleware, agentSupervisorMiddleware, asyncHandler((req, res, next) => {
   getController().delete(req, res, next);

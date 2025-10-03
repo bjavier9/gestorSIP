@@ -1,15 +1,14 @@
-
 import { injectable, inject } from 'inversify';
 import { Request, Response } from 'express';
 import { OficinaService } from '../../application/oficina.service';
 import { TYPES } from '../../config/types';
-import { responseHandler } from '../../utils/responseHandler';
+import { handleSuccess } from '../../utils/responseHandler';
 
 /**
  * @swagger
  * tags:
  *   name: Oficinas
- *   description: Gestión de oficinas para compañías de corretaje
+ *   description: Gestion de oficinas para companias de corretaje
  */
 @injectable()
 export class OficinaController {
@@ -20,40 +19,51 @@ export class OficinaController {
    * /api/companias/{companiaId}/oficinas:
    *   post:
    *     tags: [Oficinas]
-   *     summary: Crear una nueva oficina para una compañía
+   *     summary: Crear una nueva oficina para una compania
+   *     security:
+   *       - bearerAuth: []
    *     parameters:
    *       - in: path
    *         name: companiaId
    *         required: true
    *         schema:
    *           type: string
-   *         description: ID de la compañía de corretaje
+   *         description: ID de la compania de corretaje
    *     requestBody:
    *       required: true
    *       content:
    *         application/json:
    *           schema:
-   *             type: object
-   *             properties:
-   *               nombre:
-   *                 type: string
-   *               direccion:
-   *                 type: string
-   *               telefono:
-   *                 type: string
-   *               moneda:
-   *                 type: string
-   *               activo:
-   *                 type: boolean
+   *             $ref: '#/components/schemas/CreateOficinaRequest'
    *     responses:
-   *       201: { description: 'Oficina creada exitosamente' }
-   *       400: { description: 'Datos de entrada inválidos' }
+   *       201:
+   *         description: Oficina creada exitosamente.
+   *         content:
+   *           application/json:
+   *             schema:
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   properties:
+   *                     body:
+   *                       type: object
+   *                       properties:
+   *                         data:
+   *                           $ref: '#/components/schemas/Oficina'
+   *                         message:
+   *                           type: string
+   *       400:
+   *         description: Datos de entrada invalidos
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ErrorResponse'
    */
   async createOficina(req: Request, res: Response): Promise<void> {
     const { companiaId } = req.params;
     const oficinaData = { ...req.body, companiaCorretajeId: companiaId };
     const oficina = await this.oficinaService.createOficina(oficinaData);
-    responseHandler(res, { data: oficina, message: 'Oficina creada exitosamente.', status: 201 });
+    handleSuccess(req, res, oficina, 201, { message: 'Oficina creada exitosamente.' });
   }
 
   /**
@@ -61,21 +71,40 @@ export class OficinaController {
    * /api/companias/{companiaId}/oficinas:
    *   get:
    *     tags: [Oficinas]
-   *     summary: Obtener todas las oficinas de una compañía
+   *     summary: Obtener todas las oficinas de una compania
+   *     security:
+   *       - bearerAuth: []
    *     parameters:
    *       - in: path
    *         name: companiaId
    *         required: true
    *         schema:
    *           type: string
-   *         description: ID de la compañía de corretaje
+   *         description: ID de la compania de corretaje
    *     responses:
-   *       200: { description: 'Lista de oficinas' }
+   *       200:
+   *         description: Lista de oficinas
+   *         content:
+   *           application/json:
+   *             schema:
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   properties:
+   *                     body:
+   *                       type: object
+   *                       properties:
+   *                         data:
+   *                           type: array
+   *                           items:
+   *                             $ref: '#/components/schemas/Oficina'
+   *                         message:
+   *                           type: string
    */
   async getOficinas(req: Request, res: Response): Promise<void> {
     const { companiaId } = req.params;
     const oficinas = await this.oficinaService.getOficinas(companiaId);
-    responseHandler(res, { data: oficinas, message: 'Oficinas recuperadas exitosamente.' });
+    handleSuccess(req, res, oficinas, 200, { message: 'Oficinas recuperadas exitosamente.' });
   }
 
   /**
@@ -83,7 +112,9 @@ export class OficinaController {
    * /api/companias/{companiaId}/oficinas/{oficinaId}:
    *   get:
    *     tags: [Oficinas]
-   *     summary: Obtener una oficina específica
+   *     summary: Obtener una oficina especifica
+   *     security:
+   *       - bearerAuth: []
    *     parameters:
    *       - in: path
    *         name: companiaId
@@ -96,13 +127,33 @@ export class OficinaController {
    *         schema:
    *           type: string
    *     responses:
-   *       200: { description: 'Detalles de la oficina' }
-   *       404: { description: 'Oficina no encontrada' }
+   *       200:
+   *         description: Detalles de la oficina
+   *         content:
+   *           application/json:
+   *             schema:
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   properties:
+   *                     body:
+   *                       type: object
+   *                       properties:
+   *                         data:
+   *                           $ref: '#/components/schemas/Oficina'
+   *                         message:
+   *                           type: string
+   *       404:
+   *         description: Oficina no encontrada
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ErrorResponse'
    */
   async getOficinaById(req: Request, res: Response): Promise<void> {
     const { companiaId, oficinaId } = req.params;
     const oficina = await this.oficinaService.getOficinaById(companiaId, oficinaId);
-    responseHandler(res, { data: oficina, message: 'Oficina recuperada exitosamente.' });
+    handleSuccess(req, res, oficina, 200, { message: 'Oficina recuperada exitosamente.' });
   }
 
   /**
@@ -111,6 +162,8 @@ export class OficinaController {
    *   put:
    *     tags: [Oficinas]
    *     summary: Actualizar una oficina
+   *     security:
+   *       - bearerAuth: []
    *     parameters:
    *       - in: path
    *         name: companiaId
@@ -127,26 +180,35 @@ export class OficinaController {
    *       content:
    *         application/json:
    *           schema:
-   *             type: object
-   *             properties:
-   *               nombre:
-   *                 type: string
-   *               direccion:
-   *                 type: string
-   *               telefono:
-   *                 type: string
-   *               moneda:
-   *                 type: string
-   *               activo:
-   *                 type: boolean
+   *             $ref: '#/components/schemas/UpdateOficinaRequest'
    *     responses:
-   *       200: { description: 'Oficina actualizada' }
-   *       404: { description: 'Oficina no encontrada' }
+   *       200:
+   *         description: Oficina actualizada
+   *         content:
+   *           application/json:
+   *             schema:
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   properties:
+   *                     body:
+   *                       type: object
+   *                       properties:
+   *                         data:
+   *                           $ref: '#/components/schemas/Oficina'
+   *                         message:
+   *                           type: string
+   *       404:
+   *         description: Oficina no encontrada
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ErrorResponse'
    */
   async updateOficina(req: Request, res: Response): Promise<void> {
     const { companiaId, oficinaId } = req.params;
     const oficina = await this.oficinaService.updateOficina(companiaId, oficinaId, req.body);
-    responseHandler(res, { data: oficina, message: 'Oficina actualizada exitosamente.' });
+    handleSuccess(req, res, oficina, 200, { message: 'Oficina actualizada exitosamente.' });
   }
 
   /**
@@ -155,6 +217,8 @@ export class OficinaController {
    *   delete:
    *     tags: [Oficinas]
    *     summary: Eliminar una oficina
+   *     security:
+   *       - bearerAuth: []
    *     parameters:
    *       - in: path
    *         name: companiaId
@@ -167,12 +231,33 @@ export class OficinaController {
    *         schema:
    *           type: string
    *     responses:
-   *       200: { description: 'Oficina eliminada' }
-   *       404: { description: 'Oficina no encontrada' }
+   *       200:
+   *         description: Oficina eliminada
+   *         content:
+   *           application/json:
+   *             schema:
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   properties:
+   *                     body:
+   *                       type: object
+   *                       properties:
+   *                         data:
+   *                           type: object
+   *                           properties:
+   *                             message:
+   *                               type: string
+   *       404:
+   *         description: Oficina no encontrada
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ErrorResponse'
    */
   async deleteOficina(req: Request, res: Response): Promise<void> {
     const { companiaId, oficinaId } = req.params;
     await this.oficinaService.deleteOficina(companiaId, oficinaId);
-    responseHandler(res, { message: 'Oficina eliminada exitosamente.' });
+    handleSuccess(req, res, { message: 'Oficina eliminada exitosamente.' });
   }
 }

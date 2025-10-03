@@ -1,4 +1,3 @@
-
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { AuthController } from '../infrastructure/http/auth.controller';
@@ -32,13 +31,29 @@ const router = Router();
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 token: { type: 'string' }
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           type: object
+ *                           properties:
+ *                             token: { type: 'string' }
  *       401:
  *         description: Invalid credentials.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Super Admin is not configured.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post('/login/superadmin', asyncHandler(authController.loginSuperAdmin.bind(authController)));
 
@@ -61,11 +76,27 @@ router.post('/login/superadmin', asyncHandler(authController.loginSuperAdmin.bin
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/LoginResponse'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           $ref: '#/components/schemas/LoginResponse'
  *       401:
  *         description: Invalid or expired Firebase token.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
  *         description: User is not assigned to any company.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post('/login', asyncHandler(authController.login.bind(authController)));
 
@@ -75,8 +106,10 @@ router.post('/login', asyncHandler(authController.login.bind(authController)));
  *   post:
  *     tags: [Auth]
  *     summary: Select a Company to Finalize Login
- *     description: |  # Use YAML block scalar for multi-line description
+ *     description: |
  *       If login returns `needsSelection: true`, use this endpoint to select a company and get a final JWT.
+eedsSelection: true, use this endpoint to select a company and get a final JWT.
+eedsSelection: true, use this endpoint to select a company and get a final JWT.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -91,15 +124,35 @@ router.post('/login', asyncHandler(authController.login.bind(authController)));
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 token: { type: 'string' }
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           type: object
+ *                           properties:
+ *                             token: { type: 'string' }
  *       400:
  *         description: companyId is missing or has already been selected.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: Invalid or missing token.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
  *         description: User does not belong to the selected company.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post(
   '/select-compania',
@@ -119,8 +172,26 @@ router.post(
  *     responses:
  *       200:
  *         description: User information retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           type: object
+ *                           properties:
+ *                             projectId: { type: 'string' }
  *       401:
  *         description: Unauthorized.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get('/info', authMiddleware, asyncHandler(authController.getAuthInfo.bind(authController)));
 
@@ -142,12 +213,36 @@ router.get('/info', authMiddleware, asyncHandler(authController.getAuthInfo.bind
  *     responses:
  *       200:
  *         description: Test token generated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           type: object
+ *                           properties:
+ *                             token: { type: 'string' }
  *       401:
  *         description: Invalid secret.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Endpoint not available in this environment.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post('/test-token', asyncHandler(authController.getTestToken.bind(authController)));
 
-
 export default router;
+
+
+

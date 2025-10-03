@@ -12,9 +12,9 @@ const router = Router();
  * @swagger
  * /api/usuarios-companias:
  *   post:
- *     tags: [Usuarios Compañías]
- *     summary: Crear usuario-compañía (y usuario de Firebase Auth)
- *     description: Crea un usuario en Firebase Authentication y un documento en la colección usuarios_companias con el mismo uid.
+ *     tags: [Usuarios Companias]
+ *     summary: Crear usuario-compania (y usuario de Firebase Auth)
+ *     description: Crea un usuario en Firebase Authentication y un documento en la coleccion usuarios_companias con el mismo uid.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -41,12 +41,36 @@ const router = Router();
  *     responses:
  *       201:
  *         description: Usuario creado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           $ref: '#/components/schemas/UsuarioCompania'
  *       400:
- *         description: Datos inválidos.
+ *         description: Datos invalidos.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: No autorizado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
  *         description: Rol insuficiente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post('/', authMiddleware, adminSupervisorOrSuperadminMiddleware, asyncHandler(controller.create.bind(controller)));
 
@@ -54,8 +78,8 @@ router.post('/', authMiddleware, adminSupervisorOrSuperadminMiddleware, asyncHan
  * @swagger
  * /api/usuarios-companias/{id}/inhabilitar:
  *   patch:
- *     tags: [Usuarios Compañías]
- *     summary: Inhabilitar usuario-compañía
+ *     tags: [Usuarios Companias]
+ *     summary: Inhabilitar usuario-compania
  *     description: Marca el documento como inactivo y deshabilita al usuario en Firebase Auth.
  *     security:
  *       - bearerAuth: []
@@ -67,12 +91,36 @@ router.post('/', authMiddleware, adminSupervisorOrSuperadminMiddleware, asyncHan
  *     responses:
  *       200:
  *         description: Usuario inhabilitado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           $ref: '#/components/schemas/UsuarioCompania'
  *       401:
  *         description: No autorizado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
  *         description: Rol insuficiente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: No encontrado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.patch('/:id/inhabilitar', authMiddleware, adminSupervisorOrSuperadminMiddleware, asyncHandler(controller.desactivar.bind(controller)));
 
@@ -80,8 +128,8 @@ router.patch('/:id/inhabilitar', authMiddleware, adminSupervisorOrSuperadminMidd
  * @swagger
  * /api/usuarios-companias/{id}/habilitar:
  *   patch:
- *     tags: [Usuarios Compañías]
- *     summary: Habilitar usuario-compañía
+ *     tags: [Usuarios Companias]
+ *     summary: Habilitar usuario-compania
  *     description: Marca el documento como activo y habilita al usuario en Firebase Auth.
  *     security:
  *       - bearerAuth: []
@@ -93,12 +141,36 @@ router.patch('/:id/inhabilitar', authMiddleware, adminSupervisorOrSuperadminMidd
  *     responses:
  *       200:
  *         description: Usuario habilitado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           $ref: '#/components/schemas/UsuarioCompania'
  *       401:
  *         description: No autorizado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
  *         description: Rol insuficiente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: No encontrado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.patch('/:id/habilitar', authMiddleware, adminSupervisorOrSuperadminMiddleware, asyncHandler(controller.activar.bind(controller)));
 

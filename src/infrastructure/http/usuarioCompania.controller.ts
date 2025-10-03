@@ -19,21 +19,21 @@ export class UsuarioCompaniaController {
     }
 
     const result = await this.service.createUsuarioCompania({ email, password, companiaCorretajeId, rol, enteId, oficinaId });
-    handleSuccess(res, result, 201);
+    handleSuccess(req, res, result, 201);
   }
 
   async desactivar(req: Request, res: Response) {
     const { id } = req.params;
     if (!id) throw new ApiError('VALIDATION_MISSING_FIELD', 'id is required.', 400);
     const result = await this.service.setActive(id, false);
-    handleSuccess(res, result, 200);
+    handleSuccess(req, res, result, 200);
   }
 
   async activar(req: Request, res: Response) {
     const { id } = req.params;
     if (!id) throw new ApiError('VALIDATION_MISSING_FIELD', 'id is required.', 400);
     const result = await this.service.setActive(id, true);
-    handleSuccess(res, result, 200);
+    handleSuccess(req, res, result, 200);
   }
 }
 

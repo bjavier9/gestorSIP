@@ -9,7 +9,7 @@ import { ApiError } from '../utils/ApiError';
 export const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
     // The `handleError` function will check if it's an instance of ApiError
     // or a generic error and format the response accordingly.
-    handleError(res, err);
+    handleError(req, res, err);
 };
 
 /**

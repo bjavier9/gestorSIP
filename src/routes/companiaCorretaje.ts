@@ -13,7 +13,7 @@ const router = Router();
  * @swagger
  * /api/companias:
  *   post:
- *     tags: [CompaÃ±Ã­as de Corretaje]
+ *     tags: [Companias de Corretaje]
  *     summary: Create a new Brokerage Company
  *     description: Creates a new brokerage company. This endpoint is restricted to the configured Super Admin (token issued for SUPERADMIN_EMAIL).
  *     security:
@@ -26,14 +26,12 @@ const router = Router();
  *       content:
  *         application/json:
  *           schema:
- *             allOf: [
- *               { $ref: '#/components/schemas/CreateCompaniaRequest' }
- *             ]
+ *             $ref: '#/components/schemas/CreateCompaniaRequest'
  *           examples:
  *             default:
  *               summary: Example payload
  *               value:
- *                 nombre: 'Compañía Demo'
+ *                 nombre: 'Compania Demo'
  *                 rif: 'J-123456789'
  *                 direccion: 'Av. Siempre Viva 742'
  *                 telefono: '+58-212-5551234'
@@ -47,31 +45,53 @@ const router = Router();
  *         content:
  *           application/json:
  *             schema:
- *               type: 'object'
- *               properties:
- *                 success: { type: 'boolean', example: true }
- *                 status: { type: 'integer', example: 201 }
- *                 data:
- *                   $ref: '#/components/schemas/CompaniaCorretaje'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           $ref: '#/components/schemas/CompaniaCorretaje'
  *       400:
  *         description: Missing required fields.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: Unauthorized.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
  *         description: Forbidden.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       409:
  *         description: A company with this RIF already exists.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server misconfiguration (SUPERADMIN_EMAIL missing).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post('/', authMiddleware, superAdminMiddleware, asyncHandler(companiaController.create.bind(companiaController)));
-
 
 /**
  * @swagger
  * /api/companias/{id}:
  *   put:
- *     tags: [Compañías de Corretaje]
+ *     tags: [Companias de Corretaje]
  *     summary: Update a Brokerage Company
  *     description: Updates fields of a brokerage company. Restricted to the configured Super Admin.
  *     security:
@@ -101,20 +121,39 @@ router.post('/', authMiddleware, superAdminMiddleware, asyncHandler(companiaCont
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 status: { type: integer, example: 200 }
- *                 data:
- *                   $ref: '#/components/schemas/CompaniaCorretaje'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           $ref: '#/components/schemas/CompaniaCorretaje'
  *       401:
  *         description: Unauthorized.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
  *         description: Forbidden.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Company not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       409:
  *         description: A company with this RIF already exists.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.put(
   '/:id',
@@ -127,7 +166,7 @@ router.put(
  * @swagger
  * /api/companias/{id}/activar:
  *   patch:
- *     tags: [Compañías de Corretaje]
+ *     tags: [Companias de Corretaje]
  *     summary: Activate a Brokerage Company
  *     description: Sets the company status to active. Restricted to the configured Super Admin.
  *     security:
@@ -145,18 +184,33 @@ router.put(
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 status: { type: integer, example: 200 }
- *                 data:
- *                   $ref: '#/components/schemas/CompaniaCorretaje'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           $ref: '#/components/schemas/CompaniaCorretaje'
  *       401:
  *         description: Unauthorized.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
  *         description: Forbidden.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Company not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.patch(
   '/:id/activar',
@@ -169,7 +223,7 @@ router.patch(
  * @swagger
  * /api/companias/{id}/desactivar:
  *   patch:
- *     tags: [Compañías de Corretaje]
+ *     tags: [Companias de Corretaje]
  *     summary: Deactivate a Brokerage Company
  *     description: Sets the company status to inactive. Restricted to the configured Super Admin.
  *     security:
@@ -187,18 +241,33 @@ router.patch(
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 status: { type: integer, example: 200 }
- *                 data:
- *                   $ref: '#/components/schemas/CompaniaCorretaje'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           $ref: '#/components/schemas/CompaniaCorretaje'
  *       401:
  *         description: Unauthorized.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
  *         description: Forbidden.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Company not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.patch(
   '/:id/desactivar',

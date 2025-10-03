@@ -1,17 +1,14 @@
-
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { EnteController } from '../infrastructure/http/ente.controller';
 import { authMiddleware } from '../middleware/authMiddleware';
-import container from '../config/container'; // Corrected import
+import container from '../config/container';
 import { TYPES } from '../config/types';
 
-// The EnteController is resolved from the container
 const enteController = container.get<EnteController>(TYPES.EnteController);
 
 const router = Router();
 
-// All routes in this module require authentication.
 router.use(authMiddleware);
 
 /**
@@ -28,9 +25,17 @@ router.use(authMiddleware);
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Ente'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/Ente'
  *       401:
  *         description: Unauthorized
  *         content:
@@ -61,11 +66,27 @@ router.get('/', asyncHandler(enteController.getAll.bind(enteController)));
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Ente'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           $ref: '#/components/schemas/Ente'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Entity not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get('/:id', asyncHandler(enteController.getById.bind(enteController)));
 
@@ -89,13 +110,33 @@ router.get('/:id', asyncHandler(enteController.getById.bind(enteController)));
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Ente'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           $ref: '#/components/schemas/Ente'
  *       400:
  *         description: Invalid input data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       409:
  *         description: An entity with this document number already exists.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post('/', asyncHandler(enteController.create.bind(enteController)));
 
@@ -126,13 +167,33 @@ router.post('/', asyncHandler(enteController.create.bind(enteController)));
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Ente'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           $ref: '#/components/schemas/Ente'
  *       400:
  *         description: Invalid input data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Entity not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.put('/:id', asyncHandler(enteController.update.bind(enteController)));
 
@@ -152,12 +213,34 @@ router.put('/:id', asyncHandler(enteController.update.bind(enteController)));
  *           type: string
  *         description: The entity ID
  *     responses:
- *       204:
+ *       200:
  *         description: Entity deleted successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           type: object
+ *                           properties:
+ *                             message: { type: string }
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Entity not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.delete('/:id', asyncHandler(enteController.delete.bind(enteController)));
 

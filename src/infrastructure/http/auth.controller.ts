@@ -20,7 +20,7 @@ export class AuthController {
     }
 
     const result = await this.authService.loginSuperAdmin(email, password);
-    handleSuccess(res, result);
+    handleSuccess(req, res, result, 200, { token: result.token });
   }
 
   async login(req: Request, res: Response) {
@@ -31,7 +31,7 @@ export class AuthController {
     }
 
     const result = await this.authService.login(idToken);
-    handleSuccess(res, result);
+    handleSuccess(req, res, result, 200, { token: result.token });
   }
 
   async selectCompania(req: Request, res: Response) {
@@ -48,7 +48,7 @@ export class AuthController {
     }
 
     const result = await this.authService.selectCompania(currentUser, companiaId);
-    handleSuccess(res, result);
+    handleSuccess(req, res, result, 200, { token: result.token });
   }
 
   async getAuthInfo(req: Request, res: Response) {
@@ -56,7 +56,7 @@ export class AuthController {
     if (!projectId) {
       throw new ApiError('CONFIG_ERROR', 'FIREBASE_PROJECT_ID is not configured on the server.', 500);
     }
-    handleSuccess(res, { projectId });
+    handleSuccess(req, res, { projectId });
   }
 
   async getTestToken(req: Request, res: Response) {
@@ -67,6 +67,6 @@ export class AuthController {
     }
 
     const result = await this.authService.getTestToken(secret);
-    handleSuccess(res, result);
+    handleSuccess(req, res, result, 200, { token: result.token });
   }
 }

@@ -34,7 +34,7 @@ export class LeadController {
         estado,
       });
 
-      handleSuccess(res, newLead, 201);
+      handleSuccess(req, res, newLead, 201);
     } catch (error) {
       next(error);
     }
@@ -47,7 +47,7 @@ export class LeadController {
         throw new ApiError('BAD_REQUEST', 'ID de la compania de corretaje no proporcionado.', 400);
       }
       const leads = await this.leadService.getLeadsByCompania(companiaCorretajeId);
-      handleSuccess(res, leads);
+      handleSuccess(req, res, leads);
     } catch (error) {
       next(error);
     }
@@ -59,7 +59,7 @@ export class LeadController {
       if (lead.companiaCorretajeId !== req.user?.user?.companiaCorretajeId) {
         throw new ApiError('FORBIDDEN', 'No tienes permiso para acceder a este lead.', 403);
       }
-      handleSuccess(res, lead);
+      handleSuccess(req, res, lead);
     } catch (error) {
       next(error);
     }
@@ -74,7 +74,7 @@ export class LeadController {
       }
 
       const updatedLead = await this.leadService.updateLead(leadId, req.body);
-      handleSuccess(res, updatedLead);
+      handleSuccess(req, res, updatedLead);
     } catch (error) {
       next(error);
     }
@@ -89,7 +89,7 @@ export class LeadController {
       }
 
       await this.leadService.deleteLead(leadId);
-      handleSuccess(res, { message: 'Lead eliminado' });
+      handleSuccess(req, res, { message: 'Lead eliminado' });
     } catch (error) {
       next(error);
     }
