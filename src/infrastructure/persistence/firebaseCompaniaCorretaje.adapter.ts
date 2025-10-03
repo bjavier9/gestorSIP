@@ -1,84 +1,57 @@
 
 import { injectable } from 'inversify';
-import { CollectionReference } from 'firebase-admin/firestore';
-import { CompaniaCorretajeRepository } from '../../domain/ports/companiaCorretajeRepository.port';
+import { getFirestore, CollectionReference, DocumentReference } from 'firebase-admin/firestore';
 import { CompaniaCorretaje } from '../../domain/companiaCorretaje';
-import { db } from '../../config/firebase';
+import { CompaniaCorretajeRepository } from '../../domain/ports/companiaCorretajeRepository.port';
 import { ApiError } from '../../utils/ApiError';
 
 @injectable()
 export class FirebaseCompaniaCorretajeAdapter implements CompaniaCorretajeRepository {
-  private readonly collection: CollectionReference;
 
-  constructor() {
-    if (!db) {
-      throw new Error('Firestore has not been initialized. Make sure initializeFirebase() is called on startup.');
+    private get collection(): CollectionReference {
+        return getFirestore().collection('companias_corretaje');
     }
-    this.collection = db.collection('companias_corretaje');
-  }
 
-  async create(companiaData: Partial<CompaniaCorretaje>): Promise<CompaniaCorretaje> {
-    const docRef = this.collection.doc();
+    constructor() {}
 
-    const newCompania: CompaniaCorretaje = {
-      id: docRef.id,
-      nombre: companiaData.nombre || '',
-      rif: companiaData.rif || '',
-      direccion: companiaData.direccion || '',
-      telefono: companiaData.telefono || '',
-      correo: companiaData.correo || '',
-      monedasAceptadas: companiaData.monedasAceptadas || [],
-      monedaPorDefecto: companiaData.monedaPorDefecto || '',
-      modulos: companiaData.modulos || [],
-      activo: companiaData.activo !== undefined ? companiaData.activo : true,
-      fechaCreacion: new Date(),
-      fechaActualizacion: new Date(),
-      creada: companiaData.creada || { idente: 0 },
-      modificado: companiaData.modificado || [],
-    };
-
-    await docRef.set(newCompania);
-    return newCompania;
-  }
-
-  async findByRif(rif: string): Promise<CompaniaCorretaje | null> {
-    const snapshot = await this.collection.where('rif', '==', rif).limit(1).get();
-    if (snapshot.empty) {
-      return null;
+    private docToCompania(doc: FirebaseFirestore.DocumentSnapshot): CompaniaCorretaje {
+        const data = doc.data();
+        if (!data) throw new ApiError('INTERNAL_SERVER_ERROR', 'Document data is missing.', 500);
+        return {
+            id: doc.id,
+            ...data
+        } as CompaniaCorretaje;
     }
-    const doc = snapshot.docs[0];
-    return { id: doc.id, ...(doc.data() as CompaniaCorretaje) };
-  }
 
-  async findFirst(): Promise<CompaniaCorretaje | null> {
-    const snapshot = await this.collection.limit(1).get();
-    if (snapshot.empty) {
-      return null;
+    async findAll(): Promise<CompaniaCorretaje[]> {
+        const snapshot = await this.collection.get();
+        return snapshot.docs.map(doc => this.docToCompania(doc));
     }
-    const doc = snapshot.docs[0];
-    return { id: doc.id, ...(doc.data() as CompaniaCorretaje) };
-  }
 
-  async findById(id: string): Promise<CompaniaCorretaje | null> {
-    const doc = await this.collection.doc(id).get();
-    if (!doc.exists) return null;
-    return { id: doc.id, ...(doc.data() as CompaniaCorretaje) };
-  }
+    async findById(id: string): Promise<CompaniaCorretaje | null> {
+        const doc = await this.collection.doc(id).get();
+        return doc.exists ? this.docToCompania(doc) : null;
+    }
 
-  async update(id: string, data: Partial<CompaniaCorretaje>): Promise<CompaniaCorretaje> {
-    const docRef = this.collection.doc(id);
-    await db.runTransaction(async (tx) => {
-      const snap = await tx.get(docRef);
-      if (!snap.exists) {
-        throw new ApiError('NOT_FOUND', `Company with id ${id} not found.`, 404);
-      }
-      tx.update(docRef, { ...data, fechaActualizacion: new Date() });
-    });
-    const updated = await docRef.get();
-    return { id: updated.id, ...(updated.data() as CompaniaCorretaje) };
-  }
+    async create(compania: Omit<CompaniaCorretaje, 'id'>): Promise<CompaniaCorretaje> {
+        const docRef = this.collection.doc();
+        await docRef.set(compania);
+        return { id: docRef.id, ...compania } as CompaniaCorretaje;
+    }
 
-  async setActive(id: string, active: boolean): Promise<CompaniaCorretaje> {
-    return this.update(id, { activo: active });
-  }
+    async update(id: string, updates: Partial<CompaniaCorretaje>): Promise<CompaniaCorretaje | null> {
+        const docRef = this.collection.doc(id);
+        const doc = await docRef.get();
+        if (!doc.exists) return null;
+
+        await docRef.update(updates);
+        const updatedDoc = await docRef.get();
+        return this.docToCompania(updatedDoc);
+    }
+
+    async delete(id: string): Promise<boolean> {
+        const docRef = this.collection.doc(id);
+        await docRef.delete();
+        return true;
+    }
 }

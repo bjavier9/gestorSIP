@@ -1,17 +1,22 @@
 
 import { injectable } from 'inversify';
-import { CollectionReference, Timestamp } from 'firebase-admin/firestore';
+import { getFirestore, CollectionReference, Timestamp } from 'firebase-admin/firestore';
 import { UsuarioCompaniaRepository } from '../../domain/ports/usuarioCompaniaRepository.port';
 import { UsuarioCompania } from '../../domain/usuarioCompania';
 import { ApiError } from '../../utils/ApiError';
-import { db } from '../../config/firebase';
 
 @injectable()
 export class FirebaseUsuarioCompaniaAdapter implements UsuarioCompaniaRepository {
-  private readonly collection: CollectionReference;
+
+  // Usa un getter para obtener la colección de forma perezosa (lazy).
+  // Esto asegura que getFirestore() se llama solo cuando se necesita,
+  // después de que Firebase se haya inicializado.
+  private get collection(): CollectionReference {
+    return getFirestore().collection('usuarios_companias');
+  }
 
   constructor() {
-    this.collection = db.collection('usuarios_companias');
+    // El constructor ahora está vacío para evitar la inicialización temprana.
   }
 
   private docToUsuarioCompania(doc: FirebaseFirestore.DocumentSnapshot): UsuarioCompania {
@@ -20,10 +25,9 @@ export class FirebaseUsuarioCompaniaAdapter implements UsuarioCompaniaRepository
     }
     const data = doc.data()!;
 
-    // Securely convert timestamp to Date
     const fechaCreacion = data.fechaCreacion instanceof Timestamp 
       ? data.fechaCreacion.toDate() 
-      : new Date(); // Fallback to current date
+      : new Date();
 
     return {
       id: doc.id,
@@ -43,7 +47,7 @@ export class FirebaseUsuarioCompaniaAdapter implements UsuarioCompaniaRepository
     const newAssociation = {
       ...data,
       activo: data.activo !== undefined ? data.activo : true,
-      fechaCreacion: new Date(), // Set creation date on new document
+      fechaCreacion: new Date(),
     };
     await docRef.set(newAssociation);
     const newDoc = await docRef.get();
@@ -52,11 +56,9 @@ export class FirebaseUsuarioCompaniaAdapter implements UsuarioCompaniaRepository
 
   async findByUserId(userId: string): Promise<UsuarioCompania[]> {
     const snapshot = await this.collection.where('userId', '==', userId).get();
-    
     if (snapshot.empty) {
       return [];
     }
-    
     return snapshot.docs.map(doc => this.docToUsuarioCompania(doc));
   }
 
@@ -82,7 +84,8 @@ export class FirebaseUsuarioCompaniaAdapter implements UsuarioCompaniaRepository
 
   async setActive(id: string, active: boolean): Promise<UsuarioCompania> {
     const docRef = this.collection.doc(id);
-    await db.runTransaction(async (tx) => {
+    // Nota: Es más seguro obtener la instancia de la DB directamente para transacciones
+    await getFirestore().runTransaction(async (tx) => {
       const snap = await tx.get(docRef);
       if (!snap.exists) {
         throw new ApiError('NOT_FOUND', 'UsuarioCompania not found.', 404);

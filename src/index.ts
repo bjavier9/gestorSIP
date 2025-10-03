@@ -1,69 +1,59 @@
-import 'dotenv/config';
+
 import 'reflect-metadata';
 import express from 'express';
+import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
-import morgan from 'morgan';
-import Logger from './config/logger';
+import swaggerSpec from './config/swagger';
 import { initializeFirebase } from './config/firebase';
+import { errorHandler } from './middleware/errorHandler';
+
+// Importar rutas
+import authRoutes from './routes/auth';
+import contentRoutes from './routes/content';
+import companiaCorretajeRoutes from './routes/companiaCorretaje';
+import oficinaRoutes from './routes/oficinas';
+import usuariosCompaniasRoutes from './routes/usuariosCompanias';
+import entesRoutes from './routes/entes';
+import configurationRoutes from './routes/configurations';
+import aseguradorasRoutes from './routes/aseguradoras'; // <-- Nueva ruta
+
+dotenv.config();
 
 async function startServer() {
-    // --- 1. INITIALIZE EXTERNAL SERVICES ---
-    // Must be done BEFORE any other app module is imported
-    initializeFirebase();
-    Logger.info('Firebase has been initialized.');
+    try {
+        await initializeFirebase();
+        console.log('Firebase has been initialized.');
 
-    // --- 2. DYNAMICALLY IMPORT MODULES THAT DEPEND ON INITIALIZED SERVICES ---
-    // This prevents race conditions where modules try to access services (e.g., DB) before they are ready.
-    const { default: swaggerSpec } = await import('./config/swagger');
-    const { default: authRouter } = await import('./routes/auth');
-    const { default: enteRouter } = await import('./routes/entes');
-    // Content API removed per requirements
-    const { default: companiaCorretajeRouter } = await import('./routes/companiaCorretaje');
-    const { errorHandler, notFoundHandler } = await import('./middleware/errorHandler');
-    const { handleSuccess } = await import('./utils/responseHandler');
+        const app = express();
+        const port = process.env.PORT || 3000;
 
-    // --- 3. CREATE AND CONFIGURE EXPRESS APP ---
-    const app = express();
+        app.use(express.json());
 
-    // Core Middleware
-    app.use(express.json());
+        // Rutas de la API
+        app.use('/api/auth', authRoutes);
+        app.use('/api', contentRoutes);
+        app.use('/api/companias', companiaCorretajeRoutes);
+        app.use('/api/companias/:companiaId/oficinas', oficinaRoutes);
+        app.use('/api/usuarios-companias', usuariosCompaniasRoutes);
+        app.use('/api/entes', entesRoutes);
+        app.use('/api/configurations', configurationRoutes);
+        app.use('/api/aseguradoras', aseguradorasRoutes); // <-- Nueva ruta
 
-    // HTTP Logging
-    const stream = { write: (message: string) => Logger.http(message.trim()) };
-    app.use(morgan('combined', { stream }));
+        // Ruta de Swagger
+        app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-    // API Documentation
-    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+        // Manejador de errores global
+        app.use(errorHandler);
 
-    // API Routes
-    app.use('/api/auth', authRouter);
-    app.use('/api/entes', enteRouter);
-    const { default: usuariosCompaniasRouter } = await import('./routes/usuariosCompanias');
-    app.use('/api/usuarios-companias', usuariosCompaniasRouter);
-    app.use('/api/companias', companiaCorretajeRouter);
+        app.listen(port, () => {
+            console.log(`Server is running on http://localhost:${port}`);
+            console.log(`Swagger docs available on http://localhost:${port}/api-docs`);
+        });
 
-    // Public Routes
-    app.get('/', (req, res) => handleSuccess(res, { message: 'Welcome to the gestorSIP API!' }));
-    app.get('/health', (req, res) => handleSuccess(res, { status: 'ok' }));
-
-    // Error Handling (must be last)
-    app.use(notFoundHandler);
-    app.use(errorHandler);
-
-    // --- 4. START THE HTTP SERVER ---
-    const port = parseInt(process.env.PORT || '3000');
-    app.listen(port, () => {
-        Logger.info(`Server running on http://localhost:${port}`);
-        Logger.info(`API Docs available at http://localhost:${port}/api-docs`);
-    });
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
 }
 
-startServer().catch(error => {
-    // Use a logger that will definitely work, like console.error
-    console.error("Failed to start server:", error);
-    // Log with the application logger if it's available
-    if (Logger) {
-        Logger.error("Failed to start server:", { error: error.stack });
-    }
-    process.exit(1);
-});
+startServer();
