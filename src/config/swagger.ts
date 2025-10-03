@@ -270,7 +270,18 @@ const options: swaggerJsdoc.Options = {
                         estado: { type: 'string', enum: ['nuevo','contactado','calificado','perdido','ganado'], nullable: true }
                     }
                 },
-                UpdateLeadRequest: {\r\n                    type: 'object',\r\n                    properties: {\r\n                        nombre: { type: 'string' },\r\n                        correo: { type: 'string', format: 'email' },\r\n                        telefono: { type: 'string' },\r\n                        origen: { type: 'string' },\r\n                        estado: { type: 'string', enum: ['nuevo','contactado','calificado','perdido','ganado'] },\r\n                        agenteId: { type: 'string' }\r\n                    }\r\n                },\r\n                Oficina: {
+                UpdateLeadRequest: {
+                    type: 'object',
+                    properties: {
+                        nombre: { type: 'string' },
+                        correo: { type: 'string', format: 'email' },
+                        telefono: { type: 'string' },
+                        origen: { type: 'string' },
+                        estado: { type: 'string', enum: ['nuevo','contactado','calificado','perdido','ganado'] },
+                        agenteId: { type: 'string' }
+                    }
+                },
+                Oficina: {
                     type: 'object',
                     properties: {
                         id: { type: 'string' },
@@ -391,6 +402,9 @@ const options: swaggerJsdoc.Options = {
                         },
                     },
                 },
+            },
+        },
+    },
 
     // IMPORTANT: Path to the files containing OpenAPI annotations
     apis: ['./src/routes/*.ts'],
@@ -399,8 +413,3 @@ const options: swaggerJsdoc.Options = {
 const swaggerSpec = swaggerJsdoc(options);
 
 export default swaggerSpec;
-
-
-
-
-

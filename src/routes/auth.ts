@@ -107,9 +107,7 @@ router.post('/login', asyncHandler(authController.login.bind(authController)));
  *     tags: [Auth]
  *     summary: Select a Company to Finalize Login
  *     description: |
- *       If login returns `needsSelection: true`, use this endpoint to select a company and get a final JWT.
-eedsSelection: true, use this endpoint to select a company and get a final JWT.
-eedsSelection: true, use this endpoint to select a company and get a final JWT.
+ *       If login returns needsSelection: true, use this endpoint to select a company and get a final JWT.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -243,6 +241,3 @@ router.get('/info', authMiddleware, asyncHandler(authController.getAuthInfo.bind
 router.post('/test-token', asyncHandler(authController.getTestToken.bind(authController)));
 
 export default router;
-
-
-
