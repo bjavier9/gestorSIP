@@ -87,13 +87,13 @@ Abre el archivo `.env` y complétalo. Consulta la sección [Variables de Entorno
 npm run dev
 ```
 
-El servidor se iniciará y escuchará en el puerto que hayas definido (por defecto `http://localhost:3001`). Gracias a `ts-node-dev`, se reiniciará automáticamente cada vez que guardes un cambio.
+El servidor se iniciará y escuchará en el puerto que hayas definido (por defecto `http://localhost:3000`). Gracias a `ts-node-dev`, se reiniciará automáticamente cada vez que guardes un cambio.
 
 ## Variables de Entorno
 
 | Variable                  | Descripción                                                                                                 |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `PORT`                    | El puerto en el que correrá el servidor (ej: `3001`).                                                         |
+| `PORT`                    | El puerto en el que correrá el servidor (ej: `3000`).                                                         |
 | `JWT_SECRET`              | Una cadena de texto larga y secreta para firmar los tokens JWT de la aplicación.                             |
 | `FIREBASE_SERVICE_ACCOUNT`| (Opcional si usas el archivo) El **objeto JSON completo** de tu cuenta de servicio de Firebase en una sola línea. |
 | `GEMINI_API_KEY`          | (Opcional) Tu clave de API para usar las funcionalidades de IA Generativa de Google Gemini.                |
@@ -126,5 +126,5 @@ src/
 
 ## Documentación y Guías
 
--   **Documentación de la API (Swagger):** Accede a `http://localhost:3001/api-docs` cuando el servidor esté corriendo.
+-   **Documentación de la API (Swagger):** Accede a `http://localhost:3000/api-docs` cuando el servidor esté corriendo.
 -   **Guías Internas (`/wiki`):** La carpeta `wiki` contiene guías detalladas sobre la arquitectura y flujos de trabajo.

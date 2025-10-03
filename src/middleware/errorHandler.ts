@@ -19,6 +19,6 @@ export const errorHandler = (err: Error, req: Request, res: Response, next: Next
  */
 export const notFoundHandler = (req: Request, res: Response, next: NextFunction) => {
     // Create a new ApiError for a 404 and pass it to the next middleware (the errorHandler)
-    const apiError = new ApiError('ROUTING_NOT_FOUND');
+    const apiError = new ApiError('ROUTING_NOT_FOUND', 'El endpoint solicitado no existe.', 404);
     next(apiError);
 };

@@ -17,7 +17,7 @@ async function startServer() {
     const { default: swaggerSpec } = await import('./config/swagger');
     const { default: authRouter } = await import('./routes/auth');
     const { default: enteRouter } = await import('./routes/entes');
-    const { default: contentRouter } = await import('./routes/content');
+    // Content API removed per requirements
     const { default: companiaCorretajeRouter } = await import('./routes/companiaCorretaje');
     const { errorHandler, notFoundHandler } = await import('./middleware/errorHandler');
     const { handleSuccess } = await import('./utils/responseHandler');
@@ -38,7 +38,8 @@ async function startServer() {
     // API Routes
     app.use('/api/auth', authRouter);
     app.use('/api/entes', enteRouter);
-    app.use('/api/content', contentRouter);
+    const { default: usuariosCompaniasRouter } = await import('./routes/usuariosCompanias');
+    app.use('/api/usuarios-companias', usuariosCompaniasRouter);
     app.use('/api/companias', companiaCorretajeRouter);
 
     // Public Routes

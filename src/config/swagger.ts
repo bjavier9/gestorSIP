@@ -14,7 +14,7 @@ const options: swaggerJsdoc.Options = {
         },
         servers: [
             {
-                url: 'http://localhost:3001', // Updated port
+                url: 'http://localhost:3000', // Matches default server port
                 description: 'Development server',
             },
         ],
@@ -134,12 +134,76 @@ const options: swaggerJsdoc.Options = {
                     description: "Schema for updating an existing ente."
                     // Define properties that are updatable
                 },
+                                Modificado: {
+                    type: 'object',
+                    properties: {
+                        idente: { type: 'integer' },
+                        fechaActualizacion: { type: 'string', format: 'date-time' },
+                    },
+                },
+                Creada: {
+                    type: 'object',
+                    properties: {
+                        idente: { type: 'integer' }
+                    },
+                },
+                CompaniaCorretaje: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string' },
+                        nombre: { type: 'string' },
+                        rif: { type: 'string' },
+                        direccion: { type: 'string' },
+                        telefono: { type: 'string' },
+                        correo: { type: 'string', format: 'email' },
+                        fechaCreacion: { type: 'string', format: 'date-time' },
+                        fechaActualizacion: { type: 'string', format: 'date-time' },
+                        activo: { type: 'boolean' },
+                        creada: { $ref: '#/components/schemas/Creada' },
+                        modificado: { type: 'array', items: { $ref: '#/components/schemas/Modificado' } },
+                        monedasAceptadas: { type: 'array', items: { type: 'string' } },
+                        monedaPorDefecto: { type: 'string' },
+                        modulos: { type: 'array', items: { type: 'string' } },
+                    },
+                    required: ['id','nombre','rif','fechaCreacion','fechaActualizacion','activo']
+                },
+                CreateCompaniaRequest: {
+                    type: 'object',
+                    description: 'Payload to create a brokerage company',
+                    properties: {
+                        nombre: { type: 'string' },
+                        rif: { type: 'string' },
+                        direccion: { type: 'string' },
+                        telefono: { type: 'string' },
+                        correo: { type: 'string', format: 'email' },
+                        monedasAceptadas: { type: 'array', items: { type: 'string' } },
+                        monedaPorDefecto: { type: 'string' },
+                        modulos: { type: 'array', items: { type: 'string' } },
+                        activo: { type: 'boolean' }
+                    },
+                    required: ['nombre','rif']
+                },
                 SuccessResponse: {
                     type: 'object',
                     properties: {
                         success: { type: 'boolean', example: true },
                         status: { type: 'integer' },
                         data: { type: 'object' }, 
+                    }
+                },
+                UpdateCompaniaRequest: {
+                    type: 'object',
+                    description: 'Payload to update a brokerage company (all fields optional)',
+                    properties: {
+                        nombre: { type: 'string' },
+                        rif: { type: 'string' },
+                        direccion: { type: 'string' },
+                        telefono: { type: 'string' },
+                        correo: { type: 'string', format: 'email' },
+                        monedasAceptadas: { type: 'array', items: { type: 'string' } },
+                        monedaPorDefecto: { type: 'string' },
+                        modulos: { type: 'array', items: { type: 'string' } },
+                        activo: { type: 'boolean' }
                     }
                 },
             },

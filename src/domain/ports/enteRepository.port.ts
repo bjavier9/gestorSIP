@@ -1,7 +1,7 @@
 import { Ente } from "../ente";
 
 // Input data for creating a new Ente
-export type EnteInput = Omit<Ente, 'id' | 'fecha_creacion' | 'fecha_actualizacion'>;
+export type EnteInput = Omit<Ente, 'id' | 'fechaCreacion' | 'fechaActualizacion'>;
 
 // Input data for updating an existing Ente (all fields are optional)
 export type EnteUpdateInput = Partial<EnteInput>;

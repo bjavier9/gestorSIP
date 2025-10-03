@@ -39,7 +39,7 @@ export class FirebaseUsuarioCompaniaAdapter implements UsuarioCompaniaRepository
   }
 
   async create(data: Partial<UsuarioCompania>): Promise<UsuarioCompania> {
-    const docRef = this.collection.doc();
+    const docRef = data.id ? this.collection.doc(String(data.id)) : this.collection.doc();
     const newAssociation = {
       ...data,
       activo: data.activo !== undefined ? data.activo : true,
@@ -72,5 +72,24 @@ export class FirebaseUsuarioCompaniaAdapter implements UsuarioCompaniaRepository
     }
 
     return this.docToUsuarioCompania(snapshot.docs[0]);
+  }
+
+  async findById(id: string): Promise<UsuarioCompania | null> {
+    const doc = await this.collection.doc(id).get();
+    if (!doc.exists) return null;
+    return this.docToUsuarioCompania(doc);
+  }
+
+  async setActive(id: string, active: boolean): Promise<UsuarioCompania> {
+    const docRef = this.collection.doc(id);
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(docRef);
+      if (!snap.exists) {
+        throw new ApiError('NOT_FOUND', 'UsuarioCompania not found.', 404);
+      }
+      tx.update(docRef, { activo: active });
+    });
+    const updated = await docRef.get();
+    return this.docToUsuarioCompania(updated);
   }
 }

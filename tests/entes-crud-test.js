@@ -34,7 +34,7 @@ function printError(message, error) {
 async function getAppToken() {
   try {
     // 1. Autenticar con nuestra API
-    const appResponse = await axios.post(`http://localhost:3000/auth/test-token`, { secret: process.env.TEST_SECRET });
+    const appResponse = await axios.post(`${API_BASE_URL}/auth/test-token`, { secret: process.env.TEST_SECRET });
     printSuccess('Authentication successful.');
     return appResponse.data.data.token;
   } catch (error) {

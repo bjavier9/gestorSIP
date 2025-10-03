@@ -19,4 +19,36 @@ export class CompaniaCorretajeService {
 
     return this.companiaRepo.create(companiaData);
   }
+
+  async updateCompania(id: string, data: Partial<CompaniaCorretaje>): Promise<CompaniaCorretaje> {
+    const existing = await this.companiaRepo.findById(id);
+    if (!existing) {
+      throw new ApiError('NOT_FOUND', 'Company not found.', 404);
+    }
+
+    if (data.rif && data.rif !== existing.rif) {
+      const byRif = await this.companiaRepo.findByRif(data.rif);
+      if (byRif && byRif.id !== id) {
+        throw new ApiError('RIF_ALREADY_EXISTS', 'A company with this RIF already exists.', 409);
+      }
+    }
+
+    return this.companiaRepo.update(id, { ...data });
+  }
+
+  async activarCompania(id: string): Promise<CompaniaCorretaje> {
+    const existing = await this.companiaRepo.findById(id);
+    if (!existing) {
+      throw new ApiError('NOT_FOUND', 'Company not found.', 404);
+    }
+    return this.companiaRepo.setActive(id, true);
+  }
+
+  async desactivarCompania(id: string): Promise<CompaniaCorretaje> {
+    const existing = await this.companiaRepo.findById(id);
+    if (!existing) {
+      throw new ApiError('NOT_FOUND', 'Company not found.', 404);
+    }
+    return this.companiaRepo.setActive(id, false);
+  }
 }

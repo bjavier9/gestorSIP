@@ -62,5 +62,9 @@
   "AUTH_USER_ALREADY_EXISTS": {
     "status": 409,
     "description": "El usuario ya existe."
+  },
+  "VALIDATION_INVALID_LANGUAGE_CODE": {
+    "status": 400,
+    "description": "El codigo de idioma proporcionado es invalido."
   }
 }

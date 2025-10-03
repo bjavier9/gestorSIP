@@ -2,10 +2,14 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { handleSuccess } from '../utils/responseHandler';
 import { ApiError } from '../utils/ApiError';
+import { authMiddleware } from '../middleware/authMiddleware';
 import { refinePrompt } from '../services/contentService';
 import { isValidLanguageCode, LanguageCode } from '../utils/supportedLanguages';
 
 const router = Router();
+
+// Protect all content routes to match the documented security expectations.
+router.use(authMiddleware);
 
 /**
  * @swagger
@@ -56,12 +60,11 @@ router.post('/refine-prompt', asyncHandler(async (req, res, next) => {
 
   // 1. Validate input
   if (!prompt || !languageCode) {
-    throw new ApiError('VALIDATION_MISSING_FIELDS', 'The '+prompt+' and '+languageCode+' fields are required.');
+    throw new ApiError('VALIDATION_MISSING_FIELDS', 'The fields prompt and languageCode are required.', 400);
   }
 
- 
   if (!isValidLanguageCode(languageCode)) {
-    throw new ApiError('VALIDATION_INVALID_EMAIL', `Invalid 'languageCode'. Please use one of the supported language codes.`);
+    throw new ApiError('VALIDATION_INVALID_LANGUAGE_CODE', 'Invalid languageCode. Please use one of the supported language codes.', 400);
   }
 
   // 2. Call the service layer

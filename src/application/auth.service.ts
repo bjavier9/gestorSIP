@@ -11,6 +11,9 @@ import { UsuarioCompania } from '../domain/usuarioCompania';
 
 const JWT_SECRET: string = process.env.JWT_SECRET || 'secret';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h';
+const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL;
+const SUPERADMIN_PASSWORD = process.env.SUPERADMIN_PASSWORD;
+const TEST_TOKEN_SECRET = process.env.TEST_SECRET;
 
 // ... (interfaces remain the same)
 export interface AuthPayload {
@@ -41,16 +44,17 @@ export class AuthService {
   }
 
   public async loginSuperAdmin(email: string, password: string): Promise<{ token: string }> {
-    if (!process.env.SUPERADMIN_PASSWORD) {
-      throw new ApiError('CONFIG_ERROR', 'SUPERADMIN_PASSWORD is not configured on the server.', 500);
+    if (!SUPERADMIN_EMAIL || !SUPERADMIN_PASSWORD) {
+      throw new ApiError('CONFIG_ERROR', 'Super admin credentials are not configured on the server.', 500);
     }
-    if (email !== 'superadmin@seguroplus.com' || password !== process.env.SUPERADMIN_PASSWORD) {
+
+    if (email !== SUPERADMIN_EMAIL || password !== SUPERADMIN_PASSWORD) {
       throw new ApiError('AUTH_INVALID_CREDENTIALS', 'Invalid superadmin credentials.', 401);
     }
 
     const payload: AuthPayload = {
       uid: 'superadmin-uid',
-      email: email,
+      email: SUPERADMIN_EMAIL,
       role: 'superadmin',
     };
 
@@ -142,16 +146,20 @@ export class AuthService {
   }
 
   public async getTestToken(secret: string): Promise<{ token: string }> {
-    if (secret !== 'SUPER_SECRET_DEV_ONLY') { // A simple, non-production secret
-        throw new ApiError('AUTH_INVALID_SECRET', 'Invalid secret for test token.', 401);
+    if (!TEST_TOKEN_SECRET) {
+      throw new ApiError('CONFIG_ERROR', 'TEST_SECRET is not configured on the server.', 500);
+    }
+
+    if (secret !== TEST_TOKEN_SECRET) {
+      throw new ApiError('AUTH_INVALID_SECRET', 'Invalid secret for test token.', 401);
     }
 
     // Create a mock payload for a generic admin user for testing purposes
     const testPayload: AuthPayload = {
-        uid: 'test-admin-uid',
-        email: 'test-admin@example.com',
-        role: 'admin',
-        companiaCorretajeId: 'test-company-id', // Example company ID
+      uid: 'test-admin-uid',
+      email: 'test-admin@example.com',
+      role: 'admin',
+      companiaCorretajeId: 'test-company-id', // Example company ID
     };
 
     const token = this.signToken({ user: testPayload });
