@@ -1,3 +1,4 @@
+﻿# CONTEXTO_GEMINI
 # Proyecto GestorSIP - Contexto actualizado para herramientas LLM
 
 ### 1. Panorama general
@@ -99,7 +100,7 @@ id, nombre, correo, telefono, companiaCorretajeId, agenteId?, estado (nuevo/cont
 fechaCreacion, fechaActualizacion
 ```
 - Estado default: `nuevo`
-- Solo compania due�a puede leer/modificar/eliminar
+- Solo compania due�a puede leer/modificar/eliminar
 
 **Gestion**
 ```
@@ -176,3 +177,91 @@ Todos los controladores deben usar este formato (revisar leads, gestiones, compa
 - [ ] `npm run build` sin errores de compilacion TypeScript.
 
 Con este contexto, Gemini debe poder navegar la base de codigo, entender las restricciones y expandir la API sin romper contratos existentes.
+
+## Objetivo
+Documentar las acciones realizadas en `src/routes/__tests__/oficinas.test.ts` y el conocimiento relevante del backend para que cualquier agente automático replique el trabajo sin ambigüedad y preserve configuraciones críticas.
+
+## Cambios clave en el test de oficinas
+- Se incorporó `generateTestToken` desde `src/utils/__tests__/auth.helper.ts`, asegurando que el suite gestione su propio `JWT_SECRET`. Al inicio del archivo se guarda el valor original, se define `test-secret` cuando falta y al finalizar se restaura o elimina según corresponda.
+- Se implementó una clase `InMemoryOficinaRepository` que cumple con `OficinaRepository`. Mantiene los documentos en mapas de memoria, replica los campos del dominio (`Oficina`) y expone métodos `create`, `findAll`, `findById`, `update`, `delete`. Cada método devuelve copias profundas para evitar efectos colaterales entre assertions.
+- Se instancia el stack real de la ruta: `OficinaService` recibe el repositorio en memoria y `OficinaController` se crea con dicho servicio. El contenedor se falsifica mediante `jest.doMock('../../config/container', ...)` devolviendo este controlador cuando se pide `TYPES.OficinaController` y fallando explícitamente ante dependencias inesperadas.
+- El servidor de prueba usa `express()` con `express.json()`, monta `../oficinas` en `/api/companias/:companiaId/oficinas` y define un manejador de errores. Dicho manejador primero responde a instancias de `ApiError`, luego analiza objetos con `statusCode` y `errorKey`, y finalmente retorna 500 en el resto de casos.
+- Se añadieron utilidades de prueba:
+  - `baseOficinaPayload` con los campos mínimos válidos.
+  - Helper `createOficina` que usa el flujo POST real y asegura que la creación se complete con código 201 antes de reutilizar la entidad en otros tests.
+- Cobertura de casos actualizada:
+  - `POST` crea y persiste oficinas verificando estado en memoria.
+  - `GET` lista todas las oficinas de la compañía y valida contenido.
+  - `GET /:id` recupera una oficina específica.
+  - `PUT` actualiza datos y confirma persistencia.
+  - `DELETE` elimina la oficina, valida su ausencia y espera 404 en accesos posteriores.
+  - Se conservan las verificaciones del middleware de autorización: rol incorrecto, compañía distinta y error de validación (payload sin nombre).
+- Cada test usa tokens generados para roles `admin` y `agent` con distintos IDs de compañía, alineados con la lógica de `authorizeCompaniaAccess`.
+
+## Pasos a replicar cuando se clonen estos tests
+1. Importar `Oficina`, `OficinaRepository`, `OficinaService`, `OficinaController`, `ApiError`, `TYPES`, `UserRole` y el helper `generateTestToken`.
+2. Definir la gestión del `JWT_SECRET` tal como se describe para evitar dependencias externas.
+3. Copiar la implementación del repositorio en memoria, incluidos `reset`, los clones y la validación de `companiaCorretajeId`.
+4. Construir el contenedor simulado con `jest.doMock` (evitar `jest.resetModules` para mantener la identidad de `ApiError`).
+5. Montar las rutas reales y adjuntar el manejador de errores con la lógica condicional indicada.
+6. Reutilizar el helper `createOficina` y asegurar que los tests limpien el repositorio en `beforeEach`.
+7. Mantener las aserciones que inspeccionan tanto la respuesta HTTP como el estado interno del repositorio.
+
+## Panorama general del proyecto
+- Backend TypeScript para Gestor Insurance (`gestor-insurance-backend`).
+- Framework principal: Express con tipado mediante `@types/express` y middleware JSON estándar.
+- Arquitectura basada en Inversify para inversión de dependencias (`src/config/container.ts`).
+- Persistencia mediante Firebase Firestore a través de adaptadores (`firebase-admin`).
+- Documentación interactiva con Swagger (`swagger-jsdoc` + `swagger-ui-express`).
+- Logging centralizado con Winston (`src/config/logger.ts`).
+- Respuestas unificadas mediante `handleSuccess` y `handleError` en `src/utils/responseHandler.ts`.
+- Pruebas con Jest + Supertest; configuración de TypeScript vía `ts-jest`.
+
+## Arquitectura por capas
+- `domain/`: modelos y puertos (interfaces de repositorios) que definen el contrato de la capa de dominio.
+- `application/`: servicios que contienen la lógica de negocio, dependen de los puertos y arrojan `ApiError` para validaciones y estados no encontrados.
+- `infrastructure/`: adaptadores concretos (principalmente Firebase) que implementan los puertos y traducen datos a las entidades de dominio.
+- `routes/`: definición de routers Express y binding entre middlewares y controladores HTTP.
+- `config/`: container Inversify, inicialización Firebase, logger y swagger.
+- `middleware/`: autenticación JWT (`authMiddleware`), autorización por rol/compañía, manejadores globales (`errorHandler`, `notFoundHandler`).
+- `utils/`: helpers compartidos (`ApiError`, generadores de respuestas, helpers de test).
+- `types/`: definiciones auxiliares de tipado.
+
+## Módulos y rutas relevantes
+- `auth`: login y autenticación con JWT, controlado por `AuthController` y `AuthService`.
+- `companias`: CRUD para compañías de corretaje (`CompaniaCorretajeController`, `FirebaseCompaniaCorretajeAdapter`).
+- `oficinas`: funcionalidades cubiertas en los tests descritos; depende de `OficinaService` e interfaz `OficinaRepository` con adaptador `FirebaseOficinaAdapter`.
+- `usuariosCompanias`: gestión de usuarios por compañía (`UsuarioCompaniaController`).
+- `entes`, `aseguradoras`, `lead`, `gestiones`, `configurations`: cada uno con su service, controller, repositorio y rutas dedicadas.
+- Todas las rutas se montan en `src/index.ts` y comparten el `errorHandler` global.
+
+## Configuración y dependencias
+- Scripts principales (`package.json`):
+  - `npm run build` → `tsc` para compilar a `dist`.
+  - `npm run dev` → `ts-node-dev` con `dotenv/config` para recarga en caliente.
+  - `npm run start` → Ejecuta la versión compilada.
+  - `npm test` → Ejecuta Jest.
+- Dependencias destacadas: `express`, `firebase-admin`, `inversify`, `jsonwebtoken`, `swagger-jsdoc`, `swagger-ui-express`, `winston`.
+- Dev dependencies clave: `typescript`, `ts-jest`, `jest`, `supertest`, `http-status-codes`.
+- Requiere `firebase-credentials.json` en la raíz; `initializeFirebase` aborta la ejecución si falta.
+- `.env` usado para `JWT_SECRET`, `PORT`, `LOG_LEVEL`, `SUPERADMIN_EMAIL` y credenciales relacionadas.
+
+## Middleware y utilidades
+- `authMiddleware`: valida tokens Bearer usando `JWT_SECRET`, adjunta el payload decodificado en `req.user` y lanza `ApiError` en caso de ausencia o invalidez.
+- `authorizeCompaniaAccess`: verifica rol permitido y coincidencia entre `companiaCorretajeId` del token y parámetro de ruta.
+- `adminSupervisorOrSuperadminMiddleware`, `agentSupervisorMiddleware`, `superAdminMiddleware`: wrappers de autorización por rol.
+- `errorHandler`: centraliza la serialización de errores, delegando en `handleError` para estándares de respuesta.
+- `responseHandler`: provee `handleSuccess` y `handleError` con cabecera, body y status uniformes (incluye token cuando corresponde).
+
+## Firebase y persistencia
+- Adaptadores Firebase (`src/infrastructure/persistence/*`) construyen rutas de colecciones Firestore para cada agregado (p.ej. `companias_corretaje/{compania}/oficinas`).
+- Los adaptadores convierten `Timestamp` a `Date`, manejan validaciones básicas y lanzan `ApiError` cuando falta información obligatoria.
+- La inicialización de Firebase reutiliza `admin.apps` para evitar múltiples instancias y usa un logger central para diagnósticos.
+
+## Estrategia de pruebas
+- Se privilegia el uso de Supertest sobre routers reales para cubrir middlewares + controladores.
+- Helpers como `generateTestToken` requieren `JWT_SECRET`; los tests deben autogestionar este secreto para no depender del entorno.
+- Los repositorios en memoria ofrecen aislamiento al interactuar con los servicios reales sin tocar Firestore.
+
+## Directiva crítica
+**NO BORRAR NI ALTERAR EL ARCHIVO `.env` YA ESCRITO.** Este requerimiento es obligatorio para cualquier agente o colaborador futuro.
