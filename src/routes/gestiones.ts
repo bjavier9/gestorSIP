@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 import container from '../config/container';
 import { TYPES } from '../config/types';
 import { GestionController } from '../infrastructure/http/gestion.controller';
-import { agentSupervisorMiddleware, authMiddleware } from '../middleware/authMiddleware';
+import { agentSupervisorMiddleware, authMiddleware, adminSupervisorOrSuperadminMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
 const getController = () => container.get<GestionController>(TYPES.GestionController);
@@ -235,6 +235,75 @@ router.put('/:id', authMiddleware, agentSupervisorMiddleware, asyncHandler((req,
  */
 router.delete('/:id', authMiddleware, agentSupervisorMiddleware, asyncHandler((req, res, next) => {
   getController().delete(req, res, next);
+}));
+
+/**
+ * @swagger
+ * /api/gestiones/{id}/reasignar:
+ *   patch:
+ *     tags: [Gestiones]
+ *     summary: Reasignar una gestion a un nuevo agente
+ *     description: Actualiza el agente asignado a una gestion especifica. Solo para supervisores, administradores y super-administradores.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *         description: ID de la gestion a reasignar.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               agenteId:
+ *                 type: string
+ *                 description: ID del nuevo agente al que se le asignara la gestion.
+ *             required:
+ *               - agenteId
+ *           examples:
+ *             default:
+ *               value:
+ *                 agenteId: "auth0|new_agent_id"
+ *     responses:
+ *       200:
+ *         description: Gestion reasignada con exito.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     body:
+ *                       type: object
+ *                       properties:
+ *                         data:
+ *                           $ref: '#/components/schemas/Gestion'
+ *       400:
+ *         description: Falta el ID del nuevo agente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Rol no autorizado o la gestion no pertenece a la compania.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Gestion no encontrada.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.patch('/:id/reasignar', authMiddleware, adminSupervisorOrSuperadminMiddleware, asyncHandler((req, res, next) => {
+  getController().reasignar(req, res, next);
 }));
 
 export default router;

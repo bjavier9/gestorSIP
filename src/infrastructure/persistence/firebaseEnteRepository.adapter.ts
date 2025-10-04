@@ -7,10 +7,8 @@ import { ApiError } from '../../utils/ApiError';
 @injectable()
 export class FirebaseEnteRepositoryAdapter implements EnteRepository {
 
-    private collection: CollectionReference;
-
-    constructor() {
-        this.collection = getFirestore().collection('entes');
+    private get collection(): CollectionReference {
+        return getFirestore().collection('entes');
     }
 
     private docToEnte(doc: FirebaseFirestore.DocumentSnapshot): Ente {

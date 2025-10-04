@@ -4,12 +4,13 @@ import { TYPES } from '../config/types';
 import { OficinaController } from '../infrastructure/http/oficina.controller';
 import asyncHandler from 'express-async-handler';
 import { authMiddleware, authorizeCompaniaAccess } from '../middleware/authMiddleware';
+import { UserRole } from '../domain/roles';
 
 const router = Router({ mergeParams: true });
 const oficinaController = container.get<OficinaController>(TYPES.OficinaController);
 
 // Middleware de autorizacion para las rutas de oficinas
-const authorize = authorizeCompaniaAccess(['admin', 'supervisor']);
+const authorize = authorizeCompaniaAccess([UserRole.ADMIN, UserRole.SUPERVISOR]);
 
 /**
  * @swagger

@@ -17,6 +17,12 @@ jest.mock('../../middleware/authMiddleware', () => ({
         next();
     }),
     agentSupervisorMiddleware: jest.fn((req, res, next) => next()),
+    adminSupervisorOrSuperadminMiddleware: jest.fn((req, res, next) => {
+      if (['admin', 'supervisor', 'superadmin'].includes(mockUser.role)) {
+        return next();
+      }
+      return res.status(403).json({ message: 'Permission denied' });
+    }),
 }));
 
 const mockGestionService = {
@@ -25,6 +31,7 @@ const mockGestionService = {
     createGestion: jest.fn(),
     updateGestion: jest.fn(),
     deleteGestion: jest.fn(),
+    reasignarGestion: jest.fn(),
 };
 
 describe('Gestion Routes', () => {
@@ -48,6 +55,7 @@ describe('Gestion Routes', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        mockUser.role = 'agent';
     });
 
     describe('GET /api/gestiones', () => {
@@ -145,6 +153,62 @@ describe('Gestion Routes', () => {
             const response = await request(app).delete('/api/gestiones/999');
 
             expect(response.status).toBe(404);
+        });
+    });
+
+    describe('PATCH /api/gestiones/:id/reasignar', () => {
+        const gestionId = 'gestion-1';
+        const nuevoAgenteId = 'new-agent-id';
+        const originalGestion = { id: gestionId, agenteId: 'old-agent-id', companiaCorretajeId: mockUser.companiaCorretajeId };
+        const reasignedGestion = { ...originalGestion, agenteId: nuevoAgenteId };
+
+        it('should reassign a gestion for a supervisor', async () => {
+            mockUser.role = 'supervisor';
+            mockGestionService.getGestionById.mockResolvedValue(originalGestion);
+            mockGestionService.reasignarGestion.mockResolvedValue(reasignedGestion);
+
+            const response = await request(app)
+                .patch(`/api/gestiones/${gestionId}/reasignar`)
+                .send({ agenteId: nuevoAgenteId });
+
+            expect(response.status).toBe(200);
+            expect(response.body.body.data).toEqual(reasignedGestion);
+            expect(mockGestionService.getGestionById).toHaveBeenCalledWith(gestionId);
+            expect(mockGestionService.reasignarGestion).toHaveBeenCalledWith(gestionId, nuevoAgenteId);
+        });
+
+        it('should return 403 for an agent', async () => {
+            mockUser.role = 'agent';
+
+            const response = await request(app)
+                .patch(`/api/gestiones/${gestionId}/reasignar`)
+                .send({ agenteId: nuevoAgenteId });
+
+            expect(response.status).toBe(403);
+            expect(mockGestionService.reasignarGestion).not.toHaveBeenCalled();
+        });
+
+        it('should return 400 if agenteId is missing', async () => {
+            mockUser.role = 'supervisor';
+
+            const response = await request(app)
+                .patch(`/api/gestiones/${gestionId}/reasignar`)
+                .send({});
+
+            expect(response.status).toBe(400);
+            expect(mockGestionService.reasignarGestion).not.toHaveBeenCalled();
+        });
+
+        it('should return 404 if gestion is not found', async () => {
+            mockUser.role = 'supervisor';
+            mockGestionService.getGestionById.mockResolvedValue(null);
+
+            const response = await request(app)
+                .patch(`/api/gestiones/${gestionId}/reasignar`)
+                .send({ agenteId: nuevoAgenteId });
+
+            expect(response.status).toBe(404);
+            expect(mockGestionService.reasignarGestion).not.toHaveBeenCalled();
         });
     });
 });

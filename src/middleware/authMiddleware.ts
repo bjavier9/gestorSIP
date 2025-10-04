@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import asyncHandler from 'express-async-handler';
 import { ApiError } from '../utils/ApiError';
+import { UserRole } from '../domain/roles';
 
 // Extiende el tipo de Request de Express para incluir una propiedad de usuario
 export interface AuthenticatedRequest extends Request {
@@ -35,15 +36,15 @@ export const authMiddleware = asyncHandler(async (req: AuthenticatedRequest, res
 });
 
 export const superAdminMiddleware = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    const role = req.user && req.user.user ? req.user.user.role : undefined;
-    const tokenEmail = req.user && req.user.user ? req.user.user.email : undefined;
+    const role = req.user?.user?.role;
+    const tokenEmail = req.user?.user?.email;
     const configuredSuperAdminEmail = process.env.SUPERADMIN_EMAIL;
 
     if (!configuredSuperAdminEmail) {
         throw new ApiError('SERVER_CONFIG_ERROR', 'SUPERADMIN_EMAIL no esta configurado en el servidor.', 500);
     }
 
-    const isSuperAdminRole = typeof role === 'string' && role.toLowerCase() === 'superadmin';
+    const isSuperAdminRole = typeof role === 'string' && role.toLowerCase() === UserRole.SUPERADMIN;
     const emailMatches = typeof tokenEmail === 'string' && tokenEmail.toLowerCase() === configuredSuperAdminEmail.toLowerCase();
 
     if (isSuperAdminRole && emailMatches) {
@@ -54,24 +55,24 @@ export const superAdminMiddleware = asyncHandler(async (req: AuthenticatedReques
 });
 
 export const adminSupervisorOrSuperadminMiddleware = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    const role = req.user && req.user.user ? req.user.user.role : undefined;
-    const allowed = ['admin', 'supervisor', 'superadmin'];
-    if (typeof role === 'string' && allowed.includes(role.toLowerCase())) {
+    const role = req.user?.user?.role;
+    const allowed: UserRole[] = [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.SUPERADMIN];
+    if (typeof role === 'string' && allowed.includes(role.toLowerCase() as UserRole)) {
         return next();
     }
     throw new ApiError('FORBIDDEN', 'Acceso denegado. Rol insuficiente.', 403);
 });
 
 export const agentSupervisorMiddleware = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    const role = req.user && req.user.user ? req.user.user.role : undefined;
-    const allowed = ['agent', 'supervisor'];
-    if (typeof role === 'string' && allowed.includes(role.toLowerCase())) {
+    const role = req.user?.user?.role;
+    const allowed: UserRole[] = [UserRole.AGENT, UserRole.SUPERVISOR];
+    if (typeof role === 'string' && allowed.includes(role.toLowerCase() as UserRole)) {
         return next();
     }
     throw new ApiError('FORBIDDEN', 'Acceso denegado. Se requiere rol de Agente o Supervisor.', 403);
 });
 
-export const authorizeCompaniaAccess = (allowedRoles: string[]) => asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const authorizeCompaniaAccess = (allowedRoles: UserRole[]) => asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const user = req.user?.user;
     const { companiaId } = req.params;
 

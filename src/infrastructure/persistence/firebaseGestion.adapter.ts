@@ -1,13 +1,14 @@
 import { injectable } from 'inversify';
-import { Timestamp, FieldValue } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { GestionRepository, GestionCreateInput, GestionUpdateInput } from '../../domain/ports/gestionRepository.port';
 import { Gestion } from '../../domain/gestion';
-import { db } from '../../config/firebase';
 import { ApiError } from '../../utils/ApiError';
 
 @injectable()
 export class FirebaseGestionAdapter implements GestionRepository {
-  private readonly collection = db.collection('gestiones');
+  private get collection() {
+    return getFirestore().collection('gestiones');
+  }
 
   private toDate(value: any): Date | undefined {
     if (!value) return value;

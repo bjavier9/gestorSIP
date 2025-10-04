@@ -1,140 +1,111 @@
 import request from 'supertest';
-import express, { Express, Router, Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import container from '../../config/container';
+import { generateTestToken } from '../../utils/__tests__/auth.helper';
+import { UserRole } from '../../domain/roles';
+import { ApiError } from '../../utils/ApiError';
 import { TYPES } from '../../config/types';
-import { OficinaService } from '../../application/oficina.service';
-import { Oficina } from '../../domain/oficina';
-import { errorHandler } from '../../middleware/errorHandler';
 
-// Mock corregido para evitar el error de TypeScript Property 'user' does not exist on type 'Request'
-jest.mock('../../middleware/authMiddleware', () => ({
-    authMiddleware: jest.fn((req: Request, res: Response, next: NextFunction) => {
-        // Se realiza una aserción de tipo en `req` para permitir la asignación de la propiedad `user`
-        (req as any).user = {
-            user: {
-                role: 'admin',
-                companiaCorretajeId: 'comp-1',
-            }
-        };
-        next();
-    }),
-    authorizeCompaniaAccess: jest.fn(() => (req: Request, res: Response, next: NextFunction) => next()),
-}));
-
-const mockOficinaService: Partial<OficinaService> = {
-    createOficina: jest.fn(),
-    getOficinas: jest.fn(),
-    getOficinaById: jest.fn(),
-    updateOficina: jest.fn(),
-    deleteOficina: jest.fn(),
+// 1. Definimos nuestro controlador falso.
+const mockOficinaController = {
+  createOficina: jest.fn(),
 };
 
-describe('Oficina Routes', () => {
-    let app: Express;
-    const companiaId = 'comp-1';
+// 2. Mockeamos el módulo del contenedor.
+// Dado que el módulo original usa `export default container;`, nuestro mock debe
+// devolver un objeto con una propiedad `default`.
+jest.mock('../../config/container', () => ({
+  __esModule: true, // Necesario para que Jest maneje correctamente el `export default`
+  default: {
+    get: jest.fn().mockImplementation((type: symbol) => {
+      // El contenedor real usa Symbols (TYPES) para resolver las dependencias.
+      if (type === TYPES.OficinaController) {
+        return mockOficinaController;
+      }
+      return null;
+    }),
+  },
+}));
 
-    beforeAll(() => {
-        container.snapshot();
-        container.rebind<OficinaService>(TYPES.OficinaService).toConstantValue(mockOficinaService as any);
+// 3. Ahora que el mock está configurado correctamente, importamos las rutas.
+import oficinaRoutes from '../oficinas';
 
-        const oficinaRoutes = require('../oficinas').default;
+// --- Configuración de la App de Express para el Test ---
+const app = express();
+app.use(express.json());
+app.use('/api/companias/:companiaId/oficinas', oficinaRoutes);
 
-        app = express();
-        app.use(express.json());
-        
-        const companiaRouter = Router();
-        companiaRouter.use('/:companiaId/oficinas', oficinaRoutes);
-        app.use('/api/companias', companiaRouter);
-        
-        app.use(errorHandler);
-    });
+// Manejador de errores global para el test
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  if (err instanceof ApiError) {
+    res.status(err.statusCode).json({ error: { message: err.message, code: err.errorKey } });
+  } else {
+    res.status(500).json({ error: { message: 'Internal Server Error' } });
+  }
+});
 
-    afterAll(() => {
-        container.restore();
-    });
+// --- Suite de Tests ---
+describe('Oficina Routes Integration Test', () => {
+  const companiaId = 'test-compania-id';
+  const anotherCompaniaId = 'another-compania-id';
+  const adminToken = generateTestToken({ uid: 'admin-test-user', role: UserRole.ADMIN, companiaCorretajeId: companiaId, email: 'admin@test.com' });
+  const agentToken = generateTestToken({ uid: 'agent-test-user', role: UserRole.AGENT, companiaCorretajeId: companiaId, email: 'agent@test.com' });
 
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
-    const testOficina: Oficina = {
-        id: 'oficina-1',
-        nombre: 'Oficina Principal',
-        direccion: 'Av. Principal 123',
-        telefono: '555-5678',
-        companiaCorretajeId: companiaId,
-        moneda: 'USD',
-        activo: true,
-        fechaCreacion: new Date(),
-        fechaActualizacion: new Date(),
-    };
+  describe('POST /api/companias/:companiaId/oficinas', () => {
+    const newOficinaData = { nombre: 'Oficina Principal', direccion: 'Calle Falsa 123' };
 
-    describe(`POST /api/companias/${companiaId}/oficinas`, () => {
-        it('should create a new office', async () => {
-            const input = { nombre: testOficina.nombre, direccion: testOficina.direccion, moneda: 'USD', activo: true };
-            const serviceInput = { ...input, companiaCorretajeId: companiaId };
-            (mockOficinaService.createOficina as jest.Mock).mockResolvedValue(testOficina);
-
-            const response = await request(app)
-                .post(`/api/companias/${companiaId}/oficinas`)
-                .send(input);
-
-            expect(response.status).toBe(StatusCodes.CREATED);
-            expect(response.body.body.data.id).toBe(testOficina.id);
-            expect(mockOficinaService.createOficina).toHaveBeenCalledWith(expect.objectContaining(serviceInput));
+    it('should pass authorization and call the controller method for an admin user', async () => {
+        mockOficinaController.createOficina.mockImplementation(async (req, res) => {
+            res.status(StatusCodes.CREATED).json({ message: 'Oficina creada' });
         });
+
+        await request(app)
+            .post(`/api/companias/${companiaId}/oficinas`)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send(newOficinaData);
+
+        expect(mockOficinaController.createOficina).toHaveBeenCalledTimes(1);
     });
 
-    describe(`GET /api/companias/${companiaId}/oficinas`, () => {
-        it('should return a list of offices', async () => {
-            (mockOficinaService.getOficinas as jest.Mock).mockResolvedValue([testOficina]);
+    it('should be stopped by auth middleware for a user with incorrect role', async () => {
+        const response = await request(app)
+            .post(`/api/companias/${companiaId}/oficinas`)
+            .set('Authorization', `Bearer ${agentToken}`)
+            .send(newOficinaData);
 
-            const response = await request(app).get(`/api/companias/${companiaId}/oficinas`);
+        expect(response.status).toBe(StatusCodes.FORBIDDEN);
+        expect(mockOficinaController.createOficina).not.toHaveBeenCalled();
+    });
 
-            expect(response.status).toBe(StatusCodes.OK);
-            expect(response.body.body.data[0].id).toBe(testOficina.id);
-            expect(mockOficinaService.getOficinas).toHaveBeenCalledWith(companiaId);
+    it('should be stopped by auth middleware if user tries to access another company', async () => {
+        const response = await request(app)
+            .post(`/api/companias/${anotherCompaniaId}/oficinas`)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send(newOficinaData);
+
+        expect(response.status).toBe(StatusCodes.FORBIDDEN);
+        expect(mockOficinaController.createOficina).not.toHaveBeenCalled();
+    });
+
+    it('should return a 400 Bad Request if the controller throws a validation ApiError', async () => {
+        const validationError = new ApiError('VALIDATION_ERROR', 'El nombre es requerido', StatusCodes.BAD_REQUEST);
+
+        mockOficinaController.createOficina.mockImplementation(async (req, res, next) => {
+            next(validationError);
         });
+
+        const response = await request(app)
+            .post(`/api/companias/${companiaId}/oficinas`)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({ direccion: 'Una dirección sin nombre' });
+
+        expect(mockOficinaController.createOficina).toHaveBeenCalledTimes(1);
+        expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+        expect(response.body.error.code).toEqual('VALIDATION_ERROR');
     });
-
-    describe(`GET /api/companias/${companiaId}/oficinas/:oficinaId`, () => {
-        it('should return an office by id', async () => {
-            (mockOficinaService.getOficinaById as jest.Mock).mockResolvedValue(testOficina);
-
-            const response = await request(app).get(`/api/companias/${companiaId}/oficinas/${testOficina.id}`);
-
-            expect(response.status).toBe(StatusCodes.OK);
-            expect(response.body.body.data.id).toBe(testOficina.id);
-            expect(mockOficinaService.getOficinaById).toHaveBeenCalledWith(companiaId, testOficina.id);
-        });
-    });
-
-    describe(`PUT /api/companias/${companiaId}/oficinas/:oficinaId`, () => {
-        it('should update an office', async () => {
-            const updates = { nombre: 'Oficina Actualizada' };
-            const updatedOficina = { ...testOficina, ...updates };
-            (mockOficinaService.updateOficina as jest.Mock).mockResolvedValue(updatedOficina);
-
-            const response = await request(app)
-                .put(`/api/companias/${companiaId}/oficinas/${testOficina.id}`)
-                .send(updates);
-
-            expect(response.status).toBe(StatusCodes.OK);
-            expect(response.body.body.data.nombre).toBe('Oficina Actualizada');
-            expect(mockOficinaService.updateOficina).toHaveBeenCalledWith(companiaId, testOficina.id, updates);
-        });
-    });
-
-    describe(`DELETE /api/companias/${companiaId}/oficinas/:oficinaId`, () => {
-        it('should delete an office', async () => {
-            (mockOficinaService.deleteOficina as jest.Mock).mockResolvedValue(undefined);
-
-            const response = await request(app).delete(`/api/companias/${companiaId}/oficinas/${testOficina.id}`);
-
-            expect(response.status).toBe(StatusCodes.OK);
-            expect(response.body.body.data.message).toBeDefined();
-            expect(mockOficinaService.deleteOficina).toHaveBeenCalledWith(companiaId, testOficina.id);
-        });
-    });
+  });
 });

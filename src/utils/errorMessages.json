@@ -1,70 +1,27 @@
+
 {
-  "INTERNAL_SERVER_ERROR": {
-    "status": 500,
-    "description": "Ocurrió un error inesperado en el servidor."
-  },
-  "NOT_FOUND": {
-    "status": 404,
-    "description": "El recurso solicitado no fue encontrado."
-  },
-  "VALIDATION_ERROR": {
-    "status": 400,
-    "description": "La solicitud contiene datos inválidos."
-  },
-  "VALIDATION_MISSING_FIELDS": {
-    "status": 400,
-    "description": "Faltan campos obligatorios en la solicitud."
-  },
-  "VALIDATION_INVALID_EMAIL": {
-    "status": 400,
-    "description": "El formato del correo electrónico es inválido."
-  },
-  "AUTH_INVALID_CREDENTIALS": {
-    "status": 401,
-    "description": "Las credenciales de autenticación son incorrectas."
-  },
-  "AUTH_TOKEN_MISSING": {
-    "status": 401,
-    "description": "No se proveyó un token de autenticación."
-  },
-  "AUTH_TOKEN_INVALID": {
-    "status": 401,
-    "description": "El token de autenticación es inválido o ha expirado."
-  },
-  "AUTH_INVALID_FIREBASE_TOKEN": {
-    "status": 401,
-    "description": "El token de Firebase ID es inválido o ha expirado."
-  },
-  "AUTH_NO_COMPANIES_ASSIGNED": {
-    "status": 403,
-    "description": "El usuario no tiene asignada ninguna compañía."
-  },
-  "AUTH_COMPANY_ALREADY_SELECTED": {
-    "status": 400,
-    "description": "La compañía de trabajo ya ha sido seleccionada."
-  },
-  "AUTH_INVALID_COMPANY_SELECTION": {
-    "status": 403,
-    "description": "El usuario no pertenece a la compañía seleccionada."
-  },
-  "USER_NOT_FOUND": {
-    "status": 404,
-    "description": "El usuario especificado no fue encontrado."
-  },
-  "ENTE_NOT_FOUND": {
-    "status": 404,
-    "description": "El ente especificado no fue encontrado."
-  },
-  "ROUTING_NOT_FOUND": {
-    "status": 404,
-    "description": "El endpoint al que intenta acceder no está disponible en la API."
-  },
-  "AUTH_USER_ALREADY_EXISTS": {
-    "status": 409,
-    "description": "El usuario ya existe."
-  },
-  "VALIDATION_INVALID_LANGUAGE_CODE": {
-    "status": 400,
-    "description": "El codigo de idioma proporcionado es invalido."
-  }
+  "NOT_FOUND": "El recurso solicitado no fue encontrado.",
+  "CONFIG_ERROR": "Error de configuración en el servidor.",
+  "AUTH_INVALID_CREDENTIALS": "Credenciales de autenticación inválidas.",
+  "AUTH_INVALID_FIREBASE_TOKEN": "El token de Firebase proporcionado es inválido o ha expirado.",
+  "AUTH_NO_COMPANIES_AVAILABLE": "No hay compañías disponibles para asignación.",
+  "AUTH_NO_COMPANIES_ASSIGNED": "El usuario no está asignado a ninguna compañía.",
+  "AUTH_COMPANY_ALREADY_SELECTED": "La compañía ya ha sido seleccionada.",
+  "AUTH_INVALID_COMPANY_SELECTION": "El usuario no pertenece a la compañía seleccionada.",
+  "AUTH_INVALID_SECRET": "Secreto inválido para generar el token de prueba.",
+  "RIF_ALREADY_EXISTS": "Ya existe una compañía con este RIF.",
+  "CONFLICT": "Conflicto. El recurso ya existe.",
+  "ENTE_ALREADY_EXISTS": "Ya existe un ente con este número de documento.",
+  "GESTION_RELATION_REQUIRED": "La gestión debe estar asociada a un lead o a un ente.",
+  "GESTION_RELATION_CONFLICT": "Una gestión no puede estar asociada simultáneamente a un lead y a un ente.",
+  "GESTION_NOT_FOUND": "La gestión solicitada no fue encontrada.",
+  "VALIDATION_ERROR": "Error de validación. Por favor, revise los datos enviados.",
+  "VALIDATION_INVALID_ROLE": "Rol inválido para el usuario.",
+  "AUTH_USER_CREATION_FAILED": "Error al crear el usuario en el sistema de autenticación.",
+  "AUTH_USER_UPDATE_FAILED": "Error al actualizar el usuario en el sistema de autenticación.",
+  "SERVER_CONFIG_ERROR": "Error crítico de configuración en el servidor.",
+  "AUTH_TOKEN_MISSING": "No se ha proporcionado un token de autenticación.",
+  "AUTH_TOKEN_INVALID": "El token de autenticación es inválido o ha expirado.",
+  "FORBIDDEN": "Acceso denegado. No tiene los permisos necesarios para realizar esta acción.",
+  "UNAUTHENTICATED": "No autenticado. Se requiere iniciar sesión para acceder a este recurso."
 }
