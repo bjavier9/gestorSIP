@@ -1,17 +1,18 @@
 import request from 'supertest';
 import express, { Express } from 'express';
-import container from '../../config/container'; // Corrected import
+import container from '../../config/container'; 
 import { TYPES } from '../../config/types';
 import { ConfigurationService } from '../../application/configuration.service';
 import { errorHandler } from '../../middleware/errorHandler';
 
-// Mockea los middlewares de autenticación
+
 jest.mock('../../middleware/authMiddleware', () => ({
     authMiddleware: jest.fn((req, res, next) => next()),
     superAdminMiddleware: jest.fn((req, res, next) => next()),
+    adminSupervisorOrSuperadminMiddleware: jest.fn((req, res, next) => next()), 
 }));
 
-// Define el mock del servicio
+
 const mockConfigurationService = {
     getAllConfigurations: jest.fn(),
     getConfigurationById: jest.fn(),
@@ -23,15 +24,11 @@ describe('Configurations Routes', () => {
     let app: Express;
 
     beforeAll(() => {
-        // Guarda el estado original del contenedor
         container.snapshot();
-        // Reemplaza la dependencia por el mock
         container.rebind<ConfigurationService>(TYPES.ConfigurationService).toConstantValue(mockConfigurationService as any);
 
-        // Carga el router DESPUÉS de haber modificado el contenedor
         const configurationsRouter = require('../configurations').default;
 
-        // Crea la app de express
         app = express();
         app.use(express.json());
         app.use('/api/configurations', configurationsRouter);
@@ -39,7 +36,6 @@ describe('Configurations Routes', () => {
     });
 
     afterAll(() => {
-        // Restaura el estado original del contenedor para no afectar otros tests
         container.restore();
     });
 
@@ -55,7 +51,7 @@ describe('Configurations Routes', () => {
             const response = await request(app).get('/api/configurations');
 
             expect(response.status).toBe(200);
-            expect(response.body.data).toEqual(configurations);
+            expect(response.body.body.data).toEqual(configurations);
             expect(mockConfigurationService.getAllConfigurations).toHaveBeenCalled();
         });
     });
@@ -68,7 +64,7 @@ describe('Configurations Routes', () => {
             const response = await request(app).get('/api/configurations/roles');
 
             expect(response.status).toBe(200);
-            expect(response.body.data).toEqual(configuration);
+            expect(response.body.body.data).toEqual(configuration);
             expect(mockConfigurationService.getConfigurationById).toHaveBeenCalledWith('roles');
         });
 
@@ -78,7 +74,7 @@ describe('Configurations Routes', () => {
             const response = await request(app).get('/api/configurations/nonexistent');
 
             expect(response.status).toBe(404);
-            expect(response.body.success).toBe(false);
+            expect(response.body.status.success).toBe(false);
             expect(mockConfigurationService.getConfigurationById).toHaveBeenCalledWith('nonexistent');
         });
     });
@@ -93,7 +89,7 @@ describe('Configurations Routes', () => {
                 .send(newConfiguration);
 
             expect(response.status).toBe(201);
-            expect(response.body.data).toEqual(newConfiguration);
+            expect(response.body.body.data).toEqual(newConfiguration);
             expect(mockConfigurationService.createConfiguration).toHaveBeenCalledWith(newConfiguration);
         });
     });
@@ -108,7 +104,7 @@ describe('Configurations Routes', () => {
                 .send({ data: ['admin', 'user', 'guest'] });
 
             expect(response.status).toBe(200);
-            expect(response.body.data).toEqual(updatedConfiguration);
+            expect(response.body.body.data).toEqual(updatedConfiguration);
             expect(mockConfigurationService.updateConfiguration).toHaveBeenCalledWith('roles', { data: ['admin', 'user', 'guest'] });
         });
 
@@ -120,7 +116,7 @@ describe('Configurations Routes', () => {
                 .send({ data: 'some data' });
 
             expect(response.status).toBe(404);
-            expect(response.body.success).toBe(false);
+            expect(response.body.status.success).toBe(false);
             expect(mockConfigurationService.updateConfiguration).toHaveBeenCalledWith('nonexistent', { data: 'some data' });
         });
     });

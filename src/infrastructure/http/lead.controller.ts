@@ -12,6 +12,17 @@ export class LeadController {
     @inject(TYPES.LeadService) private leadService: LeadService,
   ) {}
 
+  // AÑADIDO: El método que faltaba para gestionar la ruta /compania/:companiaId
+  public async getLeadsByCompania(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { companiaId } = req.params;
+      const leads = await this.leadService.getLeadsByCompania(companiaId);
+      handleSuccess(req, res, leads);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   public async create(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { nombre, correo, telefono, origen, estado } = req.body || {};

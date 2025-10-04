@@ -113,4 +113,16 @@ export class GestionService {
     }
     await this.gestionRepository.delete(id);
   }
+
+  async reasignarGestion(gestionId: string, nuevoAgenteId: string): Promise<Gestion> {
+    const gestion = await this.gestionRepository.findById(gestionId);
+    if (!gestion) {
+      throw new ApiError('NOT_FOUND', 'Gestion no encontrada.', 404);
+    }
+    const updatedGestion = await this.gestionRepository.update(gestionId, { 
+      agenteId: nuevoAgenteId,
+      fechaActualizacion: new Date(),
+    });
+    return updatedGestion;
+  }
 }

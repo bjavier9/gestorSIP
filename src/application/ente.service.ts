@@ -10,8 +10,7 @@ export class EnteService {
     @inject(TYPES.EnteRepository) private enteRepository: EnteRepository
   ) {}
 
-  async createEnte(data: EnteInput): Promise<Ente> {
-    // The repository now handles checking for existing documents.
+  async create(data: EnteInput): Promise<Ente> {
     const existingEnte = await this.enteRepository.findByDocumento(data.documento);
     if (existingEnte) {
       throw new ApiError('ENTE_ALREADY_EXISTS', 'An ente with this document number already exists.', 409);
@@ -19,29 +18,20 @@ export class EnteService {
     return this.enteRepository.save(data);
   }
 
-  async getEnteById(id: string): Promise<Ente> {
-    const ente = await this.enteRepository.findById(id);
-    if (!ente) {
-      throw new ApiError('ENTE_NOT_FOUND', 'Ente not found.', 404);
-    }
-    return ente;
+  async getById(id: string): Promise<Ente | null> {
+    return this.enteRepository.findById(id);
   }
 
-  async getAllEntes(): Promise<Ente[]> {
+  async getAll(): Promise<Ente[]> {
     return this.enteRepository.findAll();
   }
 
-  async updateEnte(id: string, data: EnteUpdateInput): Promise<Ente> {
-    // The repository now handles the not-found case and returns the updated entity.
-    const updatedEnte = await this.enteRepository.update(id, data);
-    if (!updatedEnte) {
-        throw new ApiError('ENTE_NOT_FOUND', 'Ente not found for update.', 404);
-    }
-    return updatedEnte;
+  async update(id: string, data: EnteUpdateInput): Promise<Ente | null> {
+    return this.enteRepository.update(id, data);
   }
 
-  async deleteEnte(id: string): Promise<void> {
-    // The repository now handles the not-found case and throws an error.
+  async delete(id: string): Promise<{ message: string }> {
     await this.enteRepository.delete(id);
+    return { message: 'Ente deleted successfully' };
   }
 }

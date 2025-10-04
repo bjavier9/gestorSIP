@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { getFirestore, CollectionReference, Timestamp } from 'firebase-admin/firestore';
+import { getFirestore, CollectionReference, DocumentReference, Timestamp } from 'firebase-admin/firestore';
 import { Ente } from '../../domain/ente';
 import { EnteRepository, EnteInput, EnteUpdateInput } from '../../domain/ports/enteRepository.port';
 import { ApiError } from '../../utils/ApiError';
@@ -7,24 +7,26 @@ import { ApiError } from '../../utils/ApiError';
 @injectable()
 export class FirebaseEnteRepositoryAdapter implements EnteRepository {
 
-    private get collection(): CollectionReference {
-        return getFirestore().collection('entes');
-    }
+    private collection: CollectionReference;
 
-    constructor() {}
+    constructor() {
+        this.collection = getFirestore().collection('entes');
+    }
 
     private docToEnte(doc: FirebaseFirestore.DocumentSnapshot): Ente {
         const data = doc.data();
-
         if (!data) {
-            throw new ApiError('NOT_FOUND', `El ente con ID ${doc.id} no tiene datos.`, 404);
+            throw new ApiError('INTERNAL_SERVER_ERROR', `Error inesperado: el documento con ID ${doc.id} no tiene datos.`, 500);
         }
 
         const toDate = (timestamp: any, fieldName: string): Date => {
             if (timestamp instanceof Timestamp) {
                 return timestamp.toDate();
             }
-            throw new ApiError('INTERNAL_SERVER_ERROR', `El campo '${fieldName}' del ente con ID ${doc.id} es invalido o no existe.`, 500);
+            if (timestamp instanceof Date) {
+                return timestamp;
+            }
+            throw new ApiError('INTERNAL_SERVER_ERROR', `El campo '${fieldName}' del ente con ID ${doc.id} tiene un formato de fecha invalido.`, 500);
         };
 
         return {
@@ -46,11 +48,12 @@ export class FirebaseEnteRepositoryAdapter implements EnteRepository {
     }
 
     async save(data: EnteInput): Promise<Ente> {
+        const now = new Date();
         const newEnteData = {
             ...data,
-            fechaCreacion: new Date(),
-            fechaActualizacion: new Date(),
-            activo: true, 
+            fechaCreacion: now,
+            fechaActualizacion: now,
+            activo: data.activo !== undefined ? data.activo : true,
         };
         const docRef = await this.collection.add(newEnteData);
         const savedDoc = await docRef.get();
@@ -62,8 +65,7 @@ export class FirebaseEnteRepositoryAdapter implements EnteRepository {
         if (snapshot.empty) {
             return null;
         }
-        const doc = snapshot.docs[0];
-        return this.docToEnte(doc);
+        return this.docToEnte(snapshot.docs[0]);
     }
 
     async findAll(): Promise<Ente[]> {
@@ -73,16 +75,25 @@ export class FirebaseEnteRepositoryAdapter implements EnteRepository {
 
     async findById(id: string): Promise<Ente | null> {
         const doc = await this.collection.doc(id).get();
-        if (!doc.exists) return null;
+        if (!doc.exists) {
+            return null;
+        }
         return this.docToEnte(doc);
     }
 
     async update(id: string, updates: EnteUpdateInput): Promise<Ente | null> {
         const docRef = this.collection.doc(id);
+        const doc = await docRef.get();
+
+        if (!doc.exists) {
+            return null;
+        }
+
         const updateData = {
             ...updates,
             fechaActualizacion: new Date(),
         };
+
         await docRef.update(updateData);
         const updatedDoc = await docRef.get();
         return this.docToEnte(updatedDoc);
@@ -90,6 +101,12 @@ export class FirebaseEnteRepositoryAdapter implements EnteRepository {
 
     async delete(id: string): Promise<void> {
         const docRef = this.collection.doc(id);
+        const doc = await docRef.get();
+
+        if (!doc.exists) {
+            throw new ApiError('NOT_FOUND', `El ente con ID ${id} no fue encontrado para eliminar.`, 404);
+        }
+
         await docRef.delete();
     }
 }

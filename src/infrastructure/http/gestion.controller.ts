@@ -38,6 +38,9 @@ export class GestionController {
     try {
       const user = this.getUserContext(req);
       const gestion = await this.gestionService.getGestionById(req.params.id);
+      if (!gestion) {
+        throw new ApiError('NOT_FOUND', 'Gestion no encontrada.', 404);
+      }
       if (gestion.companiaCorretajeId !== user.companiaCorretajeId) {
         throw new ApiError('FORBIDDEN', 'No tienes permiso para ver esta gestion.', 403);
       }
@@ -111,6 +114,9 @@ export class GestionController {
     try {
       const user = this.getUserContext(req);
       const gestion = await this.gestionService.getGestionById(req.params.id);
+      if (!gestion) {
+        throw new ApiError('NOT_FOUND', 'Gestion no encontrada.', 404);
+      }
       if (gestion.companiaCorretajeId !== user.companiaCorretajeId) {
         throw new ApiError('FORBIDDEN', 'No tienes permiso para modificar esta gestion.', 403);
       }
@@ -152,6 +158,9 @@ export class GestionController {
     try {
       const user = this.getUserContext(req);
       const gestion = await this.gestionService.getGestionById(req.params.id);
+      if (!gestion) {
+        throw new ApiError('NOT_FOUND', 'Gestion no encontrada.', 404);
+      }
       if (gestion.companiaCorretajeId !== user.companiaCorretajeId) {
         throw new ApiError('FORBIDDEN', 'No tienes permiso para eliminar esta gestion.', 403);
       }
@@ -163,6 +172,33 @@ export class GestionController {
 
       await this.gestionService.deleteGestion(req.params.id);
       handleSuccess(req, res, { message: 'Gestion eliminada' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public async reasignar(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const user = this.getUserContext(req);
+      const { id: gestionId } = req.params;
+      const { agenteId: nuevoAgenteId } = req.body;
+
+      if (!nuevoAgenteId) {
+        throw new ApiError('VALIDATION_MISSING_FIELD', 'agenteId es requerido.', 400);
+      }
+
+      const gestion = await this.gestionService.getGestionById(gestionId);
+      if (!gestion) {
+          throw new ApiError('NOT_FOUND', 'Gestion no encontrada.', 404);
+      }
+
+      if (gestion.companiaCorretajeId !== user.companiaCorretajeId) {
+        throw new ApiError('FORBIDDEN', 'No tienes permiso para reasignar esta gestion.', 403);
+      }
+
+      const updatedGestion = await this.gestionService.reasignarGestion(gestionId, nuevoAgenteId);
+
+      handleSuccess(req, res, updatedGestion);
     } catch (error) {
       next(error);
     }

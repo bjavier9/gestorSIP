@@ -8,6 +8,7 @@ import { errorHandler } from '../../middleware/errorHandler';
 jest.mock('../../middleware/authMiddleware', () => ({
     authMiddleware: jest.fn((req, res, next) => next()),
     superAdminMiddleware: jest.fn((req, res, next) => next()),
+    adminSupervisorOrSuperadminMiddleware: jest.fn((req, res, next) => next()), 
 }));
 
 const mockAseguradoraService = {
@@ -48,7 +49,7 @@ describe('Aseguradoras Routes', () => {
             const response = await request(app).get('/api/aseguradoras');
 
             expect(response.status).toBe(200);
-            expect(response.body.data).toEqual(aseguradoras);
+            expect(response.body.body.data).toEqual(aseguradoras);
         });
     });
 
@@ -60,7 +61,7 @@ describe('Aseguradoras Routes', () => {
             const response = await request(app).get('/api/aseguradoras/1');
 
             expect(response.status).toBe(200);
-            expect(response.body.data).toEqual(aseguradora);
+            expect(response.body.body.data).toEqual(aseguradora);
         });
 
         it('should return 404 if aseguradora not found', async () => {
@@ -69,7 +70,7 @@ describe('Aseguradoras Routes', () => {
             const response = await request(app).get('/api/aseguradoras/999');
 
             expect(response.status).toBe(404);
-            expect(response.body.success).toBe(false);
+            expect(response.body.status.success).toBe(false);
         });
     });
 
@@ -84,7 +85,7 @@ describe('Aseguradoras Routes', () => {
                 .send(newAseguradora);
 
             expect(response.status).toBe(201);
-            expect(response.body.data).toEqual(createdAseguradora);
+            expect(response.body.body.data).toEqual(createdAseguradora);
         });
     });
 
@@ -98,7 +99,7 @@ describe('Aseguradoras Routes', () => {
                 .send({ nombre: 'Aseguradora Actualizada' });
 
             expect(response.status).toBe(200);
-            expect(response.body.data).toEqual(updatedAseguradora);
+            expect(response.body.body.data).toEqual(updatedAseguradora);
         });
 
         it('should return 404 if aseguradora to update is not found', async () => {
@@ -109,7 +110,7 @@ describe('Aseguradoras Routes', () => {
                 .send({ nombre: 'Aseguradora Inexistente' });
 
             expect(response.status).toBe(404);
-            expect(response.body.success).toBe(false);
+            expect(response.body.status.success).toBe(false);
         });
     });
 });
