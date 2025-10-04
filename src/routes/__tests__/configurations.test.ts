@@ -1,20 +1,17 @@
-
 import request from 'supertest';
-import express from 'express';
-import { ConfigurationController } from '../../infrastructure/http/configuration.controller';
+import express, { Express } from 'express';
+import container from '../../config/container'; // Corrected import
+import { TYPES } from '../../config/types';
 import { ConfigurationService } from '../../application/configuration.service';
-import { authMiddleware, superAdminMiddleware } from '../../middleware/authMiddleware';
-import configurationsRouter from '../configurations';
+import { errorHandler } from '../../middleware/errorHandler';
 
-jest.mock('../../application/configuration.service');
+// Mockea los middlewares de autenticación
 jest.mock('../../middleware/authMiddleware', () => ({
     authMiddleware: jest.fn((req, res, next) => next()),
     superAdminMiddleware: jest.fn((req, res, next) => next()),
 }));
 
-const app = express();
-app.use(express.json());
-
+// Define el mock del servicio
 const mockConfigurationService = {
     getAllConfigurations: jest.fn(),
     getConfigurationById: jest.fn(),
@@ -22,11 +19,30 @@ const mockConfigurationService = {
     updateConfiguration: jest.fn(),
 };
 
-const mockConfigurationController = new ConfigurationController(mockConfigurationService as any);
-
-app.use('/api/configurations', configurationsRouter);
-
 describe('Configurations Routes', () => {
+    let app: Express;
+
+    beforeAll(() => {
+        // Guarda el estado original del contenedor
+        container.snapshot();
+        // Reemplaza la dependencia por el mock
+        container.rebind<ConfigurationService>(TYPES.ConfigurationService).toConstantValue(mockConfigurationService as any);
+
+        // Carga el router DESPUÉS de haber modificado el contenedor
+        const configurationsRouter = require('../configurations').default;
+
+        // Crea la app de express
+        app = express();
+        app.use(express.json());
+        app.use('/api/configurations', configurationsRouter);
+        app.use(errorHandler);
+    });
+
+    afterAll(() => {
+        // Restaura el estado original del contenedor para no afectar otros tests
+        container.restore();
+    });
+
     beforeEach(() => {
         jest.clearAllMocks();
     });
@@ -39,7 +55,8 @@ describe('Configurations Routes', () => {
             const response = await request(app).get('/api/configurations');
 
             expect(response.status).toBe(200);
-            expect(response.body.body.data).toEqual(configurations);
+            expect(response.body.data).toEqual(configurations);
+            expect(mockConfigurationService.getAllConfigurations).toHaveBeenCalled();
         });
     });
 
@@ -51,7 +68,8 @@ describe('Configurations Routes', () => {
             const response = await request(app).get('/api/configurations/roles');
 
             expect(response.status).toBe(200);
-            expect(response.body.body.data).toEqual(configuration);
+            expect(response.body.data).toEqual(configuration);
+            expect(mockConfigurationService.getConfigurationById).toHaveBeenCalledWith('roles');
         });
 
         it('should return 404 if configuration not found', async () => {
@@ -60,6 +78,8 @@ describe('Configurations Routes', () => {
             const response = await request(app).get('/api/configurations/nonexistent');
 
             expect(response.status).toBe(404);
+            expect(response.body.success).toBe(false);
+            expect(mockConfigurationService.getConfigurationById).toHaveBeenCalledWith('nonexistent');
         });
     });
 
@@ -73,7 +93,8 @@ describe('Configurations Routes', () => {
                 .send(newConfiguration);
 
             expect(response.status).toBe(201);
-            expect(response.body.body.data).toEqual(newConfiguration);
+            expect(response.body.data).toEqual(newConfiguration);
+            expect(mockConfigurationService.createConfiguration).toHaveBeenCalledWith(newConfiguration);
         });
     });
 
@@ -87,7 +108,8 @@ describe('Configurations Routes', () => {
                 .send({ data: ['admin', 'user', 'guest'] });
 
             expect(response.status).toBe(200);
-            expect(response.body.body.data).toEqual(updatedConfiguration);
+            expect(response.body.data).toEqual(updatedConfiguration);
+            expect(mockConfigurationService.updateConfiguration).toHaveBeenCalledWith('roles', { data: ['admin', 'user', 'guest'] });
         });
 
         it('should return 404 if configuration to update is not found', async () => {
@@ -98,6 +120,8 @@ describe('Configurations Routes', () => {
                 .send({ data: 'some data' });
 
             expect(response.status).toBe(404);
+            expect(response.body.success).toBe(false);
+            expect(mockConfigurationService.updateConfiguration).toHaveBeenCalledWith('nonexistent', { data: 'some data' });
         });
     });
 });
