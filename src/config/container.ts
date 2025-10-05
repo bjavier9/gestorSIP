@@ -53,6 +53,12 @@ import { GestionController } from '../infrastructure/http/gestion.controller';
 import { GestionRepository } from '../domain/ports/gestionRepository.port';
 import { FirebaseGestionAdapter } from '../infrastructure/persistence/firebaseGestion.adapter';
 
+// Poliza
+import { PolizaService } from '../application/poliza.service';
+import { PolizaController } from '../infrastructure/http/poliza.controller';
+import { PolizaRepository } from '../domain/ports/polizaRepository.port';
+import { FirebasePolizaAdapter } from '../infrastructure/persistence/firebasePoliza.adapter';
+
 const container = new Container();
 
 // Auth bindings
@@ -98,5 +104,10 @@ container.bind<LeadController>(TYPES.LeadController).to(LeadController);
 container.bind<GestionRepository>(TYPES.GestionRepository).to(FirebaseGestionAdapter);
 container.bind<GestionService>(TYPES.GestionService).to(GestionService);
 container.bind<GestionController>(TYPES.GestionController).to(GestionController);
+
+// Poliza bindings
+container.bind<PolizaRepository>(TYPES.PolizaRepository).to(FirebasePolizaAdapter);
+container.bind<PolizaService>(TYPES.PolizaService).to(PolizaService);
+container.bind<PolizaController>(TYPES.PolizaController).to(PolizaController);
 
 export default container;

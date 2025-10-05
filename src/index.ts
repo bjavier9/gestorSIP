@@ -16,6 +16,7 @@ import configurationRoutes from './routes/configurations';
 import aseguradorasRoutes from './routes/aseguradoras';
 import leadRoutes from './routes/leads';
 import gestionesRoutes from './routes/gestiones';
+import polizasRoutes from './routes/polizas'; // <-- Nueva ruta
 
 dotenv.config();
 
@@ -39,6 +40,7 @@ async function startServer() {
     app.use('/api/aseguradoras', aseguradorasRoutes);
     app.use('/api/leads', leadRoutes);
     app.use('/api/gestiones', gestionesRoutes);
+    app.use('/api/polizas', polizasRoutes); // <-- Nueva ruta
 
     // Ruta de Swagger
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
