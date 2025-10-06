@@ -15,7 +15,6 @@ const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL;
 const SUPERADMIN_PASSWORD = process.env.SUPERADMIN_PASSWORD;
 const TEST_TOKEN_SECRET = process.env.TEST_SECRET;
 
-// ... (interfaces remain the same)
 export interface AuthPayload {
   uid: string;
   email: string;
@@ -73,7 +72,6 @@ export class AuthService {
     const { uid, email } = decodedToken;
     let userCompanias = await this.usuarioCompaniaRepo.findByUserId(uid);
 
-    // Auto-assignment logic for admin user
     if (userCompanias.length === 0 && email === 'admin@seguroplus.com') {
       const firstCompany = await this.companiaCorretajeRepo.findFirst();
       if (firstCompany) {
@@ -117,6 +115,25 @@ export class AuthService {
       needsSelection: true,
     };
   }
+
+  public async register(idToken: string): Promise<any> {
+    let decodedToken: DecodedIdToken;
+    try {
+      decodedToken = await getAuth().verifyIdToken(idToken);
+    } catch (error) {
+      throw new ApiError('AUTH_INVALID_FIREBASE_TOKEN', 'Invalid Firebase token.', 401);
+    }
+
+    const { uid, email } = decodedToken;
+
+    // TODO: Implementar la lógica de registro de usuario aquí.
+    // 1. Verificar si el usuario ya existe en la base de datos.
+    // 2. Si no existe, crear la asociación de usuario-compañía inicial, etc.
+    console.log(`Registration attempt for UID: ${uid}, Email: ${email}`);
+
+    // Devolver un objeto provisional. La implementación real será más compleja.
+    return { status: "registration_pending", uid };
+  }
   
   public async selectCompania(currentUser: any, selectedCompaniaId: string): Promise<{ token: string }> {
     if (!currentUser.user.pendienteCia) {
@@ -154,12 +171,11 @@ export class AuthService {
       throw new ApiError('AUTH_INVALID_SECRET', 'Invalid secret for test token.', 401);
     }
 
-    // Create a mock payload for a generic admin user for testing purposes
     const testPayload: AuthPayload = {
       uid: 'test-admin-uid',
       email: 'test-admin@example.com',
       role: 'admin',
-      companiaCorretajeId: 'test-company-id', // Example company ID
+      companiaCorretajeId: 'test-company-id',
     };
 
     const token = this.signToken({ user: testPayload });

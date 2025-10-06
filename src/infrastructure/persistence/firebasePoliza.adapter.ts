@@ -1,8 +1,8 @@
 import { injectable } from 'inversify';
-import { getFirestore, CollectionReference, DocumentData } from 'firebase-admin/firestore';
-import { PolizaRepository } from '../../domain/ports/polizaRepository.port';
+import { getFirestore, CollectionReference, DocumentData, Query } from 'firebase-admin/firestore';
+import { PolizaRepository, PolizaSearchCriteria } from '../../domain/ports/polizaRepository.port';
 import { Poliza } from '../../domain/poliza';
-import { firebaseApp } from '../../config/firebase.config'; // Asegúrate que la app de Firebase se inicialice centralmente
+import { firebaseApp } from '../../config/firebase';
 
 @injectable()
 export class FirebasePolizaAdapter implements PolizaRepository {
@@ -14,7 +14,6 @@ export class FirebasePolizaAdapter implements PolizaRepository {
         return {
             ...data,
             id: doc.id,
-            // Las fechas de Firestore necesitan ser convertidas a objetos Date de JS
             fechaInicio: data.fechaInicio.toDate(),
             fechaVencimiento: data.fechaVencimiento.toDate(),
             fechaCreacion: data.fechaCreacion.toDate(),
@@ -22,15 +21,32 @@ export class FirebasePolizaAdapter implements PolizaRepository {
         } as Poliza;
     }
 
-    async findAll(): Promise<Poliza[]> {
-        const snapshot = await this.polizasCollection.get();
+    async findByCriteria(criteria: PolizaSearchCriteria): Promise<Poliza[]> {
+        let query: Query = this.polizasCollection;
+
+        // Filtro obligatorio por compañía
+        query = query.where('companiaCorretajeId', '==', criteria.companiaCorretajeId);
+
+        if (criteria.agenteId) {
+            query = query.where('agenteId', '==', criteria.agenteId);
+        }
+
+        if (criteria.estado) {
+            query = query.where('estado', '==', criteria.estado);
+        }
+
+        if (criteria.fechaVencimiento) {
+            query = query.where('fechaVencimiento', '<=', criteria.fechaVencimiento);
+        }
+
+        const snapshot = await query.get();
         if (snapshot.empty) {
             return [];
         }
         return snapshot.docs.map(doc => this.mapDocToPoliza(doc));
     }
 
-    async findById(id: string): Promise<Poliza | null> {
+    async findById(id: string, companiaCorretajeId: string): Promise<Poliza | null> {
         const docRef = this.polizasCollection.doc(id);
         const snapshot = await docRef.get();
 
@@ -38,6 +54,13 @@ export class FirebasePolizaAdapter implements PolizaRepository {
             return null;
         }
 
-        return this.mapDocToPoliza(snapshot);
+        const poliza = this.mapDocToPoliza(snapshot);
+
+        // Verificar que la póliza pertenece a la compañía correcta
+        if (poliza.companiaCorretajeId !== companiaCorretajeId) {
+            return null;
+        }
+
+        return poliza;
     }
 }

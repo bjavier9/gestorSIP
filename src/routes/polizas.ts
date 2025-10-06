@@ -1,13 +1,22 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
-import container from '../config/container';
-import { TYPES } from '../config/types';
+import { Container } from 'inversify';
 import { PolizaController } from '../infrastructure/http/poliza.controller';
+import { TYPES } from '../config/types';
+import { asyncHandler } from '../middleware/asyncHandler';
+import { authMiddleware } from '../middleware/authMiddleware';
 
-const router = Router();
-const polizaController = container.get<PolizaController>(TYPES.PolizaController);
+export const createPolizasRoutes = (container: Container): Router => {
+    const router = Router();
+    const polizaController = container.get<PolizaController>(TYPES.PolizaController);
 
-router.get('/', asyncHandler(polizaController.getAll.bind(polizaController)));
-router.get('/:id', asyncHandler(polizaController.getById.bind(polizaController)));
+    // Aplicar middleware de autenticación a todas las rutas de pólizas
+    router.use(authMiddleware);
 
-export default router;
+    // GET /api/polizas -> busca por criterios
+    router.get('/', asyncHandler(polizaController.getByCriteria.bind(polizaController)));
+
+    // GET /api/polizas/:id
+    router.get('/:id', asyncHandler(polizaController.getById.bind(polizaController)));
+
+    return router;
+};

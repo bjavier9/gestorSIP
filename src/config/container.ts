@@ -59,55 +59,55 @@ import { PolizaController } from '../infrastructure/http/poliza.controller';
 import { PolizaRepository } from '../domain/ports/polizaRepository.port';
 import { FirebasePolizaAdapter } from '../infrastructure/persistence/firebasePoliza.adapter';
 
-const container = new Container();
+export const container = new Container();
 
-// Auth bindings
-container.bind<AuthService>(TYPES.AuthService).to(AuthService);
-container.bind<AuthController>(TYPES.AuthController).to(AuthController);
+export const configureContainer = () => {
+    // Auth bindings
+    container.bind<AuthService>(TYPES.AuthService).to(AuthService);
+    container.bind<AuthController>(TYPES.AuthController).to(AuthController);
 
-// UsuarioCompania bindings
-container.bind<UsuarioCompaniaRepository>(TYPES.UsuarioCompaniaRepository).to(FirebaseUsuarioCompaniaAdapter);
-container.bind<UsuarioCompaniaService>(TYPES.UsuarioCompaniaService).to(UsuarioCompaniaService);
-container.bind<UsuarioCompaniaController>(TYPES.UsuarioCompaniaController).to(UsuarioCompaniaController);
+    // UsuarioCompania bindings
+    container.bind<UsuarioCompaniaRepository>(TYPES.UsuarioCompaniaRepository).to(FirebaseUsuarioCompaniaAdapter);
+    container.bind<UsuarioCompaniaService>(TYPES.UsuarioCompaniaService).to(UsuarioCompaniaService);
+    container.bind<UsuarioCompaniaController>(TYPES.UsuarioCompaniaController).to(UsuarioCompaniaController);
 
-// CompaniaCorretaje bindings
-container.bind<CompaniaCorretajeRepository>(TYPES.CompaniaCorretajeRepository).to(FirebaseCompaniaCorretajeAdapter);
-container.bind<CompaniaCorretajeService>(TYPES.CompaniaCorretajeService).to(CompaniaCorretajeService);
-container.bind<CompaniaCorretajeController>(TYPES.CompaniaCorretajeController).to(CompaniaCorretajeController);
+    // CompaniaCorretaje bindings
+    container.bind<CompaniaCorretajeRepository>(TYPES.CompaniaCorretajeRepository).to(FirebaseCompaniaCorretajeAdapter);
+    container.bind<CompaniaCorretajeService>(TYPES.CompaniaCorretajeService).to(CompaniaCorretajeService);
+    container.bind<CompaniaCorretajeController>(TYPES.CompaniaCorretajeController).to(CompaniaCorretajeController);
 
-// Oficina bindings
-container.bind<OficinaRepository>(TYPES.OficinaRepository).to(FirebaseOficinaAdapter);
-container.bind<OficinaService>(TYPES.OficinaService).to(OficinaService);
-container.bind<OficinaController>(TYPES.OficinaController).to(OficinaController);
+    // Oficina bindings
+    container.bind<OficinaRepository>(TYPES.OficinaRepository).to(FirebaseOficinaAdapter);
+    container.bind<OficinaService>(TYPES.OficinaService).to(OficinaService);
+    container.bind<OficinaController>(TYPES.OficinaController).to(OficinaController);
 
-// Aseguradora bindings
-container.bind<AseguradoraRepository>(TYPES.AseguradoraRepository).to(FirebaseAseguradoraAdapter);
-container.bind<AseguradoraService>(TYPES.AseguradoraService).to(AseguradoraService);
-container.bind<AseguradoraController>(TYPES.AseguradoraController).to(AseguradoraController);
+    // Aseguradora bindings
+    container.bind<AseguradoraRepository>(TYPES.AseguradoraRepository).to(FirebaseAseguradoraAdapter);
+    container.bind<AseguradoraService>(TYPES.AseguradoraService).to(AseguradoraService);
+    container.bind<AseguradoraController>(TYPES.AseguradoraController).to(AseguradoraController);
 
-// Ente bindings
-container.bind<EnteRepository>(TYPES.EnteRepository).to(FirebaseEnteRepositoryAdapter);
-container.bind<EnteService>(TYPES.EnteService).to(EnteService);
-container.bind<EnteController>(TYPES.EnteController).to(EnteController);
+    // Ente bindings
+    container.bind<EnteRepository>(TYPES.EnteRepository).to(FirebaseEnteRepositoryAdapter);
+    container.bind<EnteService>(TYPES.EnteService).to(EnteService);
+    container.bind<EnteController>(TYPES.EnteController).to(EnteController);
 
-// Configuration bindings
-container.bind<ConfigurationRepository>(TYPES.ConfigurationRepository).to(FirebaseConfigurationAdapter);
-container.bind<ConfigurationService>(TYPES.ConfigurationService).to(ConfigurationService);
-container.bind<ConfigurationController>(TYPES.ConfigurationController).to(ConfigurationController);
+    // Configuration bindings
+    container.bind<ConfigurationRepository>(TYPES.ConfigurationRepository).to(FirebaseConfigurationAdapter);
+    container.bind<ConfigurationService>(TYPES.ConfigurationService).to(ConfigurationService);
+    container.bind<ConfigurationController>(TYPES.ConfigurationController).to(ConfigurationController);
 
-// Lead bindings
-container.bind<LeadRepository>(TYPES.LeadRepository).to(FirebaseLeadAdapter);
-container.bind<LeadService>(TYPES.LeadService).to(LeadService);
-container.bind<LeadController>(TYPES.LeadController).to(LeadController);
+    // Lead bindings
+    container.bind<LeadRepository>(TYPES.LeadRepository).to(FirebaseLeadAdapter);
+    container.bind<LeadService>(TYPES.LeadService).to(LeadService);
+    container.bind<LeadController>(TYPES.LeadController).to(LeadController);
 
-// Gestion bindings
-container.bind<GestionRepository>(TYPES.GestionRepository).to(FirebaseGestionAdapter);
-container.bind<GestionService>(TYPES.GestionService).to(GestionService);
-container.bind<GestionController>(TYPES.GestionController).to(GestionController);
+    // Gestion bindings
+    container.bind<GestionRepository>(TYPES.GestionRepository).to(FirebaseGestionAdapter);
+    container.bind<GestionService>(TYPES.GestionService).to(GestionService);
+    container.bind<GestionController>(TYPES.GestionController).to(GestionController);
 
-// Poliza bindings
-container.bind<PolizaRepository>(TYPES.PolizaRepository).to(FirebasePolizaAdapter);
-container.bind<PolizaService>(TYPES.PolizaService).to(PolizaService);
-container.bind<PolizaController>(TYPES.PolizaController).to(PolizaController);
-
-export default container;
+    // Poliza bindings
+    container.bind<PolizaRepository>(TYPES.PolizaRepository).to(FirebasePolizaAdapter);
+    container.bind<PolizaService>(TYPES.PolizaService).to(PolizaService);
+    container.bind<PolizaController>(TYPES.PolizaController).to(PolizaController);
+};

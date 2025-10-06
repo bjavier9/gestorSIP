@@ -12,17 +12,6 @@ import { ApiError } from '../../utils/ApiError';
 export class AuthController {
   constructor(@inject(TYPES.AuthService) private readonly authService: AuthService) {}
 
-  async loginSuperAdmin(req: Request, res: Response) {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      throw new ApiError('AUTH_MISSING_CREDENTIALS', 'Email and password are required.', 400);
-    }
-
-    const result = await this.authService.loginSuperAdmin(email, password);
-    handleSuccess(req, res, result, 200, { token: result.token });
-  }
-
   async login(req: Request, res: Response) {
     const { idToken } = req.body;
 
@@ -34,8 +23,31 @@ export class AuthController {
     handleSuccess(req, res, result, 200, { token: result.token });
   }
 
+  async register(req: Request, res: Response) {
+    const { idToken } = req.body;
+
+    if (!idToken) {
+        throw new ApiError('AUTH_MISSING_ID_TOKEN', 'Firebase ID token is required for registration.', 400);
+    }
+
+    // Suponiendo que el servicio de autenticación tendrá un método de registro
+    // Esto necesitará ser implementado en AuthService
+    const result = await this.authService.register(idToken);
+    handleSuccess(req, res, result, 201); // 201 Created para un nuevo recurso
+  }
+
+  async loginSuperAdmin(req: Request, res: Response) {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      throw new ApiError('AUTH_MISSING_CREDENTIALS', 'Email and password are required.', 400);
+    }
+
+    const result = await this.authService.loginSuperAdmin(email, password);
+    handleSuccess(req, res, result, 200, { token: result.token });
+  }
+
   async selectCompania(req: Request, res: Response) {
-    // The currentUser payload is attached by the authentication middleware
     const currentUser = (req as any).user; 
     const { companiaId } = req.body;
 

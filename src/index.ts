@@ -4,43 +4,49 @@ import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './config/swagger';
 import { initializeFirebase } from './config/firebase';
+import { container, configureContainer } from './config/container';
 import { errorHandler } from './middleware/errorHandler';
 
-// Importar rutas
-import authRoutes from './routes/auth';
-import companiaCorretajeRoutes from './routes/companiaCorretaje';
-import oficinaRoutes from './routes/oficinas';
-import usuariosCompaniasRoutes from './routes/usuariosCompanias';
-import entesRoutes from './routes/entes';
-import configurationRoutes from './routes/configurations';
-import aseguradorasRoutes from './routes/aseguradoras';
-import leadRoutes from './routes/leads';
-import gestionesRoutes from './routes/gestiones';
-import polizasRoutes from './routes/polizas'; // <-- Nueva ruta
+// Import route creation functions
+import { createAuthRoutes } from './routes/auth';
+import { createCompaniaCorretajeRoutes } from './routes/companiaCorretaje';
+import { createOficinaRoutes } from './routes/oficinas';
+import { createUsuariosCompaniasRoutes } from './routes/usuariosCompanias';
+import { createEntesRoutes } from './routes/entes';
+import { createConfigurationRoutes } from './routes/configurations';
+import { createAseguradorasRoutes } from './routes/aseguradoras';
+import { createLeadRoutes } from './routes/leads';
+import { createGestionesRoutes } from './routes/gestiones';
+import { createPolizasRoutes } from './routes/polizas';
 
 dotenv.config();
 
 async function startServer() {
   try {
+    // 1. Inicializar Firebase
     await initializeFirebase();
     console.log('Firebase has been initialized.');
+
+    // 2. Configurar el contenedor de inyección de dependencias
+    configureContainer();
+    console.log('Dependency injection container configured.');
 
     const app = express();
     const port = process.env.PORT || 3000;
 
     app.use(express.json());
 
-    // Rutas de la API
-    app.use('/api/auth', authRoutes);
-    app.use('/api/companias', companiaCorretajeRoutes);
-    app.use('/api/companias/:companiaId/oficinas', oficinaRoutes);
-    app.use('/api/usuarios-companias', usuariosCompaniasRoutes);
-    app.use('/api/entes', entesRoutes);
-    app.use('/api/configurations', configurationRoutes);
-    app.use('/api/aseguradoras', aseguradorasRoutes);
-    app.use('/api/leads', leadRoutes);
-    app.use('/api/gestiones', gestionesRoutes);
-    app.use('/api/polizas', polizasRoutes); // <-- Nueva ruta
+    // 3. Crear y usar las rutas, pasando el contenedor
+    app.use('/api/auth', createAuthRoutes(container));
+    app.use('/api/companias', createCompaniaCorretajeRoutes(container));
+    app.use('/api/companias/:companiaId/oficinas', createOficinaRoutes(container));
+    app.use('/api/usuarios-companias', createUsuariosCompaniasRoutes(container));
+    app.use('/api/entes', createEntesRoutes(container));
+    app.use('/api/configurations', createConfigurationRoutes(container));
+    app.use('/api/aseguradoras', createAseguradorasRoutes(container));
+    app.use('/api/leads', createLeadRoutes(container));
+    app.use('/api/gestiones', createGestionesRoutes(container));
+    app.use('/api/polizas', createPolizasRoutes(container));
 
     // Ruta de Swagger
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
