@@ -5,12 +5,50 @@ import { TYPES } from '../../config/types';
 import { handleSuccess } from '../../utils/responseHandler';
 import { ApiError } from '../../utils/ApiError';
 
+/**
+ * @swagger
+ * tags:
+ *   name: Aseguradoras
+ *   description: Gestion de catalogo de aseguradoras.
+ */
 @injectable()
 export class AseguradoraController {
     constructor(
         @inject(TYPES.AseguradoraService) private aseguradoraService: AseguradoraService
     ) {}
 
+    /**
+     * @swagger
+     * /api/aseguradoras:
+     *   get:
+     *     tags: [Aseguradoras]
+     *     summary: Lista todas las aseguradoras disponibles.
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Listado de aseguradoras.
+     *         content:
+     *           application/json:
+     *             schema:
+     *               allOf:
+     *                 - $ref: '#/components/schemas/SuccessResponse'
+     *                 - type: object
+     *                   properties:
+     *                     body:
+     *                       type: object
+     *                       properties:
+     *                         data:
+     *                           type: array
+     *                           items:
+     *                             $ref: '#/components/schemas/Aseguradora'
+     *       401:
+     *         description: Token invalido o ausente.
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/ErrorResponse'
+     */
     async getAll(req: Request, res: Response): Promise<void> {
         const aseguradoras = await this.aseguradoraService.getAllAseguradoras();
         handleSuccess(req, res, aseguradoras);

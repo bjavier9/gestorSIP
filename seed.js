@@ -1,631 +1,467 @@
+const path = require('path');
+const { existsSync } = require('fs');
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
 
-// IMPORTANTE: Asegúrate de que tu clave de servicio exista como temp-firebase-credentials.json
-const serviceAccount = require('./temp-firebase-credentials.json');
+const credentialsPath = process.env.SEED_FIREBASE_CREDENTIALS || path.join(__dirname, 'firebase-credentials.json');
 
-initializeApp({
-  credential: cert(serviceAccount)
-});
+if (!existsSync(credentialsPath)) {
+  console.error(`Credential file not found: ${credentialsPath}`);
+  process.exit(1);
+}
+
+const serviceAccount = require(credentialsPath);
+initializeApp({ credential: cert(serviceAccount) });
 
 const db = getFirestore();
 const auth = getAuth();
 
+const DEFAULT_PASSWORD = process.env.SEED_DEFAULT_PASSWORD || 'pass1234';
+const now = () => new Date();
 
-const randomNum = () => Math.floor(1000 + Math.random() * 9000);
-// === Definición de Datos de Prueba ===
+const companias = [
+  {
+    id: 'comp_001',
+    nombre: 'SeguroPlus Corretaje',
+    rif: 'J-500112233',
+    correo: 'contacto@seguroplus.com',
+    telefono: '+58-212-5550101',
+    direccion: 'Av. Principal El Rosal, Torre Seguros, Caracas',
+    activo: true,
+    fechaCreacion: now(),
+    fechaActualizacion: now(),
+    modulos: ['polizas', 'gestiones', 'reportes'],
+    monedasAceptadas: ['USD', 'VES'],
+    monedaPorDefecto: 'USD',
+    creada: { idente: 1001 },
+    modificado: [],
+  },
+  {
+    id: 'comp_002',
+    nombre: 'Global Broker Partners',
+    rif: 'J-400221199',
+    correo: 'info@globalbrokers.com',
+    telefono: '+58-241-5552222',
+    direccion: 'Av. Bolivar Norte, Centro Empresarial, Valencia',
+    activo: true,
+    fechaCreacion: now(),
+    fechaActualizacion: now(),
+    modulos: ['polizas', 'gestiones'],
+    monedasAceptadas: ['USD'],
+    monedaPorDefecto: 'USD',
+    creada: { idente: 2001 },
+    modificado: [],
+  },
+];
 
-async function getSeedData() {
-  // 1. COMPAÑÍAS DE CORRETAJE
-  const companias_corretaje = [
-    {
-      id: "comp_001",
-      nombre: "Corretaje Seguro Plus",
-      rif: "J-123456789",
-      direccion: "Calle Falsa 456, Edif. Central, Caracas",
-      telefono: "+58-212-5555678",
-      correo: "info@seguroplus.com",
-      fechaCreacion: new Date("2025-07-15T09:00:00Z"),
-      fechaActualizacion: new Date("2025-08-10T14:15:00Z"),
-      activo: true,
-      creada: { idente: 1 },
-      modificado: [
-        {
-          idente: 1,
-          fechaActualizacion: new Date("2025-08-10T14:15:00Z")
-        }
-      ],
-      monedasAceptadas: ["USD", "EUR", "VES"],
-      monedaPorDefecto: "USD",
-      modulos: [
-        "gestion_poliza",
-        "campana_masivas",
-        "correo_cumpleano",
-        "reporteria"
-      ]
-    }
-  ];
+const oficinas = [
+  { id: '301', companiaCorretajeId: 'comp_001', nombre: 'Sede Caracas', direccion: 'Av. Principal El Rosal, Torre Seguros, Caracas', telefono: '+58-212-5550101', moneda: 'USD', activo: true },
+  { id: '302', companiaCorretajeId: 'comp_001', nombre: 'Sucursal Maracaibo', direccion: 'Av. Delicias, Centro Financiero, Maracaibo', telefono: '+58-261-5554545', moneda: 'USD', activo: true },
+  { id: '303', companiaCorretajeId: 'comp_001', nombre: 'Sucursal Puerto La Cruz', direccion: 'Av. Intercomunal, Torre Marina, Puerto La Cruz', telefono: '+58-281-5553030', moneda: 'USD', activo: true },
+  { id: '401', companiaCorretajeId: 'comp_002', nombre: 'Sede Valencia', direccion: 'Av. Bolivar Norte, Centro Empresarial, Valencia', telefono: '+58-241-5552222', moneda: 'USD', activo: true },
+  { id: '402', companiaCorretajeId: 'comp_002', nombre: 'Sucursal Barquisimeto', direccion: 'Av. Venezuela, Torre Financiera, Barquisimeto', telefono: '+58-251-5553030', moneda: 'USD', activo: true },
+];
 
-  // 2. OFICINAS (ahora anidadas)
-  const oficinas = [
-    {
-      id: "oficina_001",
-      companiaCorretajeId: "comp_001", // Se mantiene para referencia lógica si es necesario
-      nombre: "Oficina Principal Caracas",
-      direccion: "Calle Falsa 456, Edif. Central, Caracas",
-      telefono: "+58-212-5555678",
-      moneda: "USD",
-      activo: true,
-      fechaCreacion: new Date("2025-07-15T09:00:00Z"),
-      fechaActualizacion: new Date("2025-08-10T14:15:00Z")
+function defineEnte(id, companiaId, nombre, documento, correo, genero, profesion, creadoPor, tipo = 'Persona Natural', idReferido = null, idregion = 1) {
+  return {
+    id,
+    companiaCorretajeId: companiaId,
+    nombre,
+    tipo,
+    documento,
+    tipo_documento: 'cedula',
+    direccion: `Direccion ${nombre}`,
+    telefono: '+58-4' + Math.floor(10000000 + Math.random() * 89999999),
+    correo,
+    idregion,
+    idReferido,
+    fechaCreacion: now(),
+    fechaActualizacion: now(),
+    activo: true,
+    metadatos: {
+      creadoPor,
+      fechaNacimiento: new Date('1985-01-01'),
+      genero,
+      estadoCivil: 'casado',
+      profesion,
+      nacionalidad: 'VE',
+      ultimaActualizacion: now(),
     },
-    {
-      id: "oficina_002",
-      companiaCorretajeId: "comp_001",
-      nombre: "Sucursal Valencia",
-      direccion: "Av. Bolívar, Centro Comercial Galerías, Valencia",
-      telefono: "+58-241-5559876",
-      moneda: "USD",
-      activo: true,
-      fechaCreacion: new Date("2025-07-20T10:00:00Z"),
-      fechaActualizacion: new Date("2025-08-05T11:30:00Z")
-    }
-  ];
-
-  // 3. ASEGURADORAS
-  const aseguradoras = [
-    {
-      id: "aseg_001",
-      nombre: "Aseguradora Nacional",
-      codigo: "AN23",
-      direccion: "Gran Boulevard 789, Piso 5, Caracas",
-      telefono: "+58-212-5559012",
-      correo: "ventas@asegnacional.com",
-      rating: 4.5,
-      fechaCreacion: new Date("2025-01-01T00:00:00Z"),
-      fechaActualizacion: new Date("2025-06-10T11:00:00Z"),
-      activo: true
-    },
-    {
-      id: "aseg_002",
-      nombre: "Seguros Horizonte",
-      codigo: "SH01",
-      direccion: "Av. Principal, Torre Seguros, Valencia",
-      telefono: "+58-241-5551234",
-      correo: "contacto@horizonte.com",
-      rating: 4.2,
-      fechaCreacion: new Date("2024-11-10T00:00:00Z"),
-      fechaActualizacion: new Date("2025-05-20T16:00:00Z"),
-      activo: true
-    }
-  ];
-
-  // 4. TIPOS DE PÓLIZAS
-  const tipos_polizas = [
-    { id: "tipo_001", nombre: "Automotriz", descripcion: "Póliza para vehículos automotores.", vigenciaMaxMeses: 12, activo: true },
-    { id: "tipo_002", nombre: "Salud", descripcion: "Póliza de seguro médico.", vigenciaMaxMeses: 12, activo: true },
-    { id: "tipo_003", nombre: "Hogar", descripcion: "Póliza de seguro para viviendas.", vigenciaMaxMeses: 24, activo: true },
-  ];
-  
-  // 5. ENTES (Clientes y usuarios)
-  const entes = [
-    {
-      id: randomNum(),
-      nombre: "Alicia Admin",
-      tipo: "Persona Natural",
-      documento: "8-892-12344",
-      tipo_documento: "cedula",
-      direccion: "Oficina Principal, Caracas",
-      telefono: "+58-212-5550000",
-      correo: "admin@seguroplus.com",
-      idregion: 507,
-      idReferido: null,
-      fechaCreacion: new Date(),
-      fechaActualizacion: new Date(),
-      activo: true,
-      metadatos: { 
-        creadoPor: "system_seed",
-        fechaNacimiento: new Date("1985-05-15"),
-        genero: "F",
-        estadoCivil: "Soltera",
-        profesion: "Administradora",
-        nacionalidad: "Venezolana",
-        ultimaActualizacion: new Date()
-      }
-    },
-    {
-      id: randomNum(),
-      nombre: "Carlos Supervisor",
-      tipo: "Persona Natural",
-      documento: "8-892-12345",
-      tipo_documento: "cedula",
-      direccion: "Av. Libertador, Edif. Paris, Apto 5B",
-      telefono: "+58-412-7654321",
-      correo: "carlos.supervisor@seguroplus.com",
-      idregion: 507,
-      idReferido: 1,
-      fechaCreacion: new Date(),
-      fechaActualizacion: new Date(),
-      activo: true,
-      metadatos: { 
-        creadoPor: 1,
-        fechaNacimiento: new Date("1980-08-22"),
-        genero: "M",
-        estadoCivil: "Casado",
-        profesion: "Supervisor de Ventas",
-        nacionalidad: "Venezolana",
-        ultimaActualizacion: new Date()
-      }
-    },
-    {
-      id: randomNum(),
-      nombre: "Maria Agente",
-      tipo: "Persona Natural",
-      documento: "8-892-12346",
-      tipo_documento: "cedula",
-      direccion: "Calle Comercio, Res. Las Flores, Apt 3A",
-      telefono: "+58-414-9876543",
-      correo: "maria.agente@seguroplus.com",
-      idregion: 507,
-      idReferido: 2,
-      fechaCreacion: new Date(),
-      fechaActualizacion: new Date(),
-      activo: true,
-      metadatos: { 
-        creadoPor: 2,
-        fechaNacimiento: new Date("1990-03-10"),
-        genero: "F",
-        estadoCivil: "Soltera",
-        profesion: "Agente de Seguros",
-        nacionalidad: "Venezolana",
-        hijos: 2,
-        ultimaActualizacion: new Date()
-      }
-    },
-    {
-      id: randomNum(),
-      nombre: "Juan Perez",
-      tipo: "Persona Natural",
-      documento: "8-892-12347",
-      tipo_documento: "cedula",
-      direccion: "Av. Libertador, Edif. Paris, Apto 5B",
-      telefono: "+58-412-1234567",
-      correo: "juan.perez@email.com",
-      idregion: 507,
-      idReferido: 3,
-      fechaCreacion: new Date(),
-      fechaActualizacion: new Date(),
-      activo: true,
-      metadatos: { 
-        creadoPor: 1,
-        fechaNacimiento: new Date("1975-12-05"),
-        genero: "M",
-        estadoCivil: "Casado",
-        profesion: "Ingeniero",
-        nacionalidad: "Venezolana",
-        hijos: 3,
-        vehiculos: 2,
-        ultimaActualizacion: new Date()
-      }
-    },
-    {
-      id: randomNum(),
-      nombre: "Empresa XYZ, C.A.",
-      tipo: "Persona Jurídica",
-      documento: "J-123456789",
-      tipo_documento: "rif",
-      direccion: "Zona Industrial, Galpón 15, Maracay",
-      telefono: "+58-243-5558899",
-      correo: "compras@empresaxyz.com",
-      idregion: 507,
-      idReferido: 4,
-      fechaCreacion: new Date(),
-      fechaActualizacion: new Date(),
-      activo: true,
-      metadatos: { 
-        creadoPor: 1,
-        fechaConstitucion: new Date("2010-05-20"),
-        sector: "Manufactura",
-        empleados: 45,
-        facturacionAnual: "1-5 millones",
-        ultimaActualizacion: new Date()
-      }
-    }
-  ];
-
-  // 6. USUARIOS COMPAÑÍAS (sin ID predefinido, se usará el UID de Firebase Auth como ID)
-  const usuarios_companias_data = [
-    {
-      email: "admin@seguroplus.com",
-      enteId: entes[0].id,
-      companiaCorretajeId: "comp_001",
-      oficinaId: "oficina_001",
-      rol: "admin",
-      fechaCreacion: new Date(),
-      activo: true
-    },
-    {
-      email: "supervisor@seguroplus.com",
-      enteId: entes[1].id,
-      companiaCorretajeId: "comp_001",
-      oficinaId: "oficina_001",
-      rol: "supervisor",
-      fechaCreacion: new Date(),
-      activo: true
-    },
-    {
-      email: "agente@seguroplus.com",
-      enteId: entes[2].id,
-      companiaCorretajeId: "comp_001",
-      oficinaId: "oficina_001",
-      rol: "agent",
-      fechaCreacion: new Date(),
-      activo: true
-    }
-  ];
-
-  // 7. PÓLIZAS
-  const polizas = [
-    {
-      id: "pol_00001",
-      numeroPoliza: "AUTO-2025-00001",
-      tipoPolizaId: "tipo_001",
-      aseguradoraId: "aseg_001",
-      tomadorId: entes[3].id,
-      aseguradoId: entes[3].id,
-      companiaCorretajeId: "comp_001",
-      oficinaId: "oficina_001",
-      agenteId: "", // Se llenará después con el UID del agente
-      fechaInicio: new Date("2025-08-15"),
-      fechaVencimiento: new Date("2026-08-15"),
-      montoAsegurado: 25000.00,
-      prima: 1200.00,
-      moneda: "USD",
-      estado: "ACTIVA",
-      fechaCreacion: new Date(),
-      fechaActualizacion: new Date(),
-    },
-    {
-      id: "pol_00002",
-      numeroPoliza: "HOGAR-2025-00002",
-      tipoPolizaId: "tipo_003",
-      aseguradoraId: "aseg_002",
-      tomadorId: entes[4].id,
-      aseguradoId: entes[4].id,
-      companiaCorretajeId: "comp_001",
-      oficinaId: "oficina_001",
-      agenteId: "", // Se llenará después con el UID del agente
-      fechaInicio: new Date("2025-09-01"),
-      fechaVencimiento: new Date("2027-09-01"),
-      montoAsegurado: 150000.00,
-      prima: 3500.00,
-      moneda: "USD",
-      estado: "PENDIENTE_PAGO",
-      fechaCreacion: new Date(),
-      fechaActualizacion: new Date(),
-    }
-  ];
-
-  // 8. GESTIONES
-  const gestiones = [
-    {
-      id: "ges_001",
-      polizaId: "pol_00001",
-      tipo: "renovacion",
-      estado: "borrador",
-      agenteId: "", // Se llenará después con el UID del agente
-      oficinaId: "oficina_001",
-      companiaCorretajeId: "comp_001",
-      fechaCreacion: new Date("2025-08-20T10:00:00Z"),
-      fechaVencimiento: new Date("2026-08-15T23:59:59Z"),
-      prioridad: "alta",
-      notas: "Renovación automática generada por sistema",
-      activo: true
-    },
-    {
-      id: "ges_002",
-      polizaId: "pol_00002",
-      tipo: "nueva",
-      estado: "en_gestion",
-      agenteId: "", // Se llenará después con el UID del agente
-      oficinaId: "oficina_001",
-      companiaCorretajeId: "comp_001",
-      fechaCreacion: new Date("2025-08-18T14:30:00Z"),
-      fechaVencimiento: new Date("2025-09-15T23:59:59Z"),
-      prioridad: "media",
-      notas: "Cliente solicita modificación de cobertura",
-      activo: true
-    }
-  ];
-
-  // 9. CLIENTES_GESTION
-  const clientes_gestion = [
-    {
-      id: "cligest_001",
-      nombre: "Nuevo Cliente Potencial",
-      tipo: "Persona Natural",
-      telefono: "+58-426-5551122",
-      correo: "nuevo.cliente@email.com",
-      agenteId: "", // Se llenará después con el UID del agente
-      oficinaId: "oficina_001",
-      companiaCorretajeId: "comp_001",
-      fechaCreacion: new Date("2025-08-22T09:15:00Z"),
-      estado: "pendiente",
-      notas: "Interesado en seguro de vida"
-    }
-  ];
-
-  // 10. CONFIGURACIONES (con regiones añadidas)
-  const configurations = {
-    roles: {
-        name: 'User Roles',
-        description: 'Defines the roles available for users in the system.',
-        items: [
-            { name: 'admin', label: 'Administrador', activo: true },
-            { name: 'supervisor', label: 'Supervisor', activo: true },
-            { name: 'agent', label: 'Agente', activo: true },
-            { name: 'viewer', label: 'Visualizador', activo: false },
-        ],
-    },
-    management_status: {
-        name: 'Management Statuses',
-        description: 'Standardized statuses for the lifecycle of a management task.',
-        items: [
-            { name: 'borrador', label: 'Borrador', activo: true },
-            { name: 'en_gestion', label: 'En Gestión', activo: true },
-            { name: 'en_tramite', label: 'En Trámite', activo: true },
-            { name: 'gestionado_exito', label: 'Gestionado con Éxito', activo: true },
-            { name: 'desistido', label: 'Desistido', activo: true },
-        ],
-    },
-    policy_status: {
-        name: 'Policy Statuses',
-        description: 'Standardized statuses for policies.',
-        items: [
-            { name: 'ACTIVA', label: 'Activa', activo: true },
-            { name: 'PENDIENTE_PAGO', label: 'Pendiente de Pago', activo: true },
-            { name: 'VENCIDA', label: 'Vencida', activo: true },
-            { name: 'CANCELADA', label: 'Cancelada', activo: true },
-        ],
-    },
-    currencies: {
-        name: 'Available Currencies',
-        description: 'Supported currencies for operations across different offices.',
-        items: [
-            { code: 'USD', name: 'Dólar Americano', symbol: '$', activo: true },
-            { code: 'EUR', name: 'Euro', symbol: '€', activo: true },
-            { code: 'VES', name: 'Bolívar Soberano', symbol: 'Bs', activo: true }
-        ],
-    },
-    regions: {
-        name: 'Available Regions',
-        description: 'Supported regions for clients and offices.',
-        items: [
-            { id: 507, name: 'Panamá', code: 'PA', activo: true },
-            { id: 58, name: 'Venezuela', code: 'VE', activo: true },
-            { id: 1, name: 'Estados Unidos', code: 'US', activo: true },
-            { id: 34, name: 'España', code: 'ES', activo: true }
-        ],
-    }
-  };
-
-  // 11. AUDITORIA
-  const auditoria = [
-    {
-      id: "audit_001",
-      usuario: 1,
-      accion: "crear_compania",
-      fecha: new Date("2025-07-15T09:00:00Z"),
-      detalle: "Creación de compañía Corretaje Seguro Plus",
-      coleccion: "companias_corretaje",
-      documentoId: "comp_001"
-    },
-    {
-      id: "audit_002",
-      usuario: 1,
-      accion: "crear_usuario",
-      fecha: new Date("2025-07-16T10:30:00Z"),
-      detalle: "Creación de usuario supervisor Carlos Supervisor",
-      coleccion: "usuarios_companias",
-      documentoId: "" // Se llenará después con el UID del usuario
-    }
-  ];
-
-  return { 
-    companias_corretaje, 
-    oficinas,
-    aseguradoras, 
-    tipos_polizas, 
-    entes, 
-    usuarios_companias_data, 
-    polizas, 
-    gestiones,
-    clientes_gestion,
-    configurations,
-    auditoria
   };
 }
 
-// === Funciones de carga ===
+const entes = [
+  defineEnte('1001', 'comp_001', 'Ana Maria Admin', 'V-13888999', 'ana.admin@seguroplus.com', 'F', 'Administrador', 'seed'),
+  defineEnte('1002', 'comp_001', 'Carlos Supervisor', 'V-16999000', 'carlos.supervisor@seguroplus.com', 'M', 'Ing. Industrial', 'seed', 'Persona Natural', '1001'),
+  defineEnte('1003', 'comp_001', 'Maria Agent', 'V-20123456', 'maria.agent@seguroplus.com', 'F', 'Asesor Comercial', 'seed', 'Persona Natural', '1002'),
+  defineEnte('1004', 'comp_001', 'Jose Agent', 'V-20555111', 'jose.agent@seguroplus.com', 'M', 'Economista', 'seed', 'Persona Natural', '1002', 10),
+  defineEnte('1005', 'comp_001', 'Cliente Renovacion 1', 'V-12345001', 'cliente1@clientes.com', 'F', 'Empresario', 'seed', 'Persona Natural', '1003', 5),
+  defineEnte('1006', 'comp_001', 'Cliente Renovacion 2', 'V-12345002', 'cliente2@clientes.com', 'M', 'Contador', 'seed', 'Persona Natural', '1003', 5),
+  defineEnte('1007', 'comp_001', 'Empresa Logistica Andes', 'J-400112200', 'logistica.andes@empresa.com', 'M', 'Gerente', 'seed', 'Persona Juridica', '1001', 3),
+  defineEnte('1008', 'comp_001', 'Cliente Prospecto Oriente', 'V-19887766', 'prospecto.oriente@clientes.com', 'F', 'Ingeniero', 'seed', 'Persona Natural', '1004', 7),
+  defineEnte('2001', 'comp_002', 'Laura Admin', 'V-15222333', 'laura.admin@globalbrokers.com', 'F', 'Abogado', 'seed', 'Persona Natural', null, 10),
+  defineEnte('2002', 'comp_002', 'Luis Supervisor', 'V-18888777', 'luis.supervisor@globalbrokers.com', 'M', 'Administrador', 'seed', 'Persona Natural', '2001', 10),
+  defineEnte('2003', 'comp_002', 'Patricia Agent', 'V-20999123', 'patricia.agent@globalbrokers.com', 'F', 'Contador', 'seed', 'Persona Natural', '2002', 9),
+  defineEnte('2004', 'comp_002', 'Cliente Global 1', 'V-33322111', 'cliente.global1@clientes.com', 'F', 'Arquitecto', 'seed', 'Persona Natural', '2003', 9),
+  defineEnte('2005', 'comp_002', 'Cliente Global 2', 'V-33322112', 'cliente.global2@clientes.com', 'M', 'Ingeniero', 'seed', 'Persona Natural', '2003', 9),
+  defineEnte('2006', 'comp_002', 'Constructora Larense', 'J-50505050', 'constructora@empresa.com', 'M', 'Director', 'seed', 'Persona Juridica', '2001', 9),
+  defineEnte('2007', 'comp_002', 'Cliente Prospecto Andes', 'V-37776655', 'prospecto.andes@clientes.com', 'F', 'Disenador', 'seed', 'Persona Natural', '2003', 9),
+];
 
-async function seedCollection(collectionName, data) {
-  if (!data || data.length === 0) {
-    console.log(`Skipping ${collectionName}, no data provided.`);
+const aseguradoras = [
+  { id: 'aseg_001', nombre: 'Aseguradora Nacional', codigo: 'AN23', direccion: 'Gran Boulevard 789, Caracas', telefono: '+58-212-5559012', correo: 'ventas@asegnacional.com', rating: 4.5, activo: true, fechaCreacion: now(), fechaActualizacion: now() },
+  { id: 'aseg_002', nombre: 'Seguros Horizonte', codigo: 'SH01', direccion: 'Av. Principal, Torre Seguros, Valencia', telefono: '+58-241-5551234', correo: 'contacto@horizonte.com', rating: 4.2, activo: true, fechaCreacion: now(), fechaActualizacion: now() },
+  { id: 'aseg_003', nombre: 'ProtecVida Internacional', codigo: 'PV88', direccion: 'Av. Fuerzas Armadas, Caracas', telefono: '+58-212-5554545', correo: 'info@protecviva.com', rating: 4.7, activo: true, fechaCreacion: now(), fechaActualizacion: now() },
+];
+
+const configurations = [
+  {
+    id: 'roles_permitidos',
+    name: 'Roles disponibles en la plataforma',
+    description: 'Roles asignables a los usuarios de compa��as',
+    items: [
+      { rol: 'admin', descripcion: 'Administrador con control total', activo: true },
+      { rol: 'supervisor', descripcion: 'Supervisor con permisos de supervisi�n y gesti�n', activo: true },
+      { rol: 'agent', descripcion: 'Agente comercial con acceso a gestiones y p�lizas propias', activo: true },
+      { rol: 'viewer', descripcion: 'Visualizador con acceso solo lectura', activo: true },
+    ],
+  },
+  {
+    id: 'gestion_estados',
+    name: 'Estados de gesti�n',
+    description: 'Estados posibles para las gestiones comerciales',
+    items: [
+      { estado: 'borrador', activo: true },
+      { estado: 'en_gestion', activo: true },
+      { estado: 'en_tramite', activo: true },
+      { estado: 'gestionado_exito', activo: true },
+      { estado: 'desistido', activo: true },
+    ],
+  },
+];
+
+const usuarioPlantilla = [
+  { email: 'ana.admin@seguroplus.com', displayName: 'Ana Maria Admin', rol: 'admin', companiaCorretajeId: 'comp_001', oficinaId: '301', enteId: '1001' },
+  { email: 'carlos.supervisor@seguroplus.com', displayName: 'Carlos Supervisor', rol: 'supervisor', companiaCorretajeId: 'comp_001', oficinaId: '301', enteId: '1002' },
+  { email: 'maria.agent@seguroplus.com', displayName: 'Maria Agent', rol: 'agent', companiaCorretajeId: 'comp_001', oficinaId: '302', enteId: '1003' },
+  { email: 'jose.agent@seguroplus.com', displayName: 'Jose Agent', rol: 'agent', companiaCorretajeId: 'comp_001', oficinaId: '302', enteId: '1004' },
+  { email: 'laura.admin@globalbrokers.com', displayName: 'Laura Admin', rol: 'admin', companiaCorretajeId: 'comp_002', oficinaId: '401', enteId: '2001' },
+  { email: 'luis.supervisor@globalbrokers.com', displayName: 'Luis Supervisor', rol: 'supervisor', companiaCorretajeId: 'comp_002', oficinaId: '401', enteId: '2002' },
+  { email: 'patricia.agent@globalbrokers.com', displayName: 'Patricia Agent', rol: 'agent', companiaCorretajeId: 'comp_002', oficinaId: '402', enteId: '2003' },
+];
+
+const leadTemplates = [
+  { id: 'lead_comp1_001', companiaCorretajeId: 'comp_001', nombre: 'Juan Perez', correo: 'juan.perez@example.com', telefono: '+58-414-5556565', estado: 'nuevo', origen: 'web', agenteEmail: 'maria.agent@seguroplus.com' },
+  { id: 'lead_comp1_002', companiaCorretajeId: 'comp_001', nombre: 'Maria Rojas', correo: 'maria.rojas@example.com', telefono: '+58-412-5552323', estado: 'contactado', origen: 'referido', agenteEmail: 'jose.agent@seguroplus.com' },
+  { id: 'lead_comp2_001', companiaCorretajeId: 'comp_002', nombre: 'Carlos Laya', correo: 'carlos.laya@example.com', telefono: '+58-414-5551212', estado: 'calificado', origen: 'web', agenteEmail: 'patricia.agent@globalbrokers.com' },
+  { id: 'lead_comp2_002', companiaCorretajeId: 'comp_002', nombre: 'Empresas Valle', correo: 'contacto@empresasvalle.com', telefono: '+58-241-5557878', estado: 'nuevo', origen: 'evento', agenteEmail: 'patricia.agent@globalbrokers.com' },
+];
+
+const polizaTemplates = [
+  {
+    id: 'poliza_001',
+    numeroPoliza: 'SP-2025-0001',
+    tipoPolizaId: 'AUTO',
+    aseguradoraId: 'aseg_001',
+    tomadorId: 1005,
+    aseguradoId: 1005,
+    companiaCorretajeId: 'comp_001',
+    oficinaId: '301',
+    agenteEmail: 'maria.agent@seguroplus.com',
+    fechaInicio: new Date('2025-01-10'),
+    fechaVencimiento: new Date('2026-01-09'),
+    montoAsegurado: 35000,
+    prima: 980,
+    moneda: 'USD',
+    estado: 'ACTIVA',
+  },
+  {
+    id: 'poliza_002',
+    numeroPoliza: 'SP-2025-0002',
+    tipoPolizaId: 'SALUD',
+    aseguradoraId: 'aseg_002',
+    tomadorId: 1006,
+    aseguradoId: 1006,
+    companiaCorretajeId: 'comp_001',
+    oficinaId: '302',
+    agenteEmail: 'jose.agent@seguroplus.com',
+    fechaInicio: new Date('2025-03-15'),
+    fechaVencimiento: new Date('2026-03-14'),
+    montoAsegurado: 18000,
+    prima: 560,
+    moneda: 'USD',
+    estado: 'ACTIVA',
+  },
+  {
+    id: 'poliza_003',
+    numeroPoliza: 'GB-2025-0101',
+    tipoPolizaId: 'HOGAR',
+    aseguradoraId: 'aseg_003',
+    tomadorId: 2004,
+    aseguradoId: 2004,
+    companiaCorretajeId: 'comp_002',
+    oficinaId: '401',
+    agenteEmail: 'patricia.agent@globalbrokers.com',
+    fechaInicio: new Date('2025-02-01'),
+    fechaVencimiento: new Date('2026-01-31'),
+    montoAsegurado: 75000,
+    prima: 1250,
+    moneda: 'USD',
+    estado: 'ACTIVA',
+  },
+  {
+    id: 'poliza_004',
+    numeroPoliza: 'GB-2025-0102',
+    tipoPolizaId: 'VIDA',
+    aseguradoraId: 'aseg_002',
+    tomadorId: 2005,
+    aseguradoId: 2005,
+    companiaCorretajeId: 'comp_002',
+    oficinaId: '402',
+    agenteEmail: 'patricia.agent@globalbrokers.com',
+    fechaInicio: new Date('2025-04-20'),
+    fechaVencimiento: new Date('2026-04-19'),
+    montoAsegurado: 50000,
+    prima: 890,
+    moneda: 'USD',
+    estado: 'ACTIVA',
+  },
+];
+
+const gestionTemplates = [
+  {
+    id: 'gestion_001',
+    companiaCorretajeId: 'comp_001',
+    agenteEmail: 'maria.agent@seguroplus.com',
+    oficinaId: '301',
+    polizaId: 'poliza_001',
+    leadId: 'lead_comp1_001',
+    tipo: 'nueva',
+    estado: 'en_gestion',
+    prioridad: 'alta',
+    notas: 'Seguimiento semanal con el cliente Juan Perez.',
+    fechaVencimiento: new Date('2025-07-30'),
+  },
+  {
+    id: 'gestion_002',
+    companiaCorretajeId: 'comp_001',
+    agenteEmail: 'jose.agent@seguroplus.com',
+    oficinaId: '302',
+    polizaId: 'poliza_002',
+    tipo: 'renovacion',
+    estado: 'en_tramite',
+    prioridad: 'media',
+    notas: 'Renovaci�n p�liza salud Cliente Renovacion 2.',
+    fechaVencimiento: new Date('2025-09-10'),
+  },
+  {
+    id: 'gestion_003',
+    companiaCorretajeId: 'comp_002',
+    agenteEmail: 'patricia.agent@globalbrokers.com',
+    oficinaId: '401',
+    leadId: 'lead_comp2_002',
+    tipo: 'nueva',
+    estado: 'borrador',
+    prioridad: 'alta',
+    notas: 'Propuesta inicial para Empresas Valle.',
+    fechaVencimiento: new Date('2025-06-01'),
+  },
+];
+
+async function seedTopLevelCollection(collectionName, items) {
+  if (!items.length) {
     return;
   }
-  console.log(`Seeding ${collectionName}...`);
   const batch = db.batch();
-  data.forEach(item => {
-    const docId = item.id;
-    if (!docId) {
-      console.warn(`Skipping item in ${collectionName} due to missing id:`, item);
-      return;
-    }
-    const docRef = db.collection(collectionName).doc(docId.toString());
-    batch.set(docRef, item);
+  items.forEach((item) => {
+    const docRef = db.collection(collectionName).doc(String(item.id));
+    batch.set(docRef, { ...item }, { merge: true });
   });
   await batch.commit();
-  console.log(`${collectionName} seeded successfully!`);
+  console.log(`Seeded ${items.length} documents into ${collectionName}`);
 }
 
-async function seedCompaniasConOficinas(companias, oficinas) {
-  console.log('Seeding companias_corretaje with anidado oficinas...');
-  const batch = db.batch();
-
-  for (const compania of companias) {
-    const companiaRef = db.collection('companias_corretaje').doc(compania.id.toString());
-    batch.set(companiaRef, compania);
-
-    const oficinasDeCompania = oficinas.filter(o => o.companiaCorretajeId === compania.id);
-    
-    for (const oficina of oficinasDeCompania) {
-      // Ya no necesitamos el `companiaCorretajeId` dentro del documento de la oficina
-      const { companiaCorretajeId, ...oficinaData } = oficina;
-      const oficinaRef = companiaRef.collection('oficinas').doc(oficinaData.id.toString());
-      batch.set(oficinaRef, oficinaData);
+function groupBy(items, keyGetter) {
+  return items.reduce((acc, item) => {
+    const key = keyGetter(item);
+    if (!acc.has(key)) {
+      acc.set(key, []);
     }
-  }
-
-  await batch.commit();
-  console.log('companias_corretaje and their oficinas seeded successfully!');
+    acc.get(key).push(item);
+    return acc;
+  }, new Map());
 }
 
-async function seedConfigurations(configData) {
-    console.log('Seeding configurations...');
+async function seedCompaniasCorretaje() {
+  await seedTopLevelCollection('companias_corretaje', companias);
+}
+
+async function seedOficinasSubcollections() {
+  const grouped = groupBy(oficinas, (item) => item.companiaCorretajeId);
+  for (const [companiaId, oficinasList] of grouped.entries()) {
     const batch = db.batch();
-    for (const [key, value] of Object.entries(configData)) {
-      const docRef = db.collection('configurations').doc(key);
-      batch.set(docRef, value);
-    }
+    const collectionRef = db.collection('companias_corretaje').doc(companiaId).collection('oficinas');
+    oficinasList.forEach((oficina) => {
+      const docRef = collectionRef.doc(String(oficina.id));
+      batch.set(docRef, {
+        ...oficina,
+        fechaCreacion: oficina.fechaCreacion || now(),
+        fechaActualizacion: oficina.fechaActualizacion || now(),
+      }, { merge: true });
+    });
     await batch.commit();
-    console.log('Configurations seeded successfully!');
-}
-
-// Función para crear usuarios en Firebase Auth y obtener sus UIDs
-async function createAuthUsers(usersData) {
-  console.log('Creating Firebase Auth users...');
-  const usersWithUid = [];
-  
-  for (const user of usersData) {
-    try {
-      const userRecord = await auth.createUser({
-        email: user.email,
-        password: "password123", // Contraseña por defecto
-        emailVerified: true,
-        disabled: false
-      });
-      
-      // Crear objeto de usuario con UID como ID
-      const userWithUid = {
-        ...user,
-        id: userRecord.uid // El ID del documento será el UID de Firebase Auth
-      };
-      
-      usersWithUid.push(userWithUid);
-      console.log(`Created Auth user: ${user.email} with UID: ${userRecord.uid}`);
-    } catch (error) {
-      console.error(`Error creating auth user ${user.email}:`, error);
-    }
+    console.log(`Seeded ${oficinasList.length} oficinas for compania ${companiaId}`);
   }
-  
-  return usersWithUid;
 }
 
-// Función para actualizar referencias en otras colecciones
-async function updateReferences(users, entes, polizas, gestiones, clientes_gestion, auditoria) {
-  // Encontrar el UID del agente
-  const agenteUser = users.find(user => user.email === "agente@seguroplus.com");
-  const agenteUid = agenteUser ? agenteUser.id : "";
-  
-  // Encontrar el UID del supervisor
-  const supervisorUser = users.find(user => user.email === "supervisor@seguroplus.com");
-  const supervisorUid = supervisorUser ? supervisorUser.id : "";
-  
-  // Actualizar referencias en pólizas
-  polizas.forEach(poliza => {
-    poliza.agenteId = agenteUid;
-  });
-  
-  // Actualizar referencias en gestiones
-  gestiones.forEach(gestion => {
-    gestion.agenteId = agenteUid;
-  });
-  
-  // Actualizar referencias en clientes_gestion
-  clientes_gestion.forEach(cliente => {
-    cliente.agenteId = agenteUid;
-  });
-  
-  // Actualizar referencias en auditoría
-  auditoria.forEach(registro => {
-    if (registro.accion === "crear_usuario") {
-      registro.documentoId = supervisorUid;
-    }
-  });
-
-  // Actualizar ID del ente en usuarios_companias_data para mantener las relaciones
-  const enteAdminId = entes.find(e => e.nombre === "Alicia Admin")?.id;
-  const enteSupervisorId = entes.find(e => e.nombre === "Carlos Supervisor")?.id;
-  const enteAgenteId = entes.find(e => e.nombre === "Maria Agente")?.id;
-
-  users.find(u => u.email === "admin@seguroplus.com").enteId = enteAdminId;
-  users.find(u => u.email === "supervisor@seguroplus.com").enteId = enteSupervisorId;
-  users.find(u => u.email === "agente@seguroplus.com").enteId = enteAgenteId;
-  
-  // Actualizar ID de referido en entes para mantener las relaciones
-  const enteIds = entes.map(e => e.id);
-  entes[1].idReferido = enteIds[0];
-  entes[2].idReferido = enteIds[1];
-  entes[3].idReferido = enteIds[2];
-  entes[4].idReferido = enteIds[3];
-  
-  return { polizas, gestiones, clientes_gestion, auditoria, entes, users };
+async function seedEntesCollection() {
+  await seedTopLevelCollection('entes', entes);
 }
 
-async function seedDatabase() {
+async function ensureAuthUser(email, displayName) {
   try {
-    console.log("Starting database seeding...");
-    const data = await getSeedData();
-
-    // Crear usuarios en Firebase Auth primero y obtener sus UIDs
-    const usuarios_companias = await createAuthUsers(data.usuarios_companias_data);
-
-    // Actualizar referencias en otras colecciones
-    const updatedData = await updateReferences(
-      usuarios_companias,
-      data.entes, 
-      data.polizas, 
-      data.gestiones, 
-      data.clientes_gestion, 
-      data.auditoria
-    );
-
-    // El orden es importante por las relaciones entre colecciones
-    // Usamos la nueva función para sembrar compañías y sus oficinas anidadas
-    await seedCompaniasConOficinas(data.companias_corretaje, data.oficinas);
-
-    await seedCollection('aseguradoras', data.aseguradoras);
-    await seedCollection('tipos_polizas', data.tipos_polizas);
-    await seedCollection('entes', updatedData.entes);
-    await seedCollection('usuarios_companias', updatedData.users);
-    await seedCollection('polizas', updatedData.polizas);
-    await seedCollection('gestiones', updatedData.gestiones);
-    await seedCollection('clientes_gestion', updatedData.clientes_gestion);
-    await seedCollection('auditoria', updatedData.auditoria);
-    
-    await seedConfigurations(data.configurations);
-
-    console.log('\nDatabase seeding completed successfully!\n');
-    console.log('Available login accounts:');
-    console.log('Super Admin: admin@seguroplus.com / password123');
-    console.log('Supervisor: supervisor@seguroplus.com / password123');
-    console.log('Agente: agente@seguroplus.com / password123');
-    console.log('\nIMPORTANT: You can now delete seed.js and temp-firebase-credentials.json for security.\n');
-
+    return await auth.getUserByEmail(email);
   } catch (error) {
-    console.error('FATAL: Error seeding database:', error);
+    if (error.code === 'auth/user-not-found') {
+      return auth.createUser({
+        email,
+        password: DEFAULT_PASSWORD,
+        displayName,
+        emailVerified: true,
+        disabled: false,
+      });
+    }
+    throw error;
   }
 }
 
-seedDatabase();
+async function seedUsuariosCompania() {
+  const collection = db.collection('usuarios_companias');
+  const userMap = new Map();
+
+  for (const user of usuarioPlantilla) {
+    const userRecord = await ensureAuthUser(user.email, user.displayName);
+    const doc = {
+      id: userRecord.uid,
+      userId: userRecord.uid,
+      email: user.email,
+      companiaCorretajeId: user.companiaCorretajeId,
+      rol: user.rol,
+      activo: true,
+      fechaCreacion: now(),
+      enteId: user.enteId,
+      ...(user.oficinaId ? { oficinaId: user.oficinaId } : {}),
+    };
+    await collection.doc(userRecord.uid).set(doc, { merge: true });
+    userMap.set(user.email, { uid: userRecord.uid, companiaCorretajeId: user.companiaCorretajeId });
+  }
+
+  console.log('Usuarios de compania creados/asociados:', userMap.size);
+  userMap.forEach((value, email) => {
+    console.log(` - ${email} (${value.uid})`);
+  });
+  return userMap;
+}
+
+async function seedLeads(userMap) {
+  if (!leadTemplates.length) return;
+  const batch = db.batch();
+  leadTemplates.forEach((lead) => {
+    const agente = lead.agenteEmail ? userMap.get(lead.agenteEmail) : undefined;
+    const docRef = db.collection('leads').doc(String(lead.id));
+    batch.set(docRef, {
+      id: lead.id,
+      nombre: lead.nombre,
+      correo: lead.correo,
+      telefono: lead.telefono,
+      companiaCorretajeId: lead.companiaCorretajeId,
+      agenteId: agente ? agente.uid : null,
+      fechaCreacion: now(),
+      fechaActualizacion: now(),
+      estado: lead.estado,
+      origen: lead.origen,
+    }, { merge: true });
+  });
+  await batch.commit();
+  console.log(`Seeded ${leadTemplates.length} leads`);
+}
+
+async function seedPolizas(userMap) {
+  if (!polizaTemplates.length) return;
+  const batch = db.batch();
+  polizaTemplates.forEach((template) => {
+    const agente = template.agenteEmail ? userMap.get(template.agenteEmail) : undefined;
+    const docRef = db.collection('polizas').doc(String(template.id));
+    batch.set(docRef, {
+      id: template.id,
+      numeroPoliza: template.numeroPoliza,
+      tipoPolizaId: template.tipoPolizaId,
+      aseguradoraId: template.aseguradoraId,
+      tomadorId: template.tomadorId,
+      aseguradoId: template.aseguradoId,
+      companiaCorretajeId: template.companiaCorretajeId,
+      oficinaId: template.oficinaId,
+      agenteId: agente ? agente.uid : null,
+      fechaInicio: template.fechaInicio,
+      fechaVencimiento: template.fechaVencimiento,
+      montoAsegurado: template.montoAsegurado,
+      prima: template.prima,
+      moneda: template.moneda,
+      estado: template.estado,
+      fechaCreacion: now(),
+      fechaActualizacion: now(),
+    }, { merge: true });
+  });
+  await batch.commit();
+  console.log(`Seeded ${polizaTemplates.length} polizas`);
+}
+
+async function seedGestiones(userMap) {
+  if (!gestionTemplates.length) return;
+  const batch = db.batch();
+  gestionTemplates.forEach((template) => {
+    const agente = template.agenteEmail ? userMap.get(template.agenteEmail) : undefined;
+    const docRef = db.collection('gestiones').doc(String(template.id));
+    batch.set(docRef, {
+      id: template.id,
+      companiaCorretajeId: template.companiaCorretajeId,
+      agenteId: agente ? agente.uid : null,
+      oficinaId: template.oficinaId || null,
+      polizaId: template.polizaId || null,
+      leadId: template.leadId || null,
+      tipo: template.tipo,
+      estado: template.estado,
+      prioridad: template.prioridad || null,
+      notas: template.notas || null,
+      fechaCreacion: now(),
+      fechaActualizacion: now(),
+      fechaVencimiento: template.fechaVencimiento || null,
+      activo: true,
+    }, { merge: true });
+  });
+  await batch.commit();
+  console.log(`Seeded ${gestionTemplates.length} gestiones`);
+}
+
+async function run() {
+  try {
+    console.log('--- Starting seed ---');
+    await seedCompaniasCorretaje();
+    await seedOficinasSubcollections();
+    await seedEntesCollection();
+    await seedTopLevelCollection('aseguradoras', aseguradoras);
+    await seedTopLevelCollection('configurations', configurations);
+    const userMap = await seedUsuariosCompania();
+    await seedLeads(userMap);
+    await seedPolizas(userMap);
+    await seedGestiones(userMap);
+    console.log('\nSeed completed successfully. Default password:', DEFAULT_PASSWORD, '\n');
+  } catch (error) {
+    console.error('Seed failed:', error);
+    process.exitCode = 1;
+  }
+}
+
+run();
+

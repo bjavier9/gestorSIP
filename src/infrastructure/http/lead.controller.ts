@@ -6,13 +6,18 @@ import { AuthenticatedRequest } from '../../middleware/authMiddleware';
 import { ApiError } from '../../utils/ApiError';
 import { handleSuccess } from '../../utils/responseHandler';
 
+/**
+ * @swagger
+ * tags:
+ *   name: Leads
+ *   description: Gestion de leads comerciales por compania.
+ */
 @injectable()
 export class LeadController {
   constructor(
     @inject(TYPES.LeadService) private leadService: LeadService,
   ) {}
 
-  // AÑADIDO: El método que faltaba para gestionar la ruta /compania/:companiaId
   public async getLeadsByCompania(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { companiaId } = req.params;
@@ -23,6 +28,34 @@ export class LeadController {
     }
   }
 
+  /**
+   * @swagger
+   * /api/leads:
+   *   post:
+   *     tags: [Leads]
+   *     summary: Crea un lead asociado a la compania del usuario.
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/CreateLeadRequest'
+   *     responses:
+   *       201:
+   *         description: Lead creado correctamente.
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/SuccessResponse'
+   *       400:
+   *         description: Datos faltantes.
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ErrorResponse'
+   */
   public async create(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { nombre, correo, telefono, origen, estado } = req.body || {};
@@ -51,6 +84,32 @@ export class LeadController {
     }
   }
 
+  /**
+   * @swagger
+   * /api/leads:
+   *   get:
+   *     tags: [Leads]
+   *     summary: Lista los leads de la compania del usuario.
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Lista de leads.
+   *         content:
+   *           application/json:
+   *             schema:
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   properties:
+   *                     body:
+   *                       type: object
+   *                       properties:
+   *                         data:
+   *                           type: array
+   *                           items:
+   *                             $ref: '#/components/schemas/Lead'
+   */
   public async getAll(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const companiaCorretajeId = req.user?.user?.companiaCorretajeId;
@@ -64,6 +123,43 @@ export class LeadController {
     }
   }
 
+  /**
+   * @swagger
+   * /api/leads/{id}:
+   *   get:
+   *     tags: [Leads]
+   *     summary: Obtiene un lead por su identificador.
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Identificador del lead.
+   *     responses:
+   *       200:
+   *         description: Lead encontrado.
+   *         content:
+   *           application/json:
+   *             schema:
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   properties:
+   *                     body:
+   *                       type: object
+   *                       properties:
+   *                         data:
+   *                           $ref: '#/components/schemas/Lead'
+   *       403:
+   *         description: El lead no pertenece a la compania.
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ErrorResponse'
+   */
   public async getById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const lead = await this.leadService.getLeadById(req.params.id);
@@ -76,6 +172,40 @@ export class LeadController {
     }
   }
 
+  /**
+   * @swagger
+   * /api/leads/{id}:
+   *   put:
+   *     tags: [Leads]
+   *     summary: Actualiza un lead existente.
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/UpdateLeadRequest'
+   *     responses:
+   *       200:
+   *         description: Lead actualizado.
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/SuccessResponse'
+   *       403:
+   *         description: No tienes permiso para modificar este lead.
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ErrorResponse'
+   */
   public async update(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const leadId = req.params.id;
@@ -91,6 +221,28 @@ export class LeadController {
     }
   }
 
+  /**
+   * @swagger
+   * /api/leads/{id}:
+   *   delete:
+   *     tags: [Leads]
+   *     summary: Elimina un lead.
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Lead eliminado.
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/SuccessResponse'
+   */
   public async delete(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const leadId = req.params.id;

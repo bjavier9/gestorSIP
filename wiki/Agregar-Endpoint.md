@@ -1,268 +1,462 @@
-﻿# Guia Avanzada para Agregar un Endpoint en GestorSIP
+# Guia para agregar una nueva ruta y funcionalidad en GestorSIP
 
-GestorSIP implementa una arquitectura hexagonal apoyada en InversifyJS para inyectar dependencias y asegura que cada modulo se cargue solo despues de que `initializeFirebase()` haya completado. Esta guia resume el flujo esperado y muestra un ejemplo completo sobre como publicar un nuevo endpoint sin romper el arranque asincrono ni las reglas de seguridad.
-
----
-
-## Checklist rapida
-
-- Validar el caso de uso y la entidad de dominio involucrada.
-- Crear o actualizar tipos y puertos en `src/domain` y `src/domain/ports`.
-- Declarar identificadores en `src/config/types.ts`.
-- Implementar el servicio de aplicacion en `src/application`.
-- Crear el controlador HTTP en `src/infrastructure/http`.
-- Registrar bindings en `src/config/container.ts`.
-- Disenar el router en `src/routes`, aplicando `authMiddleware` y cualquier middleware de rol o scoping.
-- Documentar el endpoint con Swagger JSDoc.
-- Anadir pruebas manuales (o scripts dedicados) usando tokens reales o `POST /api/auth/test-token`.
-- Actualizar la wiki y el registro de cambios correspondiente.
+> Esta guia sirve para cualquier persona, incluso si no tiene experiencia tecnica. Sigue los pasos en orden y tendras tu nuevo modulo funcionando, documentado en Swagger y conectado a Firebase.
 
 ---
 
-## Arquitectura y flujo de arranque
+## 1. Requisitos rapidos
 
-1. `startServer()` (en `src/index.ts`) espera a `initializeFirebase()` antes de importar dinamicamente los routers (`await import('./routes/...')`).
-2. Cada router resuelve sus controladores a traves del contenedor de Inversify, por lo que los bindings deben existir antes de que Express intente usarlos.
-3. Todas las respuestas deben emitirse con `handleSuccess` o levantar `ApiError` para asegurar un formato consistente.
+- Node.js y npm instalados en tu computadora.
+- Firebase ya inicializado (el proyecto ya incluye la configuracion en src/config/firebase.ts).
+- Archivo .env con los valores correctos:
+  - FIREBASE_PROJECT_ID
+  - FIREBASE_CLIENT_EMAIL
+  - FIREBASE_PRIVATE_KEY
+  - JWT_SECRET
+- Un editor de texto (Visual Studio Code funciona perfecto) y acceso a este repositorio.
 
-Mantener estas reglas evita que el servidor suba con dependencias sin enlazar o servicios externos sin inicializar.
-
----
-
-## Paso a paso general
-
-1. **Definir dominio y puertos**
-   - Modela la entidad o agrega nuevos metodos en el puerto correspondiente.
-   - Usa `Omit<T, ...>` para entradas de creacion y `Partial<T>` para updates.
-
-2. **Implementar el adaptador de infraestructura**
-   - Coloca la implementacion (Firestore, REST externo, etc.) en `src/infrastructure/persistence`.
-   - Maneja conversiones de tipos (por ejemplo `Date`) y errores coherentes.
-
-3. **Escribir el servicio de aplicacion**
-   - El servicio vive en `src/application`.
-   - Orquesta reglas de negocio, valida entrada (campos obligatorios, roles), y propaga `ApiError` con codigos HTTP apropiados.
-
-4. **Crear el controlador HTTP**
-   - En `src/infrastructure/http`, inyecta el servicio mediante Inversify.
-   - No crees instancias manualmente; usa los helpers `handleSuccess` / `handleError`.
-   - Conviertelo en el punto donde se hace `bind` de `this`.
-
-5. **Registrar bindings de DI**
-   - Anade los simbolos al objeto `TYPES`.
-   - En `src/config/container.ts`, enlaza interfaz -> implementacion con `container.bind<Interface>(TYPES.Nombre).to(Clase)`.
-
-6. **Disenar el router**
-   - Ubica el archivo en `src/routes`.
-   - Instancia el controlador via `container.get`.
-   - Protege cada ruta con `authMiddleware` y, si aplica, con middlewares de rol como `agentSupervisorMiddleware` o `authorizeCompaniaAccess`.
-   - Documenta el endpoint usando comentarios Swagger JSDoc (ver ejemplos existentes).
-   - Recuerda exportar `router` como default.
-
-7. **Montar la ruta en `index.ts`**
-   - Importa el router y configura el path base con `app.use('/api/...', router)`.
-   - Si el router depende de parametros padre, usa `Router({ mergeParams: true })` y monta con la base adecuada (por ejemplo `/api/companias/:companiaId/oficinas`).
-
-8. **Documentar y probar**
-   - Reinicia el servidor para regenerar `/api-docs`.
-   - Valida la ruta con Postman o `curl`.
-   - Actualiza la wiki (ver seccion "Documentar endpoints") y, si corresponde, agrega escenarios a `tests/`.
+Si te falta algo de la lista, pide ayuda antes de continuar.
 
 ---
 
-## Buenas practicas clave
+## 2. Entiende la arquitectura en 2 minutos
 
-- **Codigos HTTP**: usa `201` al crear, `200` para lecturas o updates y `204` cuando no hay cuerpo (delete).
-- **Seguridad**: toda ruta con datos de negocio debe pasar por `authMiddleware`. Limita roles con los helpers ya disponibles.
-- **Errores**: lanza `ApiError(code, message, status)` para mantener respuestas uniformes.
-- **Respuestas**: devuelve objetos completos del dominio o DTOs consumibles por frontend, nunca datos crudos de Firestore sin filtrar.
-- **Nombres**: los archivos siguen el patron `<recurso>.controller.ts`, `<recurso>.service.ts`, `<recurso>.ts` (router).
+GestorSIP usa capas muy claras. Siempre repetimos la misma secuencia:
+
+| Capa | Carpeta | Funcion |
+|------|---------|---------|
+| Ruta (Route) | src/routes | Define la URL disponible, por ejemplo /api/tareas |
+| Controlador | src/infrastructure/http | Recibe la peticion HTTP, valida datos y llama al servicio |
+| Servicio | src/application | Aplica reglas de negocio: que se guarda, que se actualiza, etc. |
+| Repositorio / Adaptador | src/infrastructure/persistence | Guarda y consulta datos en Firebase |
+| Dominio | src/domain | Estructuras de datos (interfaces, tipos) |
+| Contenedor | src/config/container.ts | Conecta todas las piezas con Inversify |
+
+Cada vez que crees una nueva funcionalidad repetiras estos pasos.
 
 ---
 
-## Ejemplo completo: GET /api/polizas/:id
+## 3. Ejemplo completo: modulo de "Tareas"
 
-El flujo siguiente muestra como agregar un modulo nuevo para consultar polizas.
+Supongamos que necesitamos CRUD de tareas con los endpoints:
+- POST /api/tareas
+- GET /api/tareas
+- GET /api/tareas/:id
+- PUT /api/tareas/:id
+- DELETE /api/tareas/:id
 
-### 1. Declarar tipos y simbolos
+### Paso 1. Define el modelo en el dominio
+Archivo nuevo: src/domain/tarea.ts
 
-```typescript
-// src/config/types.ts
-export const TYPES = {
-  // ... existentes
-  PolizaRepository: Symbol.for('PolizaRepository'),
-  PolizaService: Symbol.for('PolizaService'),
-  PolizaController: Symbol.for('PolizaController'),
-};
-```
-
-```typescript
-// src/domain/poliza.ts
-export interface Poliza {
+```ts
+export interface Tarea {
   id: string;
-  numero: string;
-  aseguradoId: string;
-  compania: string;
-  ramo: string;
-  fechaVencimiento: Date;
-  // campos adicionales segun el negocio
+  titulo: string;
+  descripcion: string;
+  estado: 'pendiente' | 'en_proceso' | 'completada';
+  fechaCreacion: Date;
+  fechaActualizacion: Date;
 }
 ```
 
-```typescript
-// src/domain/ports/polizaRepository.port.ts
-import { Poliza } from '../poliza';
+Puedes agregar interfaces auxiliares si las necesitas (por ejemplo CrearTareaInput).
 
-export interface PolizaRepository {
-  findById(id: string): Promise<Poliza | null>;
-  // agrega aqui findAll, save, etc. cuando sea necesario
+### Paso 2. Crea la interfaz del repositorio
+Archivo nuevo: src/domain/ports/tareaRepository.port.ts
+
+```ts
+import { Tarea } from '../tarea';
+
+export interface TareaRepository {
+  create(data: Omit<Tarea, 'id' | 'fechaCreacion' | 'fechaActualizacion'>): Promise<Tarea>;
+  findAll(): Promise<Tarea[]>;
+  findById(id: string): Promise<Tarea | null>;
+  update(id: string, data: Partial<Omit<Tarea, 'id' | 'fechaCreacion'>>): Promise<Tarea>;
+  delete(id: string): Promise<void>;
 }
 ```
 
-### 2. Servicio de aplicacion
+### Paso 3. Implementa el repositorio con Firebase
+Archivo nuevo: src/infrastructure/persistence/firebaseTarea.adapter.ts
 
-```typescript
-// src/application/poliza.service.ts
+```ts
+import { injectable } from 'inversify';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { TareaRepository } from '../../domain/ports/tareaRepository.port';
+import { Tarea } from '../../domain/tarea';
+import { ApiError } from '../../utils/ApiError';
+
+@injectable()
+export class FirebaseTareaAdapter implements TareaRepository {
+  private get collection() {
+    return getFirestore().collection('tareas');
+  }
+
+  private toTarea(doc: FirebaseFirestore.DocumentSnapshot): Tarea {
+    if (!doc.exists) {
+      throw new ApiError('NOT_FOUND', 'Tarea no encontrada.', 404);
+    }
+    const data = doc.data()!;
+    const toDate = (value: any) => value instanceof Timestamp ? value.toDate() : new Date(value);
+
+    return {
+      id: doc.id,
+      titulo: data.titulo,
+      descripcion: data.descripcion,
+      estado: data.estado,
+      fechaCreacion: toDate(data.fechaCreacion),
+      fechaActualizacion: toDate(data.fechaActualizacion),
+    };
+  }
+
+  async create(data: Omit<Tarea, 'id' | 'fechaCreacion' | 'fechaActualizacion'>): Promise<Tarea> {
+    const now = new Date();
+    const docRef = this.collection.doc();
+    await docRef.set({ ...data, fechaCreacion: now, fechaActualizacion: now });
+    return this.toTarea(await docRef.get());
+  }
+
+  async findAll(): Promise<Tarea[]> {
+    const snapshot = await this.collection.orderBy('fechaCreacion', 'desc').get();
+    return snapshot.docs.map(doc => this.toTarea(doc));
+  }
+
+  async findById(id: string): Promise<Tarea | null> {
+    const doc = await this.collection.doc(id).get();
+    return doc.exists ? this.toTarea(doc) : null;
+  }
+
+  async update(id: string, data: Partial<Omit<Tarea, 'id' | 'fechaCreacion'>>): Promise<Tarea> {
+    const docRef = this.collection.doc(id);
+    await docRef.set({ ...data, fechaActualizacion: new Date() }, { merge: true });
+    return this.toTarea(await docRef.get());
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.collection.doc(id).delete();
+  }
+}
+```
+
+### Paso 4. Crea el servicio (logica de negocio)
+Archivo nuevo: src/application/tarea.service.ts
+
+```ts
 import { inject, injectable } from 'inversify';
-import { PolizaRepository } from '../domain/ports/polizaRepository.port';
 import { TYPES } from '../config/types';
+import { TareaRepository } from '../domain/ports/tareaRepository.port';
+import { Tarea } from '../domain/tarea';
 import { ApiError } from '../utils/ApiError';
 
+interface CrearTareaInput {
+  titulo: string;
+  descripcion?: string;
+}
+
+interface ActualizarTareaInput {
+  titulo?: string;
+  descripcion?: string;
+  estado?: Tarea['estado'];
+}
+
 @injectable()
-export class PolizaService {
+export class TareaService {
   constructor(
-    @inject(TYPES.PolizaRepository) private readonly repo: PolizaRepository,
+    @inject(TYPES.TareaRepository) private readonly tareaRepository: TareaRepository,
   ) {}
 
-  async getPolizaById(id: string) {
-    const poliza = await this.repo.findById(id);
-    if (!poliza) {
-      throw new ApiError('POLIZA_NOT_FOUND', `Poliza ${id} no encontrada.`, 404);
+  async crear(data: CrearTareaInput): Promise<Tarea> {
+    if (!data.titulo) {
+      throw new ApiError('VALIDATION_ERROR', 'El titulo es obligatorio.', 400);
     }
-    return poliza;
+    return this.tareaRepository.create({
+      titulo: data.titulo,
+      descripcion: data.descripcion ?? '',
+      estado: 'pendiente',
+    });
+  }
+
+  async listar(): Promise<Tarea[]> {
+    return this.tareaRepository.findAll();
+  }
+
+  async obtener(id: string): Promise<Tarea> {
+    const tarea = await this.tareaRepository.findById(id);
+    if (!tarea) {
+      throw new ApiError('NOT_FOUND', 'La tarea no existe.', 404);
+    }
+    return tarea;
+  }
+
+  async actualizar(id: string, data: ActualizarTareaInput): Promise<Tarea> {
+    await this.obtener(id);
+    return this.tareaRepository.update(id, data);
+  }
+
+  async eliminar(id: string): Promise<void> {
+    await this.obtener(id);
+    await this.tareaRepository.delete(id);
   }
 }
 ```
 
-### 3. Adaptador de infraestructura
+### Paso 5. Controlador HTTP (incluye Swagger)
+Archivo nuevo: src/infrastructure/http/tarea.controller.ts
 
-```typescript
-// src/infrastructure/persistence/firebasePolizaRepository.adapter.ts
-import { injectable } from 'inversify';
-import { PolizaRepository } from '../../domain/ports/polizaRepository.port';
-import { Poliza } from '../../domain/poliza';
-import { db } from '../../config/firebase';
-
-@injectable()
-export class FirebasePolizaRepository implements PolizaRepository {
-  private readonly collection = db.collection('polizas');
-
-  async findById(id: string): Promise<Poliza | null> {
-    const doc = await this.collection.doc(id).get();
-    if (!doc.exists) {
-      return null;
-    }
-    return { id: doc.id, ...doc.data() } as Poliza;
-  }
-}
-```
-
-### 4. Controlador HTTP
-
-```typescript
-// src/infrastructure/http/poliza.controller.ts
-import { inject, injectable } from 'inversify';
+```ts
 import { Request, Response } from 'express';
-import { PolizaService } from '../../application/poliza.service';
-import { TYPES } from '../../config/types';
+import { inject, injectable } from 'inversify';
+import { TareaService } from '../../application/tarea.service';
 import { handleSuccess } from '../../utils/responseHandler';
-
-@injectable()
-export class PolizaController {
-  constructor(
-    @inject(TYPES.PolizaService) private readonly service: PolizaService,
-  ) {}
-
-  async getById(req: Request, res: Response) {
-    const poliza = await this.service.getPolizaById(req.params.id);
-    handleSuccess(res, poliza);
-  }
-}
-```
-
-### 5. Registrar bindings
-
-```typescript
-// src/config/container.ts
-container.bind<PolizaRepository>(TYPES.PolizaRepository).to(FirebasePolizaRepository);
-container.bind<PolizaService>(TYPES.PolizaService).to(PolizaService);
-container.bind<PolizaController>(TYPES.PolizaController).to(PolizaController);
-```
-
-### 6. Crear el router
-
-```typescript
-// src/routes/polizas.ts
-import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
-import container from '../config/container';
-import { TYPES } from '../config/types';
-import { PolizaController } from '../infrastructure/http/poliza.controller';
-import { authMiddleware } from '../middleware/authMiddleware';
-
-const router = Router();
-const controller = container.get<PolizaController>(TYPES.PolizaController);
+import { TYPES } from '../../config/types';
 
 /**
  * @swagger
- * /api/polizas/{id}:
- *   get:
- *     tags: [Polizas]
- *     summary: Obtener detalles de una poliza
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200: { description: 'Poliza encontrada' }
- *       404: { description: 'Poliza no encontrada' }
+ * tags:
+ *   name: Tareas
+ *   description: Gestion de tareas.
  */
-router.get('/:id', authMiddleware, asyncHandler(controller.getById.bind(controller)));
+@injectable()
+export class TareaController {
+  constructor(@inject(TYPES.TareaService) private readonly tareaService: TareaService) {}
 
-export default router;
+  /**
+   * @swagger
+   * /api/tareas:
+   *   post:
+   *     tags: [Tareas]
+   *     summary: Crea una nueva tarea.
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [titulo]
+   *             properties:
+   *               titulo:
+   *                 type: string
+   *               descripcion:
+   *                 type: string
+   *     responses:
+   *       201:
+   *         description: Tarea creada.
+   */
+  async crear(req: Request, res: Response) {
+    const tarea = await this.tareaService.crear(req.body);
+    handleSuccess(req, res, tarea, 201);
+  }
+
+  /**
+   * @swagger
+   * /api/tareas:
+   *   get:
+   *     tags: [Tareas]
+   *     summary: Lista todas las tareas.
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Lista de tareas.
+   */
+  async listar(req: Request, res: Response) {
+    const tareas = await this.tareaService.listar();
+    handleSuccess(req, res, tareas);
+  }
+
+  /**
+   * @swagger
+   * /api/tareas/{id}:
+   *   get:
+   *     tags: [Tareas]
+   *     summary: Obtiene una tarea.
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Tarea encontrada.
+   */
+  async obtener(req: Request, res: Response) {
+    const tarea = await this.tareaService.obtener(req.params.id);
+    handleSuccess(req, res, tarea);
+  }
+
+  /**
+   * @swagger
+   * /api/tareas/{id}:
+   *   put:
+   *     tags: [Tareas]
+   *     summary: Actualiza una tarea.
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               titulo:
+   *                 type: string
+   *               descripcion:
+   *                 type: string
+   *               estado:
+   *                 type: string
+   *                 enum: [pendiente, en_proceso, completada]
+   *     responses:
+   *       200:
+   *         description: Tarea actualizada.
+   */
+  async actualizar(req: Request, res: Response) {
+    const tarea = await this.tareaService.actualizar(req.params.id, req.body);
+    handleSuccess(req, res, tarea);
+  }
+
+  /**
+   * @swagger
+   * /api/tareas/{id}:
+   *   delete:
+   *     tags: [Tareas]
+   *     summary: Elimina una tarea.
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Tarea eliminada.
+   */
+  async eliminar(req: Request, res: Response) {
+    await this.tareaService.eliminar(req.params.id);
+    handleSuccess(req, res, { message: 'Tarea eliminada correctamente.' });
+  }
+}
 ```
 
-### 7. Montar la ruta
+### Paso 6. Define las rutas
+Archivo nuevo: src/routes/tareas.ts
 
-```typescript
-// src/index.ts
-const { default: polizaRouter } = await import('./routes/polizas');
-app.use('/api/polizas', polizaRouter);
+```ts
+import { Router } from 'express';
+import { Container } from 'inversify';
+import { TYPES } from '../config/types';
+import { TareaController } from '../infrastructure/http/tarea.controller';
+import { authMiddleware } from '../middleware/authMiddleware';
+import { asyncHandler } from '../middleware/asyncHandler';
+
+export const createTareaRoutes = (container: Container): Router => {
+  const router = Router();
+  const controller = container.get<TareaController>(TYPES.TareaController);
+
+  router.use(authMiddleware);
+  router.post('/', asyncHandler(controller.crear.bind(controller)));
+  router.get('/', asyncHandler(controller.listar.bind(controller)));
+  router.get('/:id', asyncHandler(controller.obtener.bind(controller)));
+  router.put('/:id', asyncHandler(controller.actualizar.bind(controller)));
+  router.delete('/:id', asyncHandler(controller.eliminar.bind(controller)));
+
+  return router;
+};
 ```
 
-### 8. Verificacion rapida
+### Paso 7. Actualiza el contenedor y los tipos
 
-- Genera un token valido (o usa `/api/auth/test-token` en entornos permitidos).
-- Haz `curl -H "Authorization: Bearer <token>" http://localhost:3000/api/polizas/demo`.
-- Confirma que Swagger (`/api-docs`) lista el nuevo endpoint bajo la categoria correcta.
-- Actualiza la documentacion del wiki para reflejar el nuevo recurso.
+1. src/config/types.ts
+
+```ts
+    TareaRepository: Symbol.for('TareaRepository'),
+    TareaService: Symbol.for('TareaService'),
+    TareaController: Symbol.for('TareaController'),
+```
+
+2. src/config/container.ts
+
+```ts
+import { TareaService } from '../application/tarea.service';
+import { TareaController } from '../infrastructure/http/tarea.controller';
+import { TareaRepository } from '../domain/ports/tareaRepository.port';
+import { FirebaseTareaAdapter } from '../infrastructure/persistence/firebaseTarea.adapter';
+```
+
+```ts
+    container.bind<TareaRepository>(TYPES.TareaRepository).to(FirebaseTareaAdapter);
+    container.bind<TareaService>(TYPES.TareaService).to(TareaService);
+    container.bind<TareaController>(TYPES.TareaController).to(TareaController);
+```
+
+### Paso 8. Agrega las rutas en el servidor principal
+
+src/index.ts
+
+```ts
+import { createTareaRoutes } from './routes/tareas';
+...
+    app.use('/api/tareas', createTareaRoutes(container));
+```
+
+### Paso 9. Registra el esquema en Swagger
+
+src/config/swagger.ts
+
+```ts
+                Tarea: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string' },
+                        titulo: { type: 'string' },
+                        descripcion: { type: 'string' },
+                        estado: { type: 'string', enum: ['pendiente', 'en_proceso', 'completada'] },
+                        fechaCreacion: { type: 'string', format: 'date-time' },
+                        fechaActualizacion: { type: 'string', format: 'date-time' },
+                    },
+                },
+```
+
+Los comentarios `@swagger` del controlador hacen que los endpoints aparezcan automaticamente.
+
+### Paso 10. Prueba todo
+
+1. Compila rapido: `npm run build`
+2. Ejecuta el servidor: `npm run dev`
+3. Consigue un token JWT (login Firebase o super admin) y prueba los endpoints en Postman o Thunder Client.
+4. Abre `http://localhost:3000/api-docs` para ver la documentacion generada.
+
+### Paso 11. Checklist final
+
+- [ ] Archivos nuevos creados en las carpetas correctas.
+- [ ] `types.ts`, `container.ts` e `index.ts` actualizados.
+- [ ] Endpoints probados con token valido.
+- [ ] Mensajes de error claros para usuario final.
+- [ ] Swagger muestra los nuevos endpoints y el esquema Tarea.
+
+Si todo esta ok, puedes repetir la receta para cualquier otro recurso (clientes, notas, etc.). Cambia los nombres y los campos segun lo que necesites.
 
 ---
 
-## Documentar endpoints
+## 4. Consejos finales
 
-Cada vez que agregues o modifiques rutas:
+- Empieza copiando archivos de un modulo similar y cambia nombres: es la forma mas rapida.
+- Usa nombres en minusculas para las colecciones de Firebase (`tareas`, `clientes`, etc.).
+- Si un endpoint debe ser solo para ciertos roles, agrega la validacion en el servicio.
+- Antes de subir cambios ejecuta `npm run build` para comprobar que no hay errores de TypeScript.
+- Si te atoras, pide ayuda mostrando en que paso de esta guia te quedaste.
 
-1. Actualiza la tabla de rutas en `README.md` si cambia la superficie publica.
-2. Anade una entrada en `wiki/endpoints/<recurso>.md` con:
-   - Metodo y path.
-   - Roles requeridos o middlewares aplicados.
-   - Cuerpo de solicitud y respuesta (JSON de ejemplo).
-   - Errores comunes (`ApiError` codes).
-3. Si el flujo afecta autenticacion, revisa `wiki/Authentication-Flow.md`.
-
-Seguir esta guia mantiene el backend consistente, predecible y facil de escalar.
+Listo. Con estos pasos agregas una funcionalidad nueva de principio a fin.

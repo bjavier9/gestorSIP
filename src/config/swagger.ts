@@ -92,10 +92,16 @@ const options: swaggerJsdoc.Options = {
 // --- Auth Schemas ---
                 LoginRequest: {
                     type: 'object',
-                    required: ['idToken'],
+                    description: 'Provide a Firebase ID token or super admin credentials.',
                     properties: {
                         idToken: { type: 'string', description: "Firebase Auth ID Token." },
+                        email: { type: 'string', format: 'email', description: 'Super admin email credential.' },
+                        password: { type: 'string', description: 'Super admin password credential.' },
                     },
+                    anyOf: [
+                        { required: ['idToken'] },
+                        { required: ['email', 'password'] },
+                    ],
                 },
                 SelectCompaniaRequest: {
                     type: 'object',
@@ -281,6 +287,44 @@ const options: swaggerJsdoc.Options = {
                         agenteId: { type: 'string' }
                     }
                 },
+                Gestion: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string' },
+                        companiaCorretajeId: { type: 'string' },
+                        agenteId: { type: 'string' },
+                        oficinaId: { type: 'string', nullable: true },
+                        polizaId: { type: 'string', nullable: true },
+                        leadId: { type: 'string', nullable: true },
+                        enteId: { type: 'string', nullable: true },
+                        tipo: { type: 'string', enum: ['nueva', 'renovacion'] },
+                        estado: { type: 'string', enum: ['borrador', 'en_gestion', 'en_tramite', 'gestionado_exito', 'desistido'] },
+                        prioridad: { type: 'string', enum: ['baja', 'media', 'alta'], nullable: true },
+                        notas: { type: 'string', nullable: true },
+                        fechaCreacion: { type: 'string', format: 'date-time' },
+                        fechaActualizacion: { type: 'string', format: 'date-time' },
+                        fechaVencimiento: { type: 'string', format: 'date-time', nullable: true },
+                        activo: { type: 'boolean' },
+                    },
+                    required: ['id','companiaCorretajeId','agenteId','tipo','estado','fechaCreacion','fechaActualizacion','activo'],
+                },
+                CreateGestionRequest: {
+                    type: 'object',
+                    required: ['agenteId','tipo'],
+                    properties: {
+                        agenteId: { type: 'string' },
+                        oficinaId: { type: 'string', nullable: true },
+                        polizaId: { type: 'string', nullable: true },
+                        leadId: { type: 'string', nullable: true },
+                        enteId: { type: 'string', nullable: true },
+                        tipo: { type: 'string', enum: ['nueva', 'renovacion'] },
+                        estado: { type: 'string', enum: ['borrador', 'en_gestion', 'en_tramite', 'gestionado_exito', 'desistido'], nullable: true },
+                        prioridad: { type: 'string', enum: ['baja', 'media', 'alta'], nullable: true },
+                        notas: { type: 'string', nullable: true },
+                        fechaVencimiento: { type: 'string', format: 'date-time', nullable: true },
+                        activo: { type: 'boolean', nullable: true },
+                    },
+                },
                 Oficina: {
                     type: 'object',
                     properties: {
@@ -440,9 +484,10 @@ const options: swaggerJsdoc.Options = {
     },
 
     // IMPORTANT: Path to the files containing OpenAPI annotations
-    apis: ['./src/routes/*.ts'],
+    apis: ['./src/routes/**/*.ts', './src/infrastructure/http/**/*.ts'],
 };
 
 const swaggerSpec = swaggerJsdoc(options);
 
 export default swaggerSpec;
+

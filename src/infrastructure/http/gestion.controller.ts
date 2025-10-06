@@ -7,6 +7,12 @@ import { ApiError } from '../../utils/ApiError';
 import { handleSuccess } from '../../utils/responseHandler';
 import { GestionPrioridad, GestionTipo } from '../../domain/gestion';
 
+/**
+ * @swagger
+ * tags:
+ *   name: Gestiones
+ *   description: Seguimiento de gestiones comerciales y operativas.
+ */
 @injectable()
 export class GestionController {
   constructor(
@@ -34,6 +40,43 @@ export class GestionController {
     }
   }
 
+  /**
+   * @swagger
+   * /api/gestiones/{id}:
+   *   get:
+   *     tags: [Gestiones]
+   *     summary: Obtiene una gestion por su identificador.
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Identificador de la gestion.
+   *     responses:
+   *       200:
+   *         description: Gestion encontrada.
+   *         content:
+   *           application/json:
+   *             schema:
+   *               allOf:
+   *                 - $ref: '#/components/schemas/SuccessResponse'
+   *                 - type: object
+   *                   properties:
+   *                     body:
+   *                       type: object
+   *                       properties:
+   *                         data:
+   *                           $ref: '#/components/schemas/Gestion'
+   *       404:
+   *         description: Gestion no encontrada.
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ErrorResponse'
+   */
   public async getById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const user = this.getUserContext(req);
@@ -50,6 +93,34 @@ export class GestionController {
     }
   }
 
+  /**
+   * @swagger
+   * /api/gestiones:
+   *   post:
+   *     tags: [Gestiones]
+   *     summary: Crea una gestion asociada a la compania del usuario.
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/CreateGestionRequest'
+   *     responses:
+   *       201:
+   *         description: Gestion creada correctamente.
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/SuccessResponse'
+   *       400:
+   *         description: Datos faltantes o invalidos.
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ErrorResponse'
+   */
   public async create(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const user = this.getUserContext(req);
