@@ -11,13 +11,19 @@ export class CompaniaCorretajeService {
   ) {}
 
   async createCompania(companiaData: CompaniaCorretaje): Promise<CompaniaCorretaje> {
-    // Aquí podrías agregar validaciones, como verificar que el RIF no exista
     const existingCompania = await this.companiaRepo.findByRif(companiaData.rif);
     if (existingCompania) {
       throw new ApiError('RIF_ALREADY_EXISTS', 'A company with this RIF already exists.', 409);
     }
-
     return this.companiaRepo.create(companiaData);
+  }
+
+  async getCompaniaById(id: string): Promise<CompaniaCorretaje> {
+    const compania = await this.companiaRepo.findById(id);
+    if (!compania) {
+      throw new ApiError('NOT_FOUND', 'Company not found.', 404);
+    }
+    return compania;
   }
 
   async updateCompania(id: string, data: Partial<CompaniaCorretaje>): Promise<CompaniaCorretaje> {
@@ -25,14 +31,12 @@ export class CompaniaCorretajeService {
     if (!existing) {
       throw new ApiError('NOT_FOUND', 'Company not found.', 404);
     }
-
     if (data.rif && data.rif !== existing.rif) {
       const byRif = await this.companiaRepo.findByRif(data.rif);
       if (byRif && byRif.id !== id) {
         throw new ApiError('RIF_ALREADY_EXISTS', 'A company with this RIF already exists.', 409);
       }
     }
-
     return this.companiaRepo.update(id, { ...data });
   }
 

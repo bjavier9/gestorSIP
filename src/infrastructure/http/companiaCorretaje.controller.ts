@@ -23,6 +23,15 @@ export class CompaniaCorretajeController {
     handleSuccess(req, res, result, 201);
   }
 
+  async getById(req: Request, res: Response) {
+    const { id } = req.params;
+    if (!id) {
+      throw new ApiError('VALIDATION_MISSING_FIELD', 'id is required.', 400);
+    }
+    const result = await this.companiaService.getCompaniaById(id);
+    handleSuccess(req, res, result);
+  }
+
   async update(req: Request, res: Response) {
     const { id } = req.params;
     const data: Partial<CompaniaCorretaje> = req.body;

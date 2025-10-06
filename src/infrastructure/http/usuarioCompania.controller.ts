@@ -22,6 +22,15 @@ export class UsuarioCompaniaController {
     handleSuccess(req, res, result, 201);
   }
 
+  async getById(req: Request, res: Response) {
+    const { id } = req.params;
+    if (!id) {
+        throw new ApiError('VALIDATION_MISSING_FIELD', 'id is required.', 400);
+    }
+    const result = await this.service.getById(id);
+    handleSuccess(req, res, result);
+  }
+
   async desactivar(req: Request, res: Response) {
     const { id } = req.params;
     if (!id) throw new ApiError('VALIDATION_MISSING_FIELD', 'id is required.', 400);
@@ -36,4 +45,3 @@ export class UsuarioCompaniaController {
     handleSuccess(req, res, result, 200);
   }
 }
-

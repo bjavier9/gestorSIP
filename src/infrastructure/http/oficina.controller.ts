@@ -59,7 +59,7 @@ export class OficinaController {
    *             schema:
    *               $ref: '#/components/schemas/ErrorResponse'
    */
-  async createOficina(req: Request, res: Response): Promise<void> {
+  async create(req: Request, res: Response): Promise<void> {
     const { companiaId } = req.params;
     const oficinaData = { ...req.body, companiaCorretajeId: companiaId };
     const oficina = await this.oficinaService.createOficina(oficinaData);
@@ -101,7 +101,7 @@ export class OficinaController {
    *                         message:
    *                           type: string
    */
-  async getOficinas(req: Request, res: Response): Promise<void> {
+  async getByCompania(req: Request, res: Response): Promise<void> {
     const { companiaId } = req.params;
     const oficinas = await this.oficinaService.getOficinas(companiaId);
     handleSuccess(req, res, oficinas, 200, { message: 'Oficinas recuperadas exitosamente.' });
