@@ -9,8 +9,10 @@ export type EnteUpdateInput = Partial<EnteInput>;
 export interface EnteRepository {
     findById(id: string): Promise<Ente | null>;
     findByDocumento(documento: string): Promise<Ente | null>;
-    findAll(): Promise<Ente[]>;
+    findAllByCompania(companiaCorretajeId: string): Promise<Ente[]>;
     save(data: EnteInput): Promise<Ente>;
     update(id: string, data: EnteUpdateInput): Promise<Ente | null>;
     delete(id: string): Promise<void>;
 }
+
+

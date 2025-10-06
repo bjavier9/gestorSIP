@@ -3,10 +3,11 @@
 
 import { Request, Response } from 'express';
 import { injectable, inject } from 'inversify';
-import { AuthService } from '../../application/auth.service';
+import { AuthService, RegisterUserInput } from '../../application/auth.service';
 import { handleSuccess } from '../../utils/responseHandler';
 import { TYPES } from '../../config/types';
 import { ApiError } from '../../utils/ApiError';
+import { AuthenticatedRequest } from '../../middleware/authMiddleware';
 
 @injectable()
 export class AuthController {
@@ -23,17 +24,29 @@ export class AuthController {
     handleSuccess(req, res, result, 200, { token: result.token });
   }
 
-  async register(req: Request, res: Response) {
-    const { idToken } = req.body;
-
-    if (!idToken) {
-        throw new ApiError('AUTH_MISSING_ID_TOKEN', 'Firebase ID token is required for registration.', 400);
+  async register(req: AuthenticatedRequest, res: Response) {
+    const currentUser = req.user?.user;
+    if (!currentUser) {
+      throw new ApiError('AUTH_INVALID_TOKEN', 'Invalid or missing authentication token.', 401);
     }
 
-    // Suponiendo que el servicio de autenticación tendrá un método de registro
-    // Esto necesitará ser implementado en AuthService
-    const result = await this.authService.register(idToken);
-    handleSuccess(req, res, result, 201); // 201 Created para un nuevo recurso
+    const { enteId, rol, companiaCorretajeId, oficinaId } = req.body || {};
+    if (!enteId) {
+      throw new ApiError('VALIDATION_MISSING_FIELD', 'enteId es requerido para registrar un usuario.', 400);
+    }
+    if (!rol) {
+      throw new ApiError('VALIDATION_MISSING_FIELD', 'rol es requerido para registrar un usuario.', 400);
+    }
+
+    const payload: RegisterUserInput = {
+      enteId: String(enteId),
+      rol: String(rol).toLowerCase(),
+      ...(companiaCorretajeId ? { companiaCorretajeId: String(companiaCorretajeId) } : {}),
+      ...(oficinaId ? { oficinaId: String(oficinaId) } : {}),
+    };
+
+    const result = await this.authService.register(currentUser, payload);
+    handleSuccess(req, res, result, 201);
   }
 
   async loginSuperAdmin(req: Request, res: Response) {

@@ -11,7 +11,11 @@ export const createConfigurationRoutes = (container: Container): Router => {
 
     router.use(authMiddleware);
 
-    router.get('/:configName', asyncHandler(controller.get.bind(controller)));
+    router.get('/', asyncHandler(controller.getAllConfigurations.bind(controller)));
+    router.get('/:id', asyncHandler(controller.getConfigurationById.bind(controller)));
+    router.post('/', asyncHandler(controller.createConfiguration.bind(controller)));
+    router.put('/:id', asyncHandler(controller.updateConfiguration.bind(controller)));
 
     return router;
 };
+

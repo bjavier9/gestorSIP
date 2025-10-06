@@ -10,7 +10,7 @@ interface CreateUsuarioCompaniaDto {
   password: string;
   companiaCorretajeId: string;
   rol: 'admin' | 'supervisor' | 'agent' | 'viewer';
-  enteId?: number;
+  enteId?: string;
   oficinaId?: string;
 }
 

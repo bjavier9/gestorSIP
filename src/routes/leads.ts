@@ -11,9 +11,12 @@ export const createLeadRoutes = (container: Container): Router => {
 
     router.use(authMiddleware);
 
+    router.get('/', asyncHandler(controller.getAll.bind(controller)));
     router.post('/', asyncHandler(controller.create.bind(controller)));
     router.get('/:id', asyncHandler(controller.getById.bind(controller)));
-    router.get('/', asyncHandler(controller.getByCriteria.bind(controller)));
+    router.put('/:id', asyncHandler(controller.update.bind(controller)));
+    router.delete('/:id', asyncHandler(controller.delete.bind(controller)));
 
     return router;
 };
+

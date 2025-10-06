@@ -9,7 +9,7 @@ export const createPolizasRoutes = (container: Container): Router => {
     const router = Router();
     const polizaController = container.get<PolizaController>(TYPES.PolizaController);
 
-    // Aplicar middleware de autenticación a todas las rutas de pólizas
+    // Aplicar middleware de autenticacion a todas las rutas de polizas
     router.use(authMiddleware);
 
     // GET /api/polizas -> busca por criterios
@@ -20,3 +20,4 @@ export const createPolizasRoutes = (container: Container): Router => {
 
     return router;
 };
+

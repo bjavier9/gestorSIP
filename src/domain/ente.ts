@@ -1,11 +1,11 @@
-
 // src/domain/ente.ts
 
 // Base interface with common fields for all 'Ente' types
 export interface EnteBase {
   id: string; // Firestore document ID
+  companiaCorretajeId: string;
   nombre: string;
-  tipo: 'Persona Natural' | 'Persona Jurídica';
+  tipo: 'Persona Natural' | 'Persona Juridica' | 'Persona Jur\u00eddica';
   documento: string;
   tipo_documento: string;
   direccion: string;
@@ -49,7 +49,7 @@ export interface EntePersonaNatural extends EnteBase {
 
 // Interface for a Legal Entity, extending the base and using specific metadata
 export interface EntePersonaJuridica extends EnteBase {
-  tipo: 'Persona Jurídica';
+  tipo: 'Persona Juridica' | 'Persona Jur\u00eddica';
   metadatos: MetadatosPersonaJuridica;
 }
 

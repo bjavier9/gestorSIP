@@ -1,46 +1,56 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { inject, injectable } from 'inversify';
 import { EnteService } from '../../application/ente.service';
 import { TYPES } from '../../config/types';
-import { EnteInput, EnteUpdateInput } from '../../domain/ports/enteRepository.port';
 import { handleSuccess } from '../../utils/responseHandler';
 import { ApiError } from '../../utils/ApiError';
+import { AuthenticatedRequest } from '../../middleware/authMiddleware';
 
 @injectable()
 export class EnteController {
   constructor(@inject(TYPES.EnteService) private enteService: EnteService) {}
 
-  async create(req: Request, res: Response): Promise<void> {
-    const ente = await this.enteService.create(req.body as EnteInput);
+  private getCompaniaId(req: AuthenticatedRequest): string {
+    const companiaId = req.user?.user?.companiaCorretajeId;
+    if (!companiaId) {
+      throw new ApiError('FORBIDDEN', 'No se pudo determinar la compañía asociada al token.', 403);
+    }
+    return companiaId;
+  }
+
+  async create(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const companiaId = this.getCompaniaId(req);
+    const ente = await this.enteService.create(companiaId, req.body);
     handleSuccess(req, res, ente, 201);
   }
 
-  async getById(req: Request, res: Response): Promise<void> {
-    const ente = await this.enteService.getById(req.params.id);
+  async getById(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const companiaId = this.getCompaniaId(req);
+    const ente = await this.enteService.getById(req.params.id, companiaId);
     if (!ente) {
       throw new ApiError('ENTE_NOT_FOUND', 'Ente no encontrado', 404);
     }
     handleSuccess(req, res, ente);
   }
 
-  async getAll(req: Request, res: Response): Promise<void> {
-    const entes = await this.enteService.getAll();
+  async getAll(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const companiaId = this.getCompaniaId(req);
+    const entes = await this.enteService.getAll(companiaId);
     handleSuccess(req, res, entes);
   }
 
-  async update(req: Request, res: Response): Promise<void> {
-    const ente = await this.enteService.update(req.params.id, req.body as EnteUpdateInput);
+  async update(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const companiaId = this.getCompaniaId(req);
+    const ente = await this.enteService.update(req.params.id, companiaId, req.body);
     if (!ente) {
         throw new ApiError('ENTE_NOT_FOUND', 'Ente no encontrado para actualizar', 404);
     }
     handleSuccess(req, res, ente);
   }
 
-  async delete(req: Request, res: Response): Promise<void> {
-    const result = await this.enteService.delete(req.params.id);
-    if (!result) {
-        throw new ApiError('ENTE_NOT_FOUND', 'Ente no encontrado para eliminar', 404);
-    }
+  async delete(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const companiaId = this.getCompaniaId(req);
+    const result = await this.enteService.delete(req.params.id, companiaId);
     handleSuccess(req, res, result);
   }
 }

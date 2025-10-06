@@ -1,30 +1,54 @@
 import { injectable } from 'inversify';
-import { getFirestore, CollectionReference, DocumentData, Query } from 'firebase-admin/firestore';
+import { getFirestore, CollectionReference, Query, QueryDocumentSnapshot, DocumentSnapshot } from 'firebase-admin/firestore';
 import { PolizaRepository, PolizaSearchCriteria } from '../../domain/ports/polizaRepository.port';
 import { Poliza } from '../../domain/poliza';
-import { firebaseApp } from '../../config/firebase';
 
 @injectable()
 export class FirebasePolizaAdapter implements PolizaRepository {
-    private readonly db = getFirestore(firebaseApp);
+    private readonly db = getFirestore();
     private readonly polizasCollection = this.db.collection('polizas') as CollectionReference<Poliza>;
 
-    private mapDocToPoliza(doc: DocumentData): Poliza {
+    private mapDocToPoliza(doc: QueryDocumentSnapshot<Poliza> | DocumentSnapshot<Poliza>): Poliza {
         const data = doc.data();
+        if (!data) {
+            throw new Error(`Documento de poliza ${doc.id} sin datos.`);
+        }
+
+        const normalizeDate = (value: unknown, field: string): Date => {
+            if (!value) {
+                throw new Error(`Campo ${field} ausente en poliza ${doc.id}`);
+            }
+
+            if (value instanceof Date) {
+                return value;
+            }
+
+            if (value && typeof value === 'object' && 'toDate' in (value as Record<string, unknown>)) {
+                return (value as { toDate: () => Date }).toDate();
+            }
+
+            const parsed = new Date(String(value));
+            if (Number.isNaN(parsed.getTime())) {
+                throw new Error(`Campo ${field} tiene fecha invalida en poliza ${doc.id}`);
+            }
+
+            return parsed;
+        };
+
         return {
             ...data,
             id: doc.id,
-            fechaInicio: data.fechaInicio.toDate(),
-            fechaVencimiento: data.fechaVencimiento.toDate(),
-            fechaCreacion: data.fechaCreacion.toDate(),
-            fechaActualizacion: data.fechaActualizacion.toDate(),
+            fechaInicio: normalizeDate(data.fechaInicio, 'fechaInicio'),
+            fechaVencimiento: normalizeDate(data.fechaVencimiento, 'fechaVencimiento'),
+            fechaCreacion: normalizeDate(data.fechaCreacion, 'fechaCreacion'),
+            fechaActualizacion: normalizeDate(data.fechaActualizacion, 'fechaActualizacion'),
         } as Poliza;
     }
 
     async findByCriteria(criteria: PolizaSearchCriteria): Promise<Poliza[]> {
-        let query: Query = this.polizasCollection;
+        let query: Query<Poliza> = this.polizasCollection;
 
-        // Filtro obligatorio por compañía
+        // Filtro obligatorio por compania
         query = query.where('companiaCorretajeId', '==', criteria.companiaCorretajeId);
 
         if (criteria.agenteId) {
@@ -56,7 +80,7 @@ export class FirebasePolizaAdapter implements PolizaRepository {
 
         const poliza = this.mapDocToPoliza(snapshot);
 
-        // Verificar que la póliza pertenece a la compañía correcta
+        // Verificar que la poliza pertenece a la compania correcta
         if (poliza.companiaCorretajeId !== companiaCorretajeId) {
             return null;
         }
@@ -64,3 +88,4 @@ export class FirebasePolizaAdapter implements PolizaRepository {
         return poliza;
     }
 }
+

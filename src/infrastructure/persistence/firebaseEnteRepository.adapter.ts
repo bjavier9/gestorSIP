@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { getFirestore, CollectionReference, DocumentReference, Timestamp } from 'firebase-admin/firestore';
+import { getFirestore, CollectionReference, Timestamp } from 'firebase-admin/firestore';
 import { Ente } from '../../domain/ente';
 import { EnteRepository, EnteInput, EnteUpdateInput } from '../../domain/ports/enteRepository.port';
 import { ApiError } from '../../utils/ApiError';
@@ -17,6 +17,10 @@ export class FirebaseEnteRepositoryAdapter implements EnteRepository {
             throw new ApiError('INTERNAL_SERVER_ERROR', `Error inesperado: el documento con ID ${doc.id} no tiene datos.`, 500);
         }
 
+        if (!data.companiaCorretajeId) {
+            throw new ApiError('INTERNAL_SERVER_ERROR', `El ente con ID ${doc.id} no tiene compañía asociada.`, 500);
+        }
+
         const toDate = (timestamp: any, fieldName: string): Date => {
             if (timestamp instanceof Timestamp) {
                 return timestamp.toDate();
@@ -29,6 +33,7 @@ export class FirebaseEnteRepositoryAdapter implements EnteRepository {
 
         return {
             id: doc.id,
+            companiaCorretajeId: data.companiaCorretajeId,
             nombre: data.nombre,
             tipo: data.tipo,
             documento: data.documento,
@@ -42,10 +47,14 @@ export class FirebaseEnteRepositoryAdapter implements EnteRepository {
             fechaActualizacion: toDate(data.fechaActualizacion, 'fechaActualizacion'),
             activo: data.activo,
             metadatos: data.metadatos || {},
-        };
+        } as Ente;
     }
 
     async save(data: EnteInput): Promise<Ente> {
+        if (!data.companiaCorretajeId) {
+            throw new ApiError('VALIDATION_MISSING_FIELD', 'companiaCorretajeId es requerido para crear un ente.', 400);
+        }
+
         const now = new Date();
         const newEnteData = {
             ...data,
@@ -66,8 +75,8 @@ export class FirebaseEnteRepositoryAdapter implements EnteRepository {
         return this.docToEnte(snapshot.docs[0]);
     }
 
-    async findAll(): Promise<Ente[]> {
-        const snapshot = await this.collection.get();
+    async findAllByCompania(companiaCorretajeId: string): Promise<Ente[]> {
+        const snapshot = await this.collection.where('companiaCorretajeId', '==', companiaCorretajeId).get();
         return snapshot.docs.map(doc => this.docToEnte(doc));
     }
 
@@ -85,6 +94,10 @@ export class FirebaseEnteRepositoryAdapter implements EnteRepository {
 
         if (!doc.exists) {
             return null;
+        }
+
+        if (updates.companiaCorretajeId && updates.companiaCorretajeId !== doc.data()?.companiaCorretajeId) {
+            throw new ApiError('FORBIDDEN', 'No es posible cambiar la compañía asociada del ente.', 403);
         }
 
         const updateData = {

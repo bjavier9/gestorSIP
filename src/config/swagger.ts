@@ -358,6 +358,39 @@ const options: swaggerJsdoc.Options = {
                         activo: { type: 'boolean' },
                     },
                 },
+                Poliza: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string' },
+                        numeroPoliza: { type: 'string' },
+                        tipoPolizaId: { type: 'string' },
+                        aseguradoraId: { type: 'string' },
+                        tomadorId: { type: 'number' },
+                        aseguradoId: { type: 'number' },
+                        companiaCorretajeId: { type: 'string' },
+                        oficinaId: { type: 'string' },
+                        agenteId: { type: 'string', nullable: true },
+                        fechaInicio: { type: 'string', format: 'date-time' },
+                        fechaVencimiento: { type: 'string', format: 'date-time' },
+                        montoAsegurado: { type: 'number' },
+                        prima: { type: 'number' },
+                        moneda: { type: 'string' },
+                        estado: { type: 'string' },
+                        fechaCreacion: { type: 'string', format: 'date-time' },
+                        fechaActualizacion: { type: 'string', format: 'date-time' },
+                    },
+                    required: ['id','numeroPoliza','tipoPolizaId','aseguradoraId','tomadorId','aseguradoId','companiaCorretajeId','oficinaId','fechaInicio','fechaVencimiento','montoAsegurado','prima','moneda','estado','fechaCreacion','fechaActualizacion'],
+                },
+                PolizaSearchResponse: {
+                    type: 'object',
+                    properties: {
+                        data: {
+                            type: 'array',
+                            items: { $ref: '#/components/schemas/Poliza' },
+                        },
+                        message: { type: 'string', nullable: true },
+                    },
+                },
                 ConfigurationItem: {
                     type: 'object',
                     properties: {
