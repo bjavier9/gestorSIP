@@ -31,7 +31,7 @@ const devFormat = winston.format.combine(
   ),
 );
 
-// Formato para producción: JSON estructurado
+// Formato para producción: JSON estructurado, ideal para la ingesta de logs
 const prodFormat = winston.format.combine(
   winston.format.timestamp(),
   winston.format.errors({ stack: true }), // Incluye el stack trace en los errores
@@ -42,19 +42,10 @@ const prodFormat = winston.format.combine(
 const format = process.env.NODE_ENV === 'production' ? prodFormat : devFormat;
 
 // Define los "transportes" (a dónde se envían los logs)
+// En entornos de producción modernos, siempre se debe hacer log a la consola (stdout).
+// La plataforma (ej. CloudWatch, LogDNA, etc.) se encarga de recolectar esos logs.
 const transports = [
-  // Siempre mostrar los logs en la consola
   new winston.transports.Console(),
-  
-  // En producción, también guardar los errores en un archivo separado
-  // Esto es útil para una rápida auditoría de errores graves.
-  ...(process.env.NODE_ENV === 'production' ? [
-    new winston.transports.File({
-      filename: 'logs/error.log',
-      level: 'error',
-    }),
-    new winston.transports.File({ filename: 'logs/all.log' }),
-  ] : []),
 ];
 
 // Crea y exporta la instancia del logger
