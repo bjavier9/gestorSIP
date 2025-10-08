@@ -3,7 +3,9 @@ import { Container } from 'inversify';
 import { TYPES } from './types';
 
 // Auth
-import { AuthService } from '../application/auth.service';
+import { LoginService } from '../application/auth/login.service';
+import { RegisterService } from '../application/auth/register.service';
+import { SessionService } from '../application/auth/session.service';
 import { AuthController } from '../infrastructure/http/auth.controller';
 
 // UsuarioCompania
@@ -71,7 +73,9 @@ export const container = new Container();
 
 export const configureContainer = () => {
     // Auth bindings
-    container.bind<AuthService>(TYPES.AuthService).to(AuthService);
+    container.bind<LoginService>(TYPES.LoginService).to(LoginService);
+    container.bind<RegisterService>(TYPES.RegisterService).to(RegisterService);
+    container.bind<SessionService>(TYPES.SessionService).to(SessionService);
     container.bind<AuthController>(TYPES.AuthController).to(AuthController);
 
     // UsuarioCompania bindings
