@@ -1,5 +1,5 @@
 
-import { Aseguradora } from '../aseguradora';
+import { Aseguradora } from '../entities/aseguradora';
 
 export interface AseguradoraRepository {
   create(aseguradora: Omit<Aseguradora, 'id' | 'fechaCreacion' | 'fechaActualizacion'>): Promise<Aseguradora>;

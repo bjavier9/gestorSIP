@@ -2,9 +2,9 @@ import { Request, Response } from 'express';
 import { injectable, inject } from 'inversify';
 import { CompaniaCorretajeService } from '../../application/companiaCorretaje.service';
 import { handleSuccess } from '../../utils/responseHandler';
-import { TYPES } from '../../config/types';
+import { TYPES } from '../../di/types';
 import { ApiError } from '../../utils/ApiError';
-import { CompaniaCorretaje } from '../../domain/companiaCorretaje';
+import { CompaniaCorretaje } from '../../domain/entities/companiaCorretaje';
 
 /**
  * @swagger

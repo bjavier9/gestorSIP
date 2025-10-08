@@ -1,6 +1,6 @@
 import { injectable } from 'inversify';
 import { getFirestore, CollectionReference, Timestamp } from 'firebase-admin/firestore';
-import { Ente } from '../../domain/ente';
+import { Ente } from '../../domain/entities/ente';
 import { EnteRepository, EnteInput, EnteUpdateInput } from '../../domain/ports/enteRepository.port';
 import { ApiError } from '../../utils/ApiError';
 
@@ -18,7 +18,7 @@ export class FirebaseEnteRepositoryAdapter implements EnteRepository {
         }
 
         if (!data.companiaCorretajeId) {
-            throw new ApiError('INTERNAL_SERVER_ERROR', `El ente con ID ${doc.id} no tiene compañía asociada.`, 500);
+            throw new ApiError('INTERNAL_SERVER_ERROR', `El ente con ID ${doc.id} no tiene compaï¿½ï¿½a asociada.`, 500);
         }
 
         const toDate = (timestamp: any, fieldName: string): Date => {
@@ -97,7 +97,7 @@ export class FirebaseEnteRepositoryAdapter implements EnteRepository {
         }
 
         if (updates.companiaCorretajeId && updates.companiaCorretajeId !== doc.data()?.companiaCorretajeId) {
-            throw new ApiError('FORBIDDEN', 'No es posible cambiar la compañía asociada del ente.', 403);
+            throw new ApiError('FORBIDDEN', 'No es posible cambiar la compaï¿½ï¿½a asociada del ente.', 403);
         }
 
         const updateData = {

@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
 import { GestionRepository, GestionCreateInput, GestionUpdateInput } from '../domain/ports/gestionRepository.port';
-import { TYPES } from '../config/types';
-import { Gestion, GestionEstado, GestionPrioridad, GestionTipo } from '../domain/gestion';
+import { TYPES } from '../di/types';
+import { Gestion, GestionEstado, GestionPrioridad, GestionTipo } from '../domain/entities/gestion';
 import { ApiError } from '../utils/ApiError';
 
 interface CreateGestionDto {

@@ -1,8 +1,8 @@
 
 import { inject, injectable } from 'inversify';
-import { TYPES } from '../config/types';
+import { TYPES } from '../di/types';
 import { ConfigurationRepository } from '../domain/ports/configurationRepository.port';
-import { Configuration } from '../domain/configuration';
+import { Configuration } from '../domain/entities/configuration';
 import { ApiError } from '../utils/ApiError';
 
 @injectable()

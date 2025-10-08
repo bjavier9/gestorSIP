@@ -1,9 +1,9 @@
 import request from 'supertest';
 import express, { Express } from 'express';
-import container from '../../config/container';
-import { TYPES } from '../../config/types';
-import { AseguradoraService } from '../../application/aseguradora.service';
-import { errorHandler } from '../../middleware/errorHandler';
+import {container} from '../di/container';
+import { TYPES } from '../di/types';
+import { AseguradoraService } from '../application/aseguradora.service';
+import { errorHandler } from '../middleware/errorHandler';
 
 jest.mock('../../middleware/authMiddleware', () => ({
     authMiddleware: jest.fn((req, res, next) => next()),

@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
 import { EnteRepository, EnteInput, EnteUpdateInput } from '../domain/ports/enteRepository.port';
-import { Ente } from '../domain/ente';
-import { TYPES } from '../config/types';
+import { Ente } from '../domain/entities/ente';
+import { TYPES } from '../di/types';
 import { ApiError } from '../utils/ApiError';
 
 type CreateEnteDto = Omit<EnteInput, 'companiaCorretajeId'>;
@@ -17,7 +17,7 @@ export class EnteService {
     const payload: EnteInput = { ...data, companiaCorretajeId } as EnteInput;
     const existingEnte = await this.enteRepository.findByDocumento(payload.documento);
     if (existingEnte && existingEnte.companiaCorretajeId === companiaCorretajeId) {
-      throw new ApiError('ENTE_ALREADY_EXISTS', 'Ya existe un ente con este documento para la compañía.', 409);
+      throw new ApiError('ENTE_ALREADY_EXISTS', 'Ya existe un ente con este documento para la compaï¿½ï¿½a.', 409);
     }
     return this.enteRepository.save(payload);
   }

@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
-import { Poliza } from '../domain/poliza';
+import { Poliza } from '../domain/entities/poliza';
 import { PolizaRepository, PolizaSearchCriteria } from '../domain/ports/polizaRepository.port';
-import { TYPES } from '../config/types';
+import { TYPES } from '../di/types';
 
 @injectable()
 export class PolizaService {

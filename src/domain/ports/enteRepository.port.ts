@@ -1,4 +1,4 @@
-import { Ente } from "../ente";
+import { Ente } from "../entities/ente";
 
 // Input data for creating a new Ente
 export type EnteInput = Omit<Ente, 'id' | 'fechaCreacion' | 'fechaActualizacion'>;

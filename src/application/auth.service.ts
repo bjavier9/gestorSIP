@@ -4,12 +4,12 @@ import { getAuth } from 'firebase-admin/auth';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { UsuarioCompaniaRepository } from '../domain/ports/usuarioCompaniaRepository.port';
 import { CompaniaCorretajeRepository } from '../domain/ports/companiaCorretajeRepository.port';
-import { TYPES } from '../config/types';
+import { TYPES } from '../di/types';
 import { ApiError } from '../utils/ApiError';
 import { DecodedIdToken } from 'firebase-admin/lib/auth/token-verifier';
-import { UsuarioCompania } from '../domain/usuarioCompania';
+import { UsuarioCompania } from '../domain/entities/usuarioCompania';
 import { EnteRepository } from '../domain/ports/enteRepository.port';
-import { UserRole } from '../domain/roles';
+import { UserRole } from '../domain/entities/roles';
 
 const JWT_SECRET: string = process.env.JWT_SECRET || 'secret';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h';
@@ -155,7 +155,7 @@ export class AuthService {
 
     const targetRole = this.normalizeRole(input.rol);
     if (!targetRole || !ASSIGNABLE_ROLES.has(targetRole)) {
-      throw new ApiError('VALIDATION_INVALID_ROLE', 'El rol solicitado no es válido para nuevos usuarios.', 400);
+      throw new ApiError('VALIDATION_INVALID_ROLE', 'El rol solicitado no es vï¿½lido para nuevos usuarios.', 400);
     }
 
     if (!input.enteId) {
@@ -169,29 +169,29 @@ export class AuthService {
       }
     } else {
       if (!requestingUser.companiaCorretajeId) {
-        throw new ApiError('FORBIDDEN', 'Tu token no contiene una compañía asociada.', 403);
+        throw new ApiError('FORBIDDEN', 'Tu token no contiene una compaï¿½ï¿½a asociada.', 403);
       }
       if (targetCompaniaId && targetCompaniaId !== requestingUser.companiaCorretajeId) {
-        throw new ApiError('FORBIDDEN', 'No puedes registrar usuarios en otra compañía.', 403);
+        throw new ApiError('FORBIDDEN', 'No puedes registrar usuarios en otra compaï¿½ï¿½a.', 403);
       }
       targetCompaniaId = requestingUser.companiaCorretajeId;
     }
 
     if (!targetCompaniaId) {
-      throw new ApiError('VALIDATION_MISSING_FIELD', 'No se pudo determinar la compañía destino.', 400);
+      throw new ApiError('VALIDATION_MISSING_FIELD', 'No se pudo determinar la compaï¿½ï¿½a destino.', 400);
     }
 
     const ente = await this.enteRepository.findById(input.enteId);
     if (!ente) {
-      throw new ApiError('ENTE_NOT_FOUND', `No se encontró un ente con id ${input.enteId}.`, 404);
+      throw new ApiError('ENTE_NOT_FOUND', `No se encontrï¿½ un ente con id ${input.enteId}.`, 404);
     }
 
     if (!ente.companiaCorretajeId) {
-      throw new ApiError('ENTE_INVALID', 'El ente no tiene una compañía asociada.', 400);
+      throw new ApiError('ENTE_INVALID', 'El ente no tiene una compaï¿½ï¿½a asociada.', 400);
     }
 
     if (ente.companiaCorretajeId !== targetCompaniaId) {
-      throw new ApiError('FORBIDDEN', 'El ente pertenece a una compañía distinta a la solicitada.', 403);
+      throw new ApiError('FORBIDDEN', 'El ente pertenece a una compaï¿½ï¿½a distinta a la solicitada.', 403);
     }
 
     if (!ente.correo) {
@@ -202,7 +202,7 @@ export class AuthService {
 
     try {
       await getAuth().getUserByEmail(email);
-      throw new ApiError('AUTH_EMAIL_IN_USE', 'El correo ya está registrado en Firebase Auth.', 409);
+      throw new ApiError('AUTH_EMAIL_IN_USE', 'El correo ya estï¿½ registrado en Firebase Auth.', 409);
     } catch (error: any) {
       if (error.code && error.code !== 'auth/user-not-found') {
         throw new ApiError('AUTH_USER_LOOKUP_FAILED', error.message || 'No se pudo verificar el correo en Firebase Auth.', 400, error);
@@ -239,7 +239,7 @@ export class AuthService {
       };
     } catch (error: any) {
       await getAuth().deleteUser(userRecord.uid).catch(() => undefined);
-      throw new ApiError('USUARIO_COMPANIA_CREATION_FAILED', error?.message || 'No se pudo crear la asociación usuario-compañía.', 500, error);
+      throw new ApiError('USUARIO_COMPANIA_CREATION_FAILED', error?.message || 'No se pudo crear la asociaciï¿½n usuario-compaï¿½ï¿½a.', 500, error);
     }
   }
   

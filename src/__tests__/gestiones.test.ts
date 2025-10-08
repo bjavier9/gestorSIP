@@ -1,9 +1,9 @@
 import request from 'supertest';
 import express, { Express } from 'express';
-import container from '../../config/container';
-import { TYPES } from '../../config/types';
-import { GestionService } from '../../application/gestion.service';
-import { errorHandler } from '../../middleware/errorHandler';
+import {container} from '../di/container';
+import { TYPES } from '../di/types';
+import { GestionService } from '../application/gestion.service';
+import { errorHandler } from '../middleware/errorHandler';
 
 const mockUser = {
   uid: 'test-user-id',
@@ -11,7 +11,7 @@ const mockUser = {
   role: 'agent',
 };
 
-jest.mock('../../middleware/authMiddleware', () => ({
+jest.mock('../middleware/authMiddleware', () => ({
     authMiddleware: jest.fn((req, res, next) => {
         req.user = { user: mockUser };
         next();

@@ -1,8 +1,8 @@
 
 import { injectable, inject } from 'inversify';
-import { Aseguradora } from '../domain/aseguradora';
+import { Aseguradora } from '../domain/entities/aseguradora';
 import { AseguradoraRepository } from '../domain/ports/aseguradoraRepository.port';
-import { TYPES } from '../config/types';
+import { TYPES } from '../di/types';
 import { ApiError } from '../utils/ApiError';
 
 @injectable()

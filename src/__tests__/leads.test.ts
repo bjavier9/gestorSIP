@@ -1,15 +1,15 @@
 import request from 'supertest';
 import express, { Express } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import container from '../../config/container';
-import { TYPES } from '../../config/types';
-import { LeadService } from '../../application/lead.service';
-import { Lead } from '../../domain/lead';
-import { errorHandler } from '../../middleware/errorHandler';
-import { ApiError } from '../../utils/ApiError';
+import {container} from '../di/container';
+import { TYPES } from '../di/types';
+import { LeadService } from '../application/lead.service';
+import { Lead } from '../domain/entities/lead';
+import { errorHandler } from '../middleware/errorHandler';
+import { ApiError } from '../utils/ApiError';
 
 // Mock COMPLETO del middleware, ahora con contexto de usuario
-jest.mock('../../middleware/authMiddleware', () => ({
+jest.mock('../middleware/authMiddleware', () => ({
     authMiddleware: jest.fn((req, res, next) => {
         // Simula un usuario autenticado adjunto a la request
         req.user = { user: { companiaCorretajeId: 'comp-1' } };

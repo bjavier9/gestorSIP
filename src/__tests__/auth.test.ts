@@ -22,17 +22,17 @@ import express, { Express, Router, Request, Response, NextFunction } from 'expre
 import { Container } from 'inversify';
 import jwt from 'jsonwebtoken';
 import asyncHandler from 'express-async-handler';
-import { TYPES } from '../../config/types';
-import { ApiError } from '../../utils/ApiError';
+import { TYPES } from '../di/types';
+import { ApiError } from '../utils/ApiError';
 
 // Application components
-import { AuthController } from '../../infrastructure/http/auth.controller';
-import { AuthService, AuthPayload } from '../../application/auth.service';
-import { UsuarioCompania } from '../../domain/usuarioCompania';
-import { UsuarioCompaniaRepository } from '../../domain/ports/usuarioCompaniaRepository.port';
-import { CompaniaCorretaje } from '../../domain/companiaCorretaje';
-import { CompaniaCorretajeRepository } from '../../domain/ports/companiaCorretajeRepository.port';
-import { UserRole } from '../../domain/roles';
+import { AuthController } from '../infrastructure/http/auth.controller';
+import { AuthService, AuthPayload } from '../application/auth.service';
+import { UsuarioCompania } from '../domain/entities/usuarioCompania';
+import { UsuarioCompaniaRepository } from '../domain/ports/usuarioCompaniaRepository.port';
+import { CompaniaCorretaje } from '../domain/entities/companiaCorretaje';
+import { CompaniaCorretajeRepository } from '../domain/ports/companiaCorretajeRepository.port';
+import { UserRole } from '../domain/entities/roles';
 
 // 2. Mock external, module-level dependencies
 const mockVerifyIdToken = jest.fn();

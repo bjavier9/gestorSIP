@@ -1,6 +1,6 @@
 import { injectable } from 'inversify';
 import { getFirestore, CollectionReference, Timestamp } from 'firebase-admin/firestore';
-import { User } from '../../domain/user';
+import { User } from '../../domain/entities/user';
 import { UserRepository } from '../../domain/ports/userRepository.port';
 
 @injectable()

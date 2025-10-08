@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
 import { CompaniaCorretajeRepository } from '../domain/ports/companiaCorretajeRepository.port';
-import { TYPES } from '../config/types';
-import { CompaniaCorretaje } from '../domain/companiaCorretaje';
+import { TYPES } from '../di/types';
+import { CompaniaCorretaje } from '../domain/entities/companiaCorretaje';
 import { ApiError } from '../utils/ApiError';
 
 @injectable()

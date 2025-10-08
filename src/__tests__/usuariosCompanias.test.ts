@@ -1,16 +1,16 @@
 import request from 'supertest';
 import express, { Express, Request, Response, NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import container from '../../config/container';
-import { TYPES } from '../../config/types';
-import { UsuarioCompaniaService } from '../../application/usuarioCompania.service';
-import { UsuarioCompania } from '../../domain/usuarioCompania';
-import { errorHandler } from '../../middleware/errorHandler';
+import {container} from '../di/container';
+import { TYPES } from '../di/types';
+import { UsuarioCompaniaService } from '../application/usuarioCompania.service';
+import { UsuarioCompania } from '../domain/entities/usuarioCompania';
+import { errorHandler } from '../middleware/errorHandler';
 
 // Mock del middleware para simular un usuario con rol de 'admin'
-jest.mock('../../middleware/authMiddleware', () => ({
+jest.mock('../middleware/authMiddleware', () => ({
     authMiddleware: jest.fn((req: Request, res: Response, next: NextFunction) => {
-        req.user = {
+        req.body.user = {
             user: {
                 role: 'admin',
                 companiaCorretajeId: 'comp-1',

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { inject, injectable } from 'inversify';
 import { AseguradoraService } from '../../application/aseguradora.service';
-import { TYPES } from '../../config/types';
+import { TYPES } from '../../di/types';
 import { handleSuccess } from '../../utils/responseHandler';
 import { ApiError } from '../../utils/ApiError';
 

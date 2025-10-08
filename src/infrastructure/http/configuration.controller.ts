@@ -1,8 +1,8 @@
 import { inject, injectable } from 'inversify';
 import { Request, Response } from 'express';
-import { TYPES } from '../../config/types';
+import { TYPES } from '../../di/types';
 import { ConfigurationService } from '../../application/configuration.service';
-import { Configuration } from '../../domain/configuration';
+import { Configuration } from '../../domain/entities/configuration';
 import { handleSuccess } from '../../utils/responseHandler';
 import { ApiError } from '../../utils/ApiError';
 

@@ -1,7 +1,7 @@
 import { injectable, inject } from 'inversify';
 import { Request, Response } from 'express';
 import { OficinaService } from '../../application/oficina.service';
-import { TYPES } from '../../config/types';
+import { TYPES } from '../../di/types';
 import { handleSuccess } from '../../utils/responseHandler';
 
 /**

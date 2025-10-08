@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import asyncHandler from 'express-async-handler';
 import { ApiError } from '../utils/ApiError';
-import { UserRole } from '../domain/roles';
+import { UserRole } from '../domain/entities/roles';
 
 // Extiende el tipo de Request de Express para incluir una propiedad de usuario
 export interface AuthenticatedRequest extends Request {

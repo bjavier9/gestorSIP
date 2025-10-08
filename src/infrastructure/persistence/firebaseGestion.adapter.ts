@@ -1,7 +1,7 @@
 import { injectable } from 'inversify';
 import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { GestionRepository, GestionCreateInput, GestionUpdateInput } from '../../domain/ports/gestionRepository.port';
-import { Gestion } from '../../domain/gestion';
+import { Gestion } from '../../domain/entities/gestion';
 import { ApiError } from '../../utils/ApiError';
 
 @injectable()

@@ -1,5 +1,5 @@
 
-import { CompaniaCorretaje } from '../companiaCorretaje';
+import { CompaniaCorretaje } from '../entities/companiaCorretaje';
 
 export interface CompaniaCorretajeRepository {
   create(compania: Partial<CompaniaCorretaje>): Promise<CompaniaCorretaje>;

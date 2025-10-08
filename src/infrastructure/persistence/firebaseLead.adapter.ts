@@ -1,6 +1,6 @@
 import { injectable } from 'inversify';
 import { getFirestore, CollectionReference, Query, Timestamp } from 'firebase-admin/firestore';
-import { Lead } from '../../domain/lead';
+import { Lead } from '../../domain/entities/lead';
 import { LeadRepository } from '../../domain/ports/leadRepository.port';
 import { ApiError } from '../../utils/ApiError';
 

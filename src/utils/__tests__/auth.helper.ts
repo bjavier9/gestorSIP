@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { UserRole } from '../../domain/roles';
+import { UserRole } from '../../domain/entities/roles';
 
 /**
  * Genera un token JWT válido para usar en los tests.

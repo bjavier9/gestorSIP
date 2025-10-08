@@ -1,7 +1,7 @@
 
 import { injectable } from 'inversify';
 import { getFirestore, CollectionReference, Timestamp } from 'firebase-admin/firestore';
-import { Aseguradora } from '../../domain/aseguradora';
+import { Aseguradora } from '../../domain/entities/aseguradora';
 import { AseguradoraRepository } from '../../domain/ports/aseguradoraRepository.port';
 import { ApiError } from '../../utils/ApiError';
 

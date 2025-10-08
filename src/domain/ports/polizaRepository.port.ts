@@ -1,4 +1,4 @@
-import { Poliza } from '../poliza';
+import { Poliza } from '../entities/poliza';
 
 export interface PolizaSearchCriteria {
     companiaCorretajeId: string;

@@ -1,4 +1,4 @@
-import { Lead } from '../lead';
+import { Lead } from '../entities/lead';
 
 export interface LeadRepository {
     create(lead: Omit<Lead, 'id' | 'fechaCreacion' | 'fechaActualizacion'>): Promise<Lead>;

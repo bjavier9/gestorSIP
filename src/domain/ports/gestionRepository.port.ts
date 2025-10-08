@@ -1,4 +1,4 @@
-import { Gestion, GestionEstado, GestionPrioridad, GestionTipo } from '../gestion';
+import { Gestion, GestionEstado, GestionPrioridad, GestionTipo } from '../entities/gestion';
 
 export interface GestionCreateInput {
   companiaCorretajeId: string;

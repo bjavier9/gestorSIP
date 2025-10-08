@@ -2,7 +2,7 @@
 import { injectable } from 'inversify';
 import { CollectionReference, getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { CompaniaCorretajeRepository } from '../../domain/ports/companiaCorretajeRepository.port';
-import { CompaniaCorretaje, Creada, Modificado } from '../../domain/companiaCorretaje';
+import { CompaniaCorretaje, Creada, Modificado } from '../../domain/entities/companiaCorretaje';
 import { ApiError } from '../../utils/ApiError';
 
 @injectable()

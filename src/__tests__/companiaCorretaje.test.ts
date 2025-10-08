@@ -1,11 +1,11 @@
 import request from 'supertest';
 import express, { Express } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import container from '../../config/container';
-import { TYPES } from '../../config/types';
-import { CompaniaCorretajeService } from '../../application/companiaCorretaje.service';
-import { CompaniaCorretaje, Creada, Modificado } from '../../domain/companiaCorretaje';
-import { errorHandler } from '../../middleware/errorHandler';
+import { container } from '../di/container';
+import { TYPES } from '../di/types';
+import { CompaniaCorretajeService } from '../application/companiaCorretaje.service';
+import { CompaniaCorretaje, Creada, Modificado } from '../domain/entities/companiaCorretaje';
+import { errorHandler } from '../middleware/errorHandler';
 
 // Mock del middleware de autenticación para simular un Super Admin
 jest.mock('../../middleware/authMiddleware', () => ({

@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { inject, injectable } from 'inversify';
 import { LeadService } from '../../application/lead.service';
-import { TYPES } from '../../config/types';
+import { TYPES } from '../../di/types';
 import { AuthenticatedRequest } from '../../middleware/authMiddleware';
 import { ApiError } from '../../utils/ApiError';
 import { handleSuccess } from '../../utils/responseHandler';

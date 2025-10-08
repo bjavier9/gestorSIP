@@ -1,5 +1,5 @@
 
-import { Configuration } from '../configuration';
+import { Configuration } from '../entities/configuration';
 
 export interface ConfigurationRepository {
     findAll(): Promise<Configuration[]>;

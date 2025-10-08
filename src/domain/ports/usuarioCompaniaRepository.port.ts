@@ -1,5 +1,5 @@
 
-import { UsuarioCompania } from '../usuarioCompania';
+import { UsuarioCompania } from '../entities/usuarioCompania';
 
 export interface UsuarioCompaniaRepository {
   findById(id: string): Promise<UsuarioCompania | null>;

@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './config/swagger';
 import { initializeFirebase } from './config/firebase';
-import { container, configureContainer } from './config/container';
+import { container, configureContainer } from './di/container';
 import { errorHandler } from './middleware/errorHandler';
 
 // Import route creation functions
@@ -18,6 +18,9 @@ import { createAseguradorasRoutes } from './routes/aseguradoras';
 import { createLeadRoutes } from './routes/leads';
 import { createGestionesRoutes } from './routes/gestiones';
 import { createPolizasRoutes } from './routes/polizas';
+import { createIssueRoutes } from './routes/issues'
+// src/index.ts
+
 
 dotenv.config();
 
@@ -47,6 +50,8 @@ async function startServer() {
     app.use('/api/leads', createLeadRoutes(container));
     app.use('/api/gestiones', createGestionesRoutes(container));
     app.use('/api/polizas', createPolizasRoutes(container));
+    // ruta nueva de issue
+    app.use('/api/issue', createIssueRoutes(container));
 
     // Ruta de Swagger
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

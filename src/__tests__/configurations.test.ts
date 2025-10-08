@@ -1,12 +1,12 @@
 import request from 'supertest';
 import express, { Express } from 'express';
-import container from '../../config/container'; 
-import { TYPES } from '../../config/types';
-import { ConfigurationService } from '../../application/configuration.service';
-import { errorHandler } from '../../middleware/errorHandler';
+import {container} from '../di/container'; 
+import { TYPES } from '../di/types';
+import { ConfigurationService } from '../application/configuration.service';
+import { errorHandler } from '../middleware/errorHandler';
 
 
-jest.mock('../../middleware/authMiddleware', () => ({
+jest.mock('../middleware/authMiddleware', () => ({
     authMiddleware: jest.fn((req, res, next) => next()),
     superAdminMiddleware: jest.fn((req, res, next) => next()),
     adminSupervisorOrSuperadminMiddleware: jest.fn((req, res, next) => next()), 

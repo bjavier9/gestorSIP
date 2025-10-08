@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { injectable, inject } from 'inversify';
-import { TYPES } from '../../config/types';
+import { TYPES } from '../../di/types';
 import { UsuarioCompaniaService } from '../../application/usuarioCompania.service';
 import { handleSuccess } from '../../utils/responseHandler';
 import { ApiError } from '../../utils/ApiError';

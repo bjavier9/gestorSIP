@@ -1,7 +1,7 @@
 import { injectable } from 'inversify';
 import { getFirestore, CollectionReference, Query, QueryDocumentSnapshot, DocumentSnapshot } from 'firebase-admin/firestore';
 import { PolizaRepository, PolizaSearchCriteria } from '../../domain/ports/polizaRepository.port';
-import { Poliza } from '../../domain/poliza';
+import { Poliza } from '../../domain/entities/poliza';
 
 @injectable()
 export class FirebasePolizaAdapter implements PolizaRepository {

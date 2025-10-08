@@ -2,7 +2,7 @@
 import { injectable } from 'inversify';
 import { getFirestore, CollectionReference } from 'firebase-admin/firestore';
 import { ConfigurationRepository } from '../../domain/ports/configurationRepository.port';
-import { Configuration } from '../../domain/configuration';
+import { Configuration } from '../../domain/entities/configuration';
 import { ApiError } from '../../utils/ApiError';
 
 @injectable()

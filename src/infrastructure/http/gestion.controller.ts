@@ -1,11 +1,11 @@
 import { Response, NextFunction } from 'express';
 import { inject, injectable } from 'inversify';
 import { GestionService } from '../../application/gestion.service';
-import { TYPES } from '../../config/types';
+import { TYPES } from '../../di/types';
 import { AuthenticatedRequest } from '../../middleware/authMiddleware';
 import { ApiError } from '../../utils/ApiError';
 import { handleSuccess } from '../../utils/responseHandler';
-import { GestionPrioridad, GestionTipo } from '../../domain/gestion';
+import { GestionPrioridad, GestionTipo } from '../../domain/entities/gestion';
 
 /**
  * @swagger

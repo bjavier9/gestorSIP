@@ -1,3 +1,4 @@
+// Dependency Injection
 import { Container } from 'inversify';
 import { TYPES } from './types';
 
@@ -59,6 +60,13 @@ import { PolizaController } from '../infrastructure/http/poliza.controller';
 import { PolizaRepository } from '../domain/ports/polizaRepository.port';
 import { FirebasePolizaAdapter } from '../infrastructure/persistence/firebasePoliza.adapter';
 
+
+// issue 
+import { IssueRepository } from '../domain/ports/issueRepository.port';
+import { FirebaseIssueRepository } from '../infrastructure/persistence/firebaseIssueRepository.adapter';
+import { IssueService } from '../application/issue.service';
+import { IssueController } from '../infrastructure/http/issue.controller';
+
 export const container = new Container();
 
 export const configureContainer = () => {
@@ -110,4 +118,9 @@ export const configureContainer = () => {
     container.bind<PolizaRepository>(TYPES.PolizaRepository).to(FirebasePolizaAdapter);
     container.bind<PolizaService>(TYPES.PolizaService).to(PolizaService);
     container.bind<PolizaController>(TYPES.PolizaController).to(PolizaController);
+
+    // issue
+    container.bind<IssueRepository>(TYPES.IssueRepository).to(FirebaseIssueRepository);
+    container.bind<IssueService>(TYPES.IssueService).to(IssueService);
+    container.bind<IssueController>(TYPES.IssueController).to(IssueController);
 };

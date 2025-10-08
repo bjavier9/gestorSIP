@@ -1,8 +1,8 @@
 
 import { injectable, inject } from 'inversify';
 import { OficinaRepository } from '../domain/ports/oficinaRepository.port';
-import { TYPES } from '../config/types';
-import { Oficina } from '../domain/oficina';
+import { TYPES } from '../di/types';
+import { Oficina } from '../domain/entities/oficina';
 import { ApiError } from '../utils/ApiError';
 
 @injectable()

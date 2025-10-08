@@ -1,9 +1,9 @@
 import { inject, injectable } from 'inversify';
 import { getAuth } from 'firebase-admin/auth';
 import { UsuarioCompaniaRepository } from '../domain/ports/usuarioCompaniaRepository.port';
-import { TYPES } from '../config/types';
+import { TYPES } from '../di/types';
 import { ApiError } from '../utils/ApiError';
-import { UsuarioCompania } from '../domain/usuarioCompania';
+import { UsuarioCompania } from '../domain/entities/usuarioCompania';
 
 interface CreateUsuarioCompaniaDto {
   email: string;

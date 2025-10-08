@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { Container } from 'inversify';
 import { CompaniaCorretajeController } from '../infrastructure/http/companiaCorretaje.controller';
-import { TYPES } from '../config/types';
+import { TYPES } from '../di/types';
 import { asyncHandler } from '../middleware/asyncHandler';
 
 export const createCompaniaCorretajeRoutes = (container: Container): Router => {

@@ -1,7 +1,7 @@
 
 import { injectable } from 'inversify';
 import { getFirestore, CollectionReference, Timestamp } from 'firebase-admin/firestore';
-import { Oficina } from '../../domain/oficina';
+import { Oficina } from '../../domain/entities/oficina';
 import { OficinaRepository } from '../../domain/ports/oficinaRepository.port';
 import { ApiError } from '../../utils/ApiError';
 

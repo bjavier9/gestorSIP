@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
 import { LeadRepository } from '../domain/ports/leadRepository.port';
-import { TYPES } from '../config/types';
-import { Lead } from '../domain/lead';
+import { TYPES } from '../di/types';
+import { Lead } from '../domain/entities/lead';
 import { ApiError } from '../utils/ApiError';
 
 @injectable()

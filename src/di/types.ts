@@ -37,6 +37,11 @@ const TYPES = {
     PolizaRepository: Symbol.for('PolizaRepository'),
     PolizaService: Symbol.for('PolizaService'),
     PolizaController: Symbol.for('PolizaController'),
+
+    //demo
+    IssueRepository: Symbol.for('IssueRepository'),
+    IssueService: Symbol.for('IssueService'),
+    IssueController: Symbol.for('IssueController'),
 };
 
 export { TYPES };

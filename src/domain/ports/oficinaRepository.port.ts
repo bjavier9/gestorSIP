@@ -1,5 +1,5 @@
 
-import { Oficina } from '../oficina';
+import { Oficina } from '../entities/oficina';
 
 /**
  * Puerto que define las operaciones de persistencia para las oficinas.
