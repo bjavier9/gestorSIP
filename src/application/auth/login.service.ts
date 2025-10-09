@@ -8,6 +8,7 @@ import { ApiError } from '../../utils/ApiError';
 import { DecodedIdToken } from 'firebase-admin/lib/auth/token-verifier';
 import { UserRole } from '../../domain/entities/roles';
 import { AuthPayload, LoginResponse } from '../../domain/entities/auth';
+import logger from '../../utils/logger';
 
 const JWT_SECRET: string = process.env.JWT_SECRET || 'secret';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h';
@@ -43,6 +44,7 @@ export class LoginService {
         }
 
         const { uid, email } = decodedToken;
+        logger.info(`Login attempt for user: ${email} (uid: ${uid})`);
 
         // Superadmin check
         if (email === SUPERADMIN_EMAIL && uid === SUPERADMIN_UID) {
