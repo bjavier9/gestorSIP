@@ -39,12 +39,20 @@ export class LoginService {
         let decodedToken: DecodedIdToken;
         try {
             decodedToken = await getAuth().verifyIdToken(idToken);
-        } catch (error) {
+        } catch (error: any) {
+            logger.error('Firebase token verification failed', { 
+                errorMessage: error.message,
+                errorCode: error.code,
+                originalError: error
+            });
             throw new ApiError('AUTH_INVALID_FIREBASE_TOKEN', 'Invalid Firebase token.', 401, error);
         }
 
         const { uid, email } = decodedToken;
-        logger.error(`Login attempt for user: ${email} (uid: ${uid})`);
+        logger.info(`Login attempt for user: ${email} (uid: ${uid})`);
+
+        // Debugging Superadmin Check
+        logger.info(`Superadmin check values: [From Token] email: ${email}, uid: ${uid}. [From Env] SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL}, SUPERADMIN_UID: ${SUPERADMIN_UID}`);
 
         // Superadmin check
         if (email === SUPERADMIN_EMAIL && uid === SUPERADMIN_UID) {
@@ -61,7 +69,7 @@ export class LoginService {
         const userCompanias = await this.usuarioCompaniaRepo.findByUserId(uid);
 
         if (userCompanias.length === 0) {
-            throw new ApiError('AUTH_NO_COMPANIES_ASSIGNED',`User is not assigned to any company. ${email} (uid: ${uid})` , 403);
+            throw new ApiError('AUTH_NO_COMPANIES_ASSIGNED', 'User is not assigned to any company.', 403);
         }
 
         // User with a single company association
