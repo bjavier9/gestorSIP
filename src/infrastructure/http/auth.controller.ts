@@ -19,20 +19,10 @@ export class AuthController {
   ) {}
 
   async login(req: Request, res: Response) {
-    const { idToken, email, password } = req.body || {};
-
-    if (email || password) {
-      if (!email || !password) {
-        throw new ApiError('AUTH_MISSING_CREDENTIALS', 'Email and password are required for super admin login.', 400);
-      }
-
-      const result = await this.loginService.loginSuperAdmin(email, password);
-      handleSuccess(req, res, result, 200, { token: result.token });
-      return;
-    }
+    const { idToken } = req.body;
 
     if (!idToken) {
-      throw new ApiError('AUTH_MISSING_ID_TOKEN', 'Firebase ID token is required unless super admin credentials are provided.', 400);
+      throw new ApiError('AUTH_MISSING_ID_TOKEN', 'Firebase ID token is required.', 400);
     }
 
     const result = await this.loginService.login(idToken);

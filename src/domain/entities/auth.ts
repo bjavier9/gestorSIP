@@ -1,44 +1,33 @@
-import { UsuarioCompania } from './usuarioCompania';
-import { UserRole } from './roles';
+import { UsuarioCompania } from "./usuarioCompania";
 
-/**
- * Payload decodificado del token JWT, representa la identidad del usuario en el sistema.
- */
-export interface AuthPayload {
-  uid: string;
-  email: string;
-  role?: UserRole;
-  companiaCorretajeId?: string;
-  oficinaId?: string;
-  enteId?: string;
-  pendienteCia?: boolean; // Indica si el usuario necesita seleccionar una compañía
-}
-
-/**
- * Respuesta del endpoint de login.
- */
 export interface LoginResponse {
-  token: string;
-  companias: UsuarioCompania[];
-  needsSelection: boolean;
-}
+    token: string;
+    companias: UsuarioCompania[];
+    needsSelection: boolean;
+    isSuperAdmin?: boolean; // campo opcional
+  }
 
-/**
- * DTO para el registro de un nuevo usuario.
- */
-export interface RegisterUserInput {
-  enteId: string;
-  rol: string;
-  companiaCorretajeId?: string;
-  oficinaId?: string;
-}
+  export interface AuthPayload {
+    uid: string;
+    email: string;
+    role: string;
+    companiaCorretajeId?: string;
+    oficinaId?: string;
+    enteId?: string;
+    
+  }
 
-/**
- * DTO con el resultado del registro de un nuevo usuario.
- */
-export interface RegisterUserResult {
-  uid: string;
-  email: string;
-  defaultPassword: string;
-  usuarioCompaniaId: string;
-}
+  export interface RegisterUserInput {
+    enteId: string;
+    rol: string;
+    companiaCorretajeId?: string;
+    oficinaId?: string;
+  }
+  
+  export interface RegisterUserResult {
+    uid: string;
+    email: string;
+    defaultPassword?: string;
+    usuarioCompaniaId: string;
+  }
+  

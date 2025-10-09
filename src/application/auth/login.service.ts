@@ -3,7 +3,6 @@ import { inject, injectable } from 'inversify';
 import { getAuth } from 'firebase-admin/auth';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { UsuarioCompaniaRepository } from '../../domain/ports/usuarioCompaniaRepository.port';
-import { CompaniaCorretajeRepository } from '../../domain/ports/companiaCorretajeRepository.port';
 import { TYPES } from '../../di/types';
 import { ApiError } from '../../utils/ApiError';
 import { DecodedIdToken } from 'firebase-admin/lib/auth/token-verifier';
@@ -13,13 +12,12 @@ import { AuthPayload, LoginResponse } from '../../domain/entities/auth';
 const JWT_SECRET: string = process.env.JWT_SECRET || 'secret';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h';
 const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL;
-const SUPERADMIN_PASSWORD = process.env.SUPERADMIN_PASSWORD;
+const SUPERADMIN_UID = process.env.SUPERADMIN_UID;
 
 @injectable()
 export class LoginService {
     constructor(
-        @inject(TYPES.UsuarioCompaniaRepository) private usuarioCompaniaRepo: UsuarioCompaniaRepository,
-        @inject(TYPES.CompaniaCorretajeRepository) private companiaCorretajeRepo: CompaniaCorretajeRepository
+        @inject(TYPES.UsuarioCompaniaRepository) private usuarioCompaniaRepo: UsuarioCompaniaRepository
     ) { }
 
     private signToken(payload: object): string {
@@ -36,25 +34,6 @@ export class LoginService {
             : undefined;
     }
 
-    public async loginSuperAdmin(email: string, password: string): Promise<{ token: string }> {
-        if (!SUPERADMIN_EMAIL || !SUPERADMIN_PASSWORD) {
-            throw new ApiError('CONFIG_ERROR', 'Super admin credentials are not configured on the server.', 500);
-        }
-
-        if (email !== SUPERADMIN_EMAIL || password !== SUPERADMIN_PASSWORD) {
-            throw new ApiError('AUTH_INVALID_CREDENTIALS', 'Invalid superadmin credentials.', 401);
-        }
-
-        const payload: AuthPayload = {
-            uid: 'superadmin-uid',
-            email: SUPERADMIN_EMAIL,
-            role: UserRole.SUPERADMIN,
-        };
-
-        const token = this.signToken({ user: payload });
-        return { token };
-    }
-
     public async login(idToken: string): Promise<LoginResponse> {
         let decodedToken: DecodedIdToken;
         try {
@@ -64,29 +43,27 @@ export class LoginService {
         }
 
         const { uid, email } = decodedToken;
-        let userCompanias = await this.usuarioCompaniaRepo.findByUserId(uid);
 
-        if (userCompanias.length === 0 && email === 'admin@seguroplus.com') {
-            const firstCompany = await this.companiaCorretajeRepo.findFirst();
-            if (firstCompany) {
-                const newAssociation = await this.usuarioCompaniaRepo.create({
-                    userId: uid,
-                    email: email!,
-                    companiaCorretajeId: firstCompany.id,
-                    rol: 'admin',
-                });
-                userCompanias = [newAssociation];
-            } else {
-                throw new ApiError('AUTH_NO_COMPANIES_AVAILABLE', 'No companies available for assignment.', 500);
-            }
+        // Superadmin check
+        if (email === SUPERADMIN_EMAIL && uid === SUPERADMIN_UID) {
+            const payload: AuthPayload = {
+                uid,
+                email: email!,
+                role: UserRole.SUPERADMIN,
+            };
+            const token = this.signToken({ user: payload });
+            return { token, companias: [], needsSelection: false, isSuperAdmin: true };
         }
+
+        // Regular user logic
+        const userCompanias = await this.usuarioCompaniaRepo.findByUserId(uid);
 
         if (userCompanias.length === 0) {
             throw new ApiError('AUTH_NO_COMPANIES_ASSIGNED', 'User is not assigned to any company.', 403);
         }
 
-        const isSupervisor = userCompanias.some(uc => uc.rol === 'supervisor');
-        if (isSupervisor || userCompanias.length === 1) {
+        // User with a single company association
+        if (userCompanias.length === 1) {
             const primaryRelation = userCompanias[0];
             const payload: AuthPayload = {
                 uid,
@@ -100,6 +77,7 @@ export class LoginService {
             return { token, companias: userCompanias, needsSelection: false };
         }
 
+        // User with multiple companies, needs to select one
         const payload = { user: { uid, email: email!, pendienteCia: true } };
         const token = this.signToken(payload);
 
