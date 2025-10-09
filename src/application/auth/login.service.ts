@@ -44,7 +44,7 @@ export class LoginService {
         }
 
         const { uid, email } = decodedToken;
-        logger.info(`Login attempt for user: ${email} (uid: ${uid})`);
+        logger.error(`Login attempt for user: ${email} (uid: ${uid})`);
 
         // Superadmin check
         if (email === SUPERADMIN_EMAIL && uid === SUPERADMIN_UID) {
@@ -61,7 +61,7 @@ export class LoginService {
         const userCompanias = await this.usuarioCompaniaRepo.findByUserId(uid);
 
         if (userCompanias.length === 0) {
-            throw new ApiError('AUTH_NO_COMPANIES_ASSIGNED', 'User is not assigned to any company.', 403);
+            throw new ApiError('AUTH_NO_COMPANIES_ASSIGNED',`User is not assigned to any company. ${email} (uid: ${uid})` , 403);
         }
 
         // User with a single company association
