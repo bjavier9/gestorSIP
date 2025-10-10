@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { Container } from 'inversify';
 import { AuthController } from '../infrastructure/http/auth.controller';
 import { TYPES } from '../di/types';
-import { asyncHandler } from '../middleware/asyncHandler';
-import { authMiddleware } from '../middleware/authMiddleware';
+import { asyncHandler } from '../middleware/async-handler.middleware';
+import { authMiddleware } from '../middleware/authentication.middleware';
 
 // Crea y devuelve el router configurado con el contenedor
 export const createAuthRoutes = (container: Container): Router => {
@@ -15,5 +15,3 @@ export const createAuthRoutes = (container: Container): Router => {
 
     return router;
 };
-
-

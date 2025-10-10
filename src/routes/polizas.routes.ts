@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { Container } from 'inversify';
 import { PolizaController } from '../infrastructure/http/poliza.controller';
 import { TYPES } from '../di/types';
-import { asyncHandler } from '../middleware/asyncHandler';
-import { authMiddleware } from '../middleware/authMiddleware';
+import { asyncHandler } from '../middleware/async-handler.middleware';
+import { authMiddleware } from '../middleware/authentication.middleware';
 
 export const createPolizasRoutes = (container: Container): Router => {
     const router = Router();

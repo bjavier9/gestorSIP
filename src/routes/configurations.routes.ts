@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { Container } from 'inversify';
 import { ConfigurationController } from '../infrastructure/http/configuration.controller';
 import { TYPES } from '../di/types';
-import { asyncHandler } from '../middleware/asyncHandler';
-import { authMiddleware } from '../middleware/authMiddleware';
+import { asyncHandler } from '../middleware/async-handler.middleware';
+import { authMiddleware } from '../middleware/authentication.middleware';
 
 export const createConfigurationRoutes = (container: Container): Router => {
     const router = Router();
@@ -18,4 +18,3 @@ export const createConfigurationRoutes = (container: Container): Router => {
 
     return router;
 };
-

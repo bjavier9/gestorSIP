@@ -5,7 +5,7 @@ import { Router } from 'express';
 import { Container } from 'inversify';
 import { IssueController } from '../infrastructure/http/issue.controller';
 import { TYPES } from '../di/types';
-import { asyncHandler } from '../middleware/asyncHandler';
+import { asyncHandler } from '../middleware/async-handler.middleware';
 // import { authMiddleware } from '../middleware/authMiddleware';
 
 export const createIssueRoutes = (container: Container): Router => {
