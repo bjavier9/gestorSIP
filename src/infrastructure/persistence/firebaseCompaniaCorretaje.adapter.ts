@@ -87,6 +87,11 @@ export class FirebaseCompaniaCorretajeAdapter implements CompaniaCorretajeReposi
     return this.docToCompaniaCorretaje(doc);
   }
 
+  async findAll(): Promise<CompaniaCorretaje[]> {
+    const snapshot = await this.collection.get();
+    return snapshot.docs.map(doc => this.docToCompaniaCorretaje(doc));
+  }
+
   async findFirst(): Promise<CompaniaCorretaje | null> {
     const snapshot = await this.collection.limit(1).get();
     if (snapshot.empty) {

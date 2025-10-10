@@ -9,8 +9,8 @@ import { CompaniaCorretaje } from '../../domain/entities/companiaCorretaje';
 /**
  * @swagger
  * tags:
- *   name: Companias
- *   description: Administracion de companias de corretaje.
+ *   name: Companias Corretaje (Superadmin)
+ *   description: Administración de Compañías de Corretaje. Acceso restringido a Superadministradores.
  */
 @injectable()
 export class CompaniaCorretajeController {
@@ -21,9 +21,44 @@ export class CompaniaCorretajeController {
   /**
    * @swagger
    * /api/companias:
+   *   get:
+   *     tags: [Companias Corretaje (Superadmin)]
+   *     summary: Obtiene una lista de todas las compañías de corretaje.
+   *     description: Ruta exclusiva para Superadministradores.
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Lista de compañías obtenida con éxito.
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 body:
+   *                   type: object
+   *                   properties:
+   *                     data:
+   *                       type: array
+   *                       items:
+   *                         $ref: '#/components/schemas/CompaniaCorretaje'
+   *       401:
+   *         description: No autorizado (token no válido o no proporcionado).
+   *       403:
+   *         description: Prohibido (el usuario no es Superadmin).
+   */
+  async getAll(req: Request, res: Response) {
+    const result = await this.companiaService.getAllCompanias();
+    handleSuccess(req, res, result);
+  }
+
+  /**
+   * @swagger
+   * /api/companias:
    *   post:
-   *     tags: [Companias]
-   *     summary: Crea una nueva compania de corretaje.
+   *     tags: [Companias Corretaje (Superadmin)]
+   *     summary: Crea una nueva compañía de corretaje.
+   *     description: Ruta exclusiva para Superadministradores.
    *     security:
    *       - bearerAuth: []
    *     requestBody:
@@ -34,25 +69,17 @@ export class CompaniaCorretajeController {
    *             $ref: '#/components/schemas/CompaniaCorretaje'
    *     responses:
    *       201:
-   *         description: Compania creada correctamente.
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/SuccessResponse'
+   *         description: Compañía creada correctamente.
    *       400:
-   *         description: Datos faltantes o invalidos.
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/ErrorResponse'
+   *         description: Datos faltantes o inválidos (ej. RIF duplicado).
+   *       403:
+   *         description: Prohibido (el usuario no es Superadmin).
    */
   async create(req: Request, res: Response) {
     const companiaData: CompaniaCorretaje = req.body;
-
     if (!companiaData.nombre || !companiaData.rif) {
       throw new ApiError('VALIDATION_MISSING_FIELD', 'Nombre and RIF are required.', 400);
     }
-
     const result = await this.companiaService.createCompania(companiaData);
     handleSuccess(req, res, result, 201);
   }
@@ -61,8 +88,9 @@ export class CompaniaCorretajeController {
    * @swagger
    * /api/companias/{id}:
    *   get:
-   *     tags: [Companias]
-   *     summary: Obtiene una compania por su identificador.
+   *     tags: [Companias Corretaje (Superadmin)]
+   *     summary: Obtiene una compañía específica por su ID.
+   *     description: Ruta exclusiva para Superadministradores.
    *     security:
    *       - bearerAuth: []
    *     parameters:
@@ -71,34 +99,14 @@ export class CompaniaCorretajeController {
    *         required: true
    *         schema:
    *           type: string
-   *         description: Identificador de la compania.
+   *         description: Identificador único de la compañía.
    *     responses:
    *       200:
-   *         description: Compania encontrada.
-   *         content:
-   *           application/json:
-   *             schema:
-   *               allOf:
-   *                 - $ref: '#/components/schemas/SuccessResponse'
-   *                 - type: object
-   *                   properties:
-   *                     body:
-   *                       type: object
-   *                       properties:
-   *                         data:
-   *                           $ref: '#/components/schemas/CompaniaCorretaje'
-   *       400:
-   *         description: Falta el identificador.
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/ErrorResponse'
+   *         description: Compañía encontrada.
+   *       403:
+   *         description: Prohibido (el usuario no es Superadmin).
    *       404:
-   *         description: Compania no encontrada.
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/ErrorResponse'
+   *         description: Compañía no encontrada.
    */
   async getById(req: Request, res: Response) {
     const { id } = req.params;
@@ -109,18 +117,70 @@ export class CompaniaCorretajeController {
     handleSuccess(req, res, result);
   }
 
+  /**
+   * @swagger
+   * /api/companias/{id}:
+   *   put:
+   *     tags: [Companias Corretaje (Superadmin)]
+   *     summary: Actualiza los datos de una compañía existente.
+   *     description: Ruta exclusiva para Superadministradores.
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Identificador de la compañía a actualizar.
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/CompaniaCorretaje'
+   *     responses:
+   *       200:
+   *         description: Compañía actualizada correctamente.
+   *       403:
+   *         description: Prohibido (el usuario no es Superadmin).
+   *       404:
+   *         description: Compañía no encontrada.
+   */
   async update(req: Request, res: Response) {
     const { id } = req.params;
     const data: Partial<CompaniaCorretaje> = req.body;
-
     if (!id) {
       throw new ApiError('VALIDATION_MISSING_FIELD', 'id is required.', 400);
     }
-
     const result = await this.companiaService.updateCompania(id, data);
     handleSuccess(req, res, result, 200);
   }
 
+  /**
+   * @swagger
+   * /api/companias/{id}/activar:
+   *   put:
+   *     tags: [Companias Corretaje (Superadmin)]
+   *     summary: Activa una compañía.
+   *     description: Ruta exclusiva para Superadministradores.
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Identificador de la compañía a activar.
+   *     responses:
+   *       200:
+   *         description: Compañía activada.
+   *       403:
+   *         description: Prohibido (el usuario no es Superadmin).
+   *       404:
+   *         description: Compañía no encontrada.
+   */
   async activar(req: Request, res: Response) {
     const { id } = req.params;
     if (!id) {
@@ -130,6 +190,30 @@ export class CompaniaCorretajeController {
     handleSuccess(req, res, result, 200);
   }
 
+  /**
+   * @swagger
+   * /api/companias/{id}/desactivar:
+   *   put:
+   *     tags: [Companias Corretaje (Superadmin)]
+   *     summary: Desactiva una compañía.
+   *     description: Ruta exclusiva para Superadministradores.
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Identificador de la compañía a desactivar.
+   *     responses:
+   *       200:
+   *         description: Compañía desactivada.
+   *       403:
+   *         description: Prohibido (el usuario no es Superadmin).
+   *       404:
+   *         description: Compañía no encontrada.
+   */
   async desactivar(req: Request, res: Response) {
     const { id } = req.params;
     if (!id) {

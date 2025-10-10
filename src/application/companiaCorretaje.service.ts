@@ -18,6 +18,10 @@ export class CompaniaCorretajeService {
     return this.companiaRepo.create(companiaData);
   }
 
+  async getAllCompanias(): Promise<CompaniaCorretaje[]> {
+    return this.companiaRepo.findAll();
+  }
+
   async getCompaniaById(id: string): Promise<CompaniaCorretaje> {
     const compania = await this.companiaRepo.findById(id);
     if (!compania) {
@@ -45,7 +49,7 @@ export class CompaniaCorretajeService {
     if (!existing) {
       throw new ApiError('NOT_FOUND', 'Company not found.', 404);
     }
-    return this.companiaRepo.setActive(id, true);
+    return this.companiaRepo.update(id, { activo: true });
   }
 
   async desactivarCompania(id: string): Promise<CompaniaCorretaje> {
@@ -53,6 +57,6 @@ export class CompaniaCorretajeService {
     if (!existing) {
       throw new ApiError('NOT_FOUND', 'Company not found.', 404);
     }
-    return this.companiaRepo.setActive(id, false);
+    return this.companiaRepo.update(id, { activo: false });
   }
 }
