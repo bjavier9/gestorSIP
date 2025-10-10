@@ -5,7 +5,7 @@ import { TYPES } from '../../di/types';
 import { handleSuccess } from '../../utils/responseHandler';
 import { ApiError } from '../../utils/ApiError';
 import { PolizaSearchCriteria } from '../../domain/ports/polizaRepository.port';
-import { AuthenticatedRequest } from '../../middleware/authMiddleware';
+import { AuthenticatedRequest } from '../../middleware/authentication.middleware';
 
 /**
  * @swagger

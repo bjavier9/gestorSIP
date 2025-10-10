@@ -8,7 +8,7 @@ import { RegisterUserInput } from '../../domain/entities/auth';
 import { handleSuccess } from '../../utils/responseHandler';
 import { TYPES } from '../../di/types';
 import { ApiError } from '../../utils/ApiError';
-import { AuthenticatedRequest } from '../../middleware/authMiddleware';
+import { AuthenticatedRequest } from '../../middleware/authentication.middleware';
 
 @injectable()
 export class AuthController {

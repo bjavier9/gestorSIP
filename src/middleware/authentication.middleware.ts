@@ -4,7 +4,7 @@ import { ApiError } from '../utils/ApiError';
 import logger from '../utils/logger';
 
 // Extiende la interfaz de Request para incluir la propiedad 'user'
-interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest extends Request {
   user?: any; // O un tipo más específico si tienes la interfaz del payload del token
 }
 

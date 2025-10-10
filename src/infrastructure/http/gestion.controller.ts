@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express';
 import { inject, injectable } from 'inversify';
 import { GestionService } from '../../application/gestion.service';
 import { TYPES } from '../../di/types';
-import { AuthenticatedRequest } from '../../middleware/authMiddleware';
+import { AuthenticatedRequest } from '../../middleware/authentication.middleware';
 import { ApiError } from '../../utils/ApiError';
 import { handleSuccess } from '../../utils/responseHandler';
 import { GestionPrioridad, GestionTipo } from '../../domain/entities/gestion';
