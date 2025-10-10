@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { ApiError } from '../../utils/ApiError';
-import { UserRole } from '../../domain/entities/roles';
+import { ApiError } from '../utils/ApiError';
+import { UserRole } from '../domain/entities/roles';
+import logger from '../utils/logger';
 
 // Este middleware asume que el token ya ha sido verificado por otro middleware
 // y que req.user contiene el payload del token.
@@ -10,6 +11,11 @@ export const authorize = (allowedRoles: UserRole[]) => {
         const user = (req as any).user;
 
         if (!user || !user.role) {
+             logger.error('Authentication required', { 
+                errorMessage:`${JSON.stringify(user)}` ,
+                errorCode: 401,
+                originalError: 'AUTH_UNAUTHORIZED'
+            });
             return next(new ApiError('AUTH_UNAUTHORIZED', 'Authentication required.', 401));
         }
 

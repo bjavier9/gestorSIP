@@ -4,7 +4,7 @@ import { CompaniaCorretajeController } from '../infrastructure/http/companiaCorr
 import { TYPES } from '../di/types';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { authMiddleware } from '../middleware/authMiddleware';
-import { isSuperAdmin } from '../presentation/middlewares/auth.middleware';
+import { isSuperAdmin } from '../middleware/auth.middleware';
 
 export const createCompaniaCorretajeRoutes = (container: Container): Router => {
     const router = Router();
